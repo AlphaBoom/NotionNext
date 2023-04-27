@@ -68,7 +68,7 @@ const LayoutBase = props => {
                     </div>
 
                     {/* 桌面端右侧 */}
-                    <div className={`bg-white dark:bg-transparent hidden xl:block border-l dark:border-transparent w-96 relative z-10 ${CONFIG_MEDIUM.RIGHT_PANEL_DARK ? 'bg-hexo-black-gray dark' : ''}`}>
+                    <div className={`bg-slate-50 dark:bg-transparent hidden xl:block border-l dark:border-transparent w-96 relative z-10 ${CONFIG_MEDIUM.RIGHT_PANEL_DARK ? 'bg-hexo-black-gray dark' : ''}`}>
                         <div className='py-14 px-6 sticky top-0'>
                             <Tabs>
                                 {slotRight}
