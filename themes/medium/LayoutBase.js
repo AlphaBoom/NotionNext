@@ -47,7 +47,7 @@ const LayoutBase = props => {
                         {/* 顶部导航栏 */}
                         <TopNavBar {...props} />
 
-                        <div id='container-inner' className='px-7 max-w-5xl justify-center mx-auto min-h-screen'>
+                        <div id='container-inner' className='bg-white dark:bg-transparent px-7 max-w-5xl justify-center mx-auto min-h-screen'>
                             {slotTop}
 
                             {onLoading ? LoadingCover : children}
@@ -68,7 +68,7 @@ const LayoutBase = props => {
                     </div>
 
                     {/* 桌面端右侧 */}
-                    <div className={`hidden xl:block border-l dark:border-transparent w-96 relative z-10 ${CONFIG_MEDIUM.RIGHT_PANEL_DARK ? 'bg-hexo-black-gray dark' : ''}`}>
+                    <div className={`bg-white dark:bg-transparent hidden xl:block border-l dark:border-transparent w-96 relative z-10 ${CONFIG_MEDIUM.RIGHT_PANEL_DARK ? 'bg-hexo-black-gray dark' : ''}`}>
                         <div className='py-14 px-6 sticky top-0'>
                             <Tabs>
                                 {slotRight}
