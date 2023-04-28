@@ -575,7 +575,6 @@ summary > .notion-h {
 }
 
 .notion-link:hover {
-  border-color: var(--fg-color-6);
   text-decoration: underline;
   animation: shake 1.5s ease-in-out;
   animation-iteration-count: infinite;
