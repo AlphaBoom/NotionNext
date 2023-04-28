@@ -559,8 +559,9 @@ summary > .notion-h {
 }
 
 .notion-link {
-  display: inline-block;
-  @apply text-green-500 dark:text-blue-400;
+  display: inline-flex;
+  vertical-align: text-bottom;
+  @apply text-sky-500 dark:text-blue-400;
   word-break: break-word;
   text-decoration: inherit;
   border-bottom: 0 none;
@@ -568,7 +569,6 @@ summary > .notion-h {
   opacity: 1;
   transition: border-color 100ms ease-in, opacity 100ms ease-in;
 }
-
 
 .notion-link:hover {
   border-color: var(--fg-color-6);
