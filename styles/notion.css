@@ -570,6 +570,10 @@ summary > .notion-h {
   transition: border-color 100ms ease-in, opacity 100ms ease-in;
 }
 
+.notion-link .notion-page-title {
+  align-items: baseline;
+}
+
 .notion-link:hover {
   border-color: var(--fg-color-6);
   text-decoration: underline;
