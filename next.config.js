@@ -9,6 +9,7 @@ module.exports = withBundleAnalyzer({
     // 允许next/image加载的图片 域名
     domains: [
       'gravatar.com',
+      'cravatar.cn',
       'www.notion.so',
       'avatars.githubusercontent.com',
       'images.unsplash.com',
