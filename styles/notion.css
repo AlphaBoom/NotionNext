@@ -561,6 +561,7 @@ summary > .notion-h {
 .notion-link {
   display: inline-flex;
   vertical-align: baseline;
+  -webkit-backface-visibility: hidden;
   @apply text-sky-500 dark:text-blue-400;
   word-break: break-word;
   text-decoration: inherit;
