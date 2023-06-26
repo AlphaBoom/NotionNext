@@ -18,6 +18,7 @@ const CommonHead = ({ meta, children }) => {
   return (
     <Head>
       <title>{title}</title>
+      <meta name="referrer" content="no-referrer"/>
       <meta name="theme-color" content={BLOG.BACKGROUND_DARK} />
       <meta
         name="viewport"
