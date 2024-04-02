@@ -52,10 +52,6 @@ const LayoutBase = props => {
   const router = useRouter()
   const [tocVisible, changeTocVisible] = useState(false)
   const { onLoading, fullWidth } = useGlobal()
-  
-  useEffect(()=> {
-    console.log("loading state:", onLoading)
-  }, [onLoading])
 
   return (
         <ThemeGlobalMedium.Provider value={{ tocVisible, changeTocVisible }}>
