@@ -52,6 +52,10 @@ const LayoutBase = props => {
   const router = useRouter()
   const [tocVisible, changeTocVisible] = useState(false)
   const { onLoading, fullWidth } = useGlobal()
+  
+  useEffect(()=> {
+    console.log("loading state:", onLoading)
+  }, [onLoading])
 
   return (
         <ThemeGlobalMedium.Provider value={{ tocVisible, changeTocVisible }}>
@@ -75,7 +79,6 @@ const LayoutBase = props => {
                         <div id='container-inner' className={`bg-white dark:bg-transparent px-7 ${fullWidth ? '' : 'max-w-5xl'} justify-center mx-auto min-h-screen`}>
                             <Transition
                                 show={!onLoading}
-                                appear={true}
                                 enter="transition ease-in-out duration-700 transform order-first"
                                 enterFrom="opacity-0 translate-y-16"
                                 enterTo="opacity-100"
