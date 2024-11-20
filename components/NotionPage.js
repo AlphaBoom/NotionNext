@@ -159,7 +159,14 @@ const autoScrollToTarget = () => {
  */
 const mapPageUrl = id => {
   // return 'https://www.notion.so/' + id.replace(/-/g, '')
-  return '/' + id.replace(/-/g, '')
+  id = id.replace(/-/g, '')
+  if ([
+    "f21f69678d6445b1805c09af356d59d5",
+    "d2d28bd552f546a6b5e99e0914543504",
+  ].includes(id)) {
+    return '#' + id
+  }
+  return '/' + id
 }
 
 /**
