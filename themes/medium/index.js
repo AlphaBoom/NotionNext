@@ -8,7 +8,7 @@ import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import { isBrowser } from '@/lib/utils'
 import { Transition } from '@headlessui/react'
-import Link from 'next/link'
+import SmartLink from '@/components/SmartLink'
 import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useState } from 'react'
 import Announcement from './components/Announcement'
@@ -330,6 +330,20 @@ const LayoutArchive = props => {
  * @returns
  */
 const Layout404 = props => {
+  const router = useRouter()
+  useEffect(() => {
+    // 延时3秒如果加载失败就返回首页
+    setTimeout(() => {
+      const article =
+        typeof document !== 'undefined' &&
+        document.getElementById('notion-article')
+      if (!article) {
+        router.push('/').then(() => {
+          // console.log('找不到页面', router.asPath)
+        })
+      }
+    }, 3000)
+  })
   return (
     <>
       <div className='w-full h-96 py-80 flex flex-col justify-center items-center'>未找到页面，不过别灰心这可能是由于网络问题导致
@@ -361,7 +375,7 @@ const LayoutCategoryIndex = props => {
         <div id='category-list' className='duration-200 flex flex-wrap'>
           {categoryOptions?.map(category => {
             return (
-              <Link
+              <SmartLink
                 key={category.name}
                 href={`/category/${category.name}`}
                 passHref
@@ -373,7 +387,7 @@ const LayoutCategoryIndex = props => {
                   <i className='mr-4 fas fa-folder' />
                   {category.name}({category.count})
                 </div>
-              </Link>
+              </SmartLink>
             )
           })}
         </div>

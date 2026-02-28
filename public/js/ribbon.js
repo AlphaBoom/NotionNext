@@ -22,7 +22,7 @@ function createRibbon() {
       a = window.innerWidth,
       l = window.innerHeight,
       d = e.s
-    i.id = idRibbon
+    i.id = '__next'
     let r, s
     const u = Math
     let h = 0
