@@ -73,6 +73,14 @@
   color: var(--fg-color);
   caret-color: var(--fg-color);
   font-family: inherit !important;
+  /* Add visual spacing at CJK/Latin and CJK/number boundaries without
+     changing the source text or duplicating author-provided spaces. */
+  text-autospace: normal;
+}
+
+.notion
+  :is(pre, code, .notion-code, .notion-inline-code, .notion-equation, .katex) {
+  text-autospace: no-autospace;
 }
 
 .notion > * {
