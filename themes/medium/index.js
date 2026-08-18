@@ -7,7 +7,6 @@ import Tabs from '@/components/Tabs'
 import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import { isBrowser } from '@/lib/utils'
-import { Transition } from '@headlessui/react'
 import SmartLink from '@/components/SmartLink'
 import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -27,6 +26,7 @@ import Footer from './components/Footer'
 import InfoCard from './components/InfoCard'
 import JumpToTopButton from './components/JumpToTopButton'
 import RevolverMaps from './components/RevolverMaps'
+import RouteTransition from './components/RouteTransition'
 import SearchInput from './components/SearchInput'
 import TagGroups from './components/TagGroups'
 import TagItemMini from './components/TagItemMini'
@@ -50,7 +50,7 @@ const LayoutBase = props => {
   const { locale } = useGlobal()
   const router = useRouter()
   const [tocVisible, changeTocVisible] = useState(false)
-  const { onLoading, fullWidth } = useGlobal()
+  const { fullWidth } = useGlobal()
   const [slotRight, setSlotRight] = useState(null)
 
   useEffect(() => {
@@ -93,19 +93,10 @@ const LayoutBase = props => {
             <div
               id='container-inner'
               className={`px-7 ${fullWidth ? '' : 'max-w-5xl'} bg-white dark:bg-transparent justify-center mx-auto min-h-screen`}>
-              <Transition
-                show={!onLoading}
-                appear={true}
-                enter='transition ease-in-out duration-700 transform order-first'
-                enterFrom='opacity-0 translate-y-16'
-                enterTo='opacity-100'
-                leave='transition ease-in-out duration-300 transform'
-                leaveFrom='opacity-100'
-                leaveTo='opacity-0 -translate-y-16'
-                unmount={false}>
+              <RouteTransition>
                 {slotTop}
                 {children}
-              </Transition>
+              </RouteTransition>
 
               <JumpToTopButton className='hidden md:flex' />
             </div>
