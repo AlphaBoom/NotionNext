@@ -61,9 +61,14 @@ export const MenuItemDrop = ({ link }) => {
                 key={sLink.id}
                 className='not:last-child:border-b-0 border-b text-gray-700 dark:text-gray-200  hover:bg-gray-50 dark:hover:bg-gray-900 tracking-widest transition-all duration-200  dark:border-gray-800 py-3 pr-6 pl-3'>
                 <SmartLink href={sLink.href} target={link?.target}>
-                  <span className='text-xs font-extralight'>
-                    {link?.icon && <i className={sLink?.icon}> &nbsp; </i>}
-                    {sLink.title}
+                  <span className='flex items-center gap-2 text-xs font-extralight'>
+                    {sLink?.icon && (
+                      <i
+                        className={`${sLink.icon} w-4 shrink-0 text-center leading-none`}
+                        aria-hidden='true'
+                      />
+                    )}
+                    <span>{sLink.title}</span>
                   </span>
                 </SmartLink>
               </li>
