@@ -66,7 +66,11 @@ const THEME_COLOR_DEFAULTS = {
   landing: { PRIMARY: '#ef4444' },
   magzine: { PRIMARY: '#7BE986', PRIMARY_DARK: '#62BA6B', BG: '#f6f6f1' },
   matery: { PRIMARY: '#4338ca', BG: '#f5f5f5' },
-  medium: { PRIMARY: '#4f46e5' },
+  medium: {
+    PRIMARY: '#4f46e5',
+    BG: '#eeeeee',
+    CARD: '#ffffff'
+  },
   movie: { PRIMARY: '#2563eb', PRIMARY_DARK: '#ca8a04' },
   nav: { PRIMARY: '#000000', BG: '#fbfbfb', TEXT: '#8c8c8c' },
   next: { PRIMARY: '#4e80ee', BG: '#eeedee' },
