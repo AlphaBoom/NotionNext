@@ -107,7 +107,7 @@ const LayoutBase = props => {
                 {children}
               </Transition>
 
-              <JumpToTopButton />
+              <JumpToTopButton className='hidden md:flex' />
             </div>
 
             {/* 底部 */}

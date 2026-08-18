@@ -22,9 +22,10 @@ export default function BottomMenuBar({ post, className }) {
             <i className='fas fa-search' />
           </div>
         </SmartLink>
-        <div className='flex w-full items-center justify-center cursor-pointer z-20'>
-          <JumpToTopButton />
-        </div>
+        <JumpToTopButton
+          inline
+          className='flex w-full h-full items-center justify-center cursor-pointer z-20'
+        />
         {showTocButton && (
           <div
             onClick={toggleToc}
