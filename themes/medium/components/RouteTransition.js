@@ -3,12 +3,31 @@ import { useGlobal } from '@/lib/global'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 
-const OVERLAY_DELAY_MS = 140
+const ArticleLoading = ({ label }) => (
+  <section
+    role='status'
+    aria-live='polite'
+    className='min-h-[60vh] max-w-4xl px-1 pt-14'>
+    <span className='sr-only'>{label}</span>
+    <div className='animate-pulse motion-reduce:animate-none'>
+      <div className='mb-5 h-10 w-4/5 rounded bg-gray-200 dark:bg-gray-700' />
+      <div className='mb-12 flex gap-4'>
+        <div className='h-4 w-24 rounded bg-gray-200 dark:bg-gray-700' />
+        <div className='h-4 w-32 rounded bg-gray-200 dark:bg-gray-700' />
+      </div>
+      <div className='space-y-4 border-t border-gray-100 pt-10 dark:border-gray-800'>
+        <div className='h-4 w-full rounded bg-gray-100 dark:bg-gray-800' />
+        <div className='h-4 w-11/12 rounded bg-gray-100 dark:bg-gray-800' />
+        <div className='h-4 w-3/4 rounded bg-gray-100 dark:bg-gray-800' />
+        <div className='h-4 w-5/6 rounded bg-gray-100 dark:bg-gray-800' />
+      </div>
+    </div>
+  </section>
+)
 
 export default function RouteTransition({ children }) {
-  const { locale, onLoading } = useGlobal()
+  const { locale } = useGlobal()
   const router = useRouter()
-  const [showOverlay, setShowOverlay] = useState(false)
   const [contentEntered, setContentEntered] = useState(true)
   const [loadingArticle, setLoadingArticle] = useState(false)
   const animationFrame = useRef(null)
@@ -19,20 +38,17 @@ export default function RouteTransition({ children }) {
       const path = String(url || '').split('?')[0]
       setLoadingArticle(path.startsWith(`/${prefix}/`))
     }
+    const handleRouteDone = () => setLoadingArticle(false)
 
     router.events.on('routeChangeStart', handleRouteStart)
-    return () => router.events.off('routeChangeStart', handleRouteStart)
-  }, [router.events])
-
-  useEffect(() => {
-    if (!onLoading) {
-      setShowOverlay(false)
-      return
+    router.events.on('routeChangeComplete', handleRouteDone)
+    router.events.on('routeChangeError', handleRouteDone)
+    return () => {
+      router.events.off('routeChangeStart', handleRouteStart)
+      router.events.off('routeChangeComplete', handleRouteDone)
+      router.events.off('routeChangeError', handleRouteDone)
     }
-
-    const timer = window.setTimeout(() => setShowOverlay(true), OVERLAY_DELAY_MS)
-    return () => window.clearTimeout(timer)
-  }, [onLoading])
+  }, [router.events])
 
   useEffect(() => {
     setContentEntered(false)
@@ -57,26 +73,11 @@ export default function RouteTransition({ children }) {
             ? 'translate-y-0 opacity-100'
             : 'translate-y-2 opacity-0'
         }`}>
-        {children}
-      </div>
-
-      <div
-        role='status'
-        aria-live='polite'
-        aria-hidden={!showOverlay}
-        className={`fixed inset-0 z-40 flex items-center justify-center bg-white/70 backdrop-blur-[1px] transition-opacity duration-200 motion-reduce:transition-none dark:bg-black/60 ${
-          showOverlay
-            ? 'pointer-events-auto opacity-100'
-            : 'pointer-events-none opacity-0'
-        }`}>
-        <div className='flex items-center gap-3 rounded-full border border-gray-200 bg-white/95 px-5 py-3 text-sm text-gray-600 shadow-lg dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-300'>
-          <span className='h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700 motion-reduce:animate-none dark:border-gray-600 dark:border-t-gray-200' />
-          <span>
-            {loadingArticle
-              ? locale.COMMON.LOADING_ARTICLE
-              : locale.COMMON.LOADING}
-          </span>
-        </div>
+        {loadingArticle ? (
+          <ArticleLoading label={locale.COMMON.LOADING_ARTICLE} />
+        ) : (
+          children
+        )}
       </div>
     </>
   )
