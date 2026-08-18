@@ -6,7 +6,9 @@ jest.mock('notion-utils', () => ({
 
 import {
   formatNotionBlock,
+  getMissingExternalObjectInstanceIds,
   hasExpiredSignedUrls,
+  hydrateExternalObjectInstances,
   preferStablePdfSignedUrls
 } from '@/lib/db/notion/getPostBlocks'
 import {
@@ -16,6 +18,65 @@ import {
 } from '@/lib/db/notion/normalizeExternalMediaBlock'
 
 describe('formatNotionBlock', () => {
+  it('finds rich-text external object instances missing from the block map', () => {
+    const recordMap = {
+      block: {
+        list: {
+          value: {
+            id: 'list',
+            type: 'bulleted_list',
+            properties: {
+              title: [
+                ['‣', [['eoi', 'github-mention']]],
+                [' description']
+              ]
+            }
+          }
+        }
+      }
+    }
+
+    expect(getMissingExternalObjectInstanceIds(recordMap)).toEqual([
+      'github-mention'
+    ])
+  })
+
+  it('hydrates rich-text external object instances for the renderer', async () => {
+    const recordMap = {
+      block: {
+        list: {
+          value: {
+            id: 'list',
+            properties: {
+              title: [['‣', [['eoi', 'github-mention']]]]
+            }
+          }
+        }
+      }
+    }
+    const githubMention = {
+      value: {
+        id: 'github-mention',
+        type: 'external_object_instance',
+        format: {
+          domain: 'github.com',
+          original_url: 'https://github.com/example/repo',
+          attributes: []
+        }
+      }
+    }
+    const fetchBlocks = jest.fn().mockResolvedValue({
+      'github-mention': githubMention
+    })
+
+    await expect(
+      hydrateExternalObjectInstances(recordMap, fetchBlocks)
+    ).resolves.toBe(true)
+    expect(fetchBlocks).toHaveBeenCalledWith(['github-mention'])
+    expect(recordMap.block['github-mention']).toEqual(githubMention)
+    expect(getMissingExternalObjectInstanceIds(recordMap)).toEqual([])
+  })
+
   it('detects Apple Music single-track embed URLs', () => {
     expect(
       isAppleMusicEmbedUrl(
