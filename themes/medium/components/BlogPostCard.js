@@ -1,15 +1,17 @@
 import LazyImage from '@/components/LazyImage'
 import NotionIcon from '@/components/NotionIcon'
-import NotionPage from '@/components/NotionPage'
 import TwikooCommentCount from '@/components/TwikooCommentCount'
 import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import SmartLink from '@/components/SmartLink'
+import dynamic from 'next/dynamic'
 import CONFIG from '../config'
 import CategoryItem from './CategoryItem'
 import TagItemMini from './TagItemMini'
 
-const BlogPostCard = ({ post, showSummary }) => {
+const NotionPage = dynamic(() => import('@/components/NotionPage'))
+
+const BlogPostCard = ({ post, showSummary, priority = false }) => {
   const showPreview =
     siteConfig('MEDIUM_POST_LIST_PREVIEW', null, CONFIG) && post.blockMap
   const { locale } = useGlobal()
@@ -33,6 +35,7 @@ const BlogPostCard = ({ post, showSummary }) => {
               <div className='w-full max-h-96 object-cover overflow-hidden mb-2 rounded shadow'>
                 <LazyImage
                   src={post.pageCoverThumbnail}
+                  priority={priority}
                   style={post.pageCoverThumbnail ? {} : { height: '0px' }}
                   className='w-full max-h-96 object-cover hover:scale-125 duration-150'
                 />

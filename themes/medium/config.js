@@ -5,7 +5,7 @@ const CONFIG = {
   MEDIUM_COLOR_PRIMARY: '#4f46e5',
 
   MEDIUM_POST_LIST_COVER: true, // 文章列表显示图片封面
-  MEDIUM_POST_LIST_PREVIEW: true, // 列表显示文章预览
+  MEDIUM_POST_LIST_PREVIEW: false, // 列表仅显示摘要，完整内容留在详情页渲染
   MEDIUM_POST_LIST_CATEGORY: true, // 列表显示文章分类
   MEDIUM_POST_LIST_TAG: true, // 列表显示文章标签
 
