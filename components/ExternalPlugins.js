@@ -28,6 +28,7 @@ const ExternalPlugin = props => {
   const DISABLE_PLUGIN = siteConfig('DISABLE_PLUGIN', null, NOTION_CONFIG)
   const THEME_SWITCH = siteConfig('THEME_SWITCH', null, NOTION_CONFIG)
   const DEBUG = siteConfig('DEBUG', null, NOTION_CONFIG)
+  const AOS_ENABLE = siteConfig('AOS_ENABLE', false, NOTION_CONFIG)
   const INNER_PAGE_URL_PARENT_PATH = siteConfig(
     'INNER_PAGE_URL_PARENT_PATH',
     null,
@@ -281,9 +282,9 @@ const ExternalPlugin = props => {
       {WEB_WHIZ_ENABLED && <WebWhiz />}
       {AD_WWADS_BLOCK_DETECT && <AdBlockDetect />}
       {TIANLI_KEY && <TianliGPT />}
-      <VConsole />
+      {DEBUG && <VConsole />}
       {ENABLE_NPROGRSS && <LoadingProgress />}
-      {pluginsIdle && <AosAnimation />}
+      {pluginsIdle && AOS_ENABLE && <AosAnimation />}
       {ANALYTICS_51LA_ID && ANALYTICS_51LA_CK && <LA51 />}
       {AI_CHAT_API || DOCS_CHAT_API ? <DocsChat /> : COZE_BOT_ID && <Coze />}
 

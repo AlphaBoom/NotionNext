@@ -19,11 +19,9 @@ import BLOG from '@/blog.config'
 import ExternalPlugins from '@/components/ExternalPlugins'
 import PWAInstaller from '@/components/PWAInstaller'
 import SEO from '@/components/SEO'
-import { zhCN } from '@clerk/localizations'
 import dynamic from 'next/dynamic'
-// import { ClerkProvider } from '@clerk/nextjs'
-const ClerkProvider = dynamic(() =>
-  import('@clerk/nextjs').then(m => m.ClerkProvider)
+const ClerkAuthProvider = dynamic(
+  () => import('@/components/ClerkAuthProvider')
 )
 const AppErrorBoundary = ErrorHandler.createErrorBoundary(
   <div style={{ padding: '2rem', textAlign: 'center', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -98,7 +96,7 @@ const MyApp = ({ Component, pageProps }) => {
   return (
     <>
       {enableClerk ? (
-        <ClerkProvider localization={zhCN}>{content}</ClerkProvider>
+        <ClerkAuthProvider>{content}</ClerkAuthProvider>
       ) : (
         content
       )}
