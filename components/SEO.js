@@ -28,6 +28,7 @@ const SEO = props => {
     : webFontUrl
       ? [webFontUrl]
       : []
+  const hasWebFontUrl = webFontUrls.length > 0
 
   // SEO关键词
   const KEYWORDS = siteConfig('KEYWORDS')
