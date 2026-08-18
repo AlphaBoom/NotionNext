@@ -1029,6 +1029,20 @@ code[class*='language-'] {
   line-height: 1em;
 }
 
+/*
+ * react-notion-x styles callout icons with a descendant selector, which also
+ * catches page icons nested in inline article links. Restore the normal inline
+ * link metrics so these links keep the same baseline alignment as body text.
+ */
+.notion-callout .notion-link .notion-page-icon-inline,
+.notion-callout .notion-link .notion-page-icon {
+  align-self: auto !important;
+  width: 22px !important;
+  height: 22px !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+}
+
 .notion-callout-text {
   margin-left: 8px;
   white-space: pre-wrap;
