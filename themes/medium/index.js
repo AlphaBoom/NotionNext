@@ -343,14 +343,14 @@ const Layout404 = () => {
       <div className='mt-8 flex flex-wrap justify-center gap-3'>
         <SmartLink
           href='/'
-          className='rounded-md bg-gray-800 px-5 py-2.5 text-sm text-white transition-colors hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-white'>
+          className='inline-flex h-10 items-center justify-center rounded-md bg-gray-800 px-5 text-sm leading-none text-white transition-colors hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-white'>
           返回首页
         </SmartLink>
         <a
           href='https://alphaboom.notion.site/alphaboom/32c16f6bb85e4e949eba49dee2d73a5c?v=e7c99abff7b6444683b94893a4f838a1'
           target='_blank'
           rel='noopener noreferrer'
-          className='rounded-md border border-gray-300 px-5 py-2.5 text-sm text-gray-700 transition-colors hover:border-gray-500 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-400 dark:hover:text-white'>
+          className='inline-flex h-10 items-center justify-center rounded-md border border-gray-300 px-5 text-sm leading-none text-gray-700 transition-colors hover:border-gray-500 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-400 dark:hover:text-white'>
           访问 Notion 公开页面
         </a>
       </div>
