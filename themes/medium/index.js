@@ -98,6 +98,9 @@ const LayoutBase = props => {
                 {children}
               </RouteTransition>
 
+              {/* Keep fixed-position UI outside the transformed route content. */}
+              {!props.lock && post && <TocDrawer {...props} />}
+
               <JumpToTopButton className='hidden md:flex' />
             </div>
 
@@ -233,8 +236,6 @@ const LayoutSlug = props => {
             <Comment frontMatter={post} />
           </section>
 
-          {/* 移动端目录 */}
-          <TocDrawer {...props} />
         </div>
       )}
     </div>
