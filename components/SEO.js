@@ -101,6 +101,16 @@ const SEO = props => {
   return (
     <Head>
       <link rel='icon' href={favicon} />
+      {hasWebFontUrl && (
+        <>
+          <link rel='preconnect' href='https://fonts.googleapis.com' />
+          <link
+            rel='preconnect'
+            href='https://fonts.gstatic.com'
+            crossOrigin='anonymous'
+          />
+        </>
+      )}
       {webFontUrls.map(url => (
         <link key={url} rel='stylesheet' href={url} />
       ))}
@@ -229,16 +239,8 @@ const SEO = props => {
       />
 
       {/* DNS预取和预连接 */}
-      {hasWebFontUrl && <link rel='dns-prefetch' href='//fonts.googleapis.com' />}
       <link rel='dns-prefetch' href='//www.google-analytics.com' />
       <link rel='dns-prefetch' href='//www.googletagmanager.com' />
-      {hasWebFontUrl && (
-        <link
-          rel='preconnect'
-          href='https://fonts.gstatic.com'
-          crossOrigin='anonymous'
-        />
-      )}
 
       {children}
     </Head>

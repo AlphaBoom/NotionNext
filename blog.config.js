@@ -63,8 +63,10 @@ const BLOG = {
   // 后面空格隔开的font-light的字体粗细，留空是默认粗细；参考 https://www.tailwindcss.cn/docs/font-weight
   FONT_STYLE: process.env.NEXT_PUBLIC_FONT_STYLE || 'font-sans font-light',
   // 字体CSS 例如 https://npm.elemecdn.com/lxgw-wenkai-webfont@1.6.0/style.css
-  // Medium 主题优先使用下方的系统字体栈，避免首屏下载多套远程字体。
-  FONT_URL: [],
+  // 合并 Google Fonts 请求，在保留原字体设计的同时减少样式表连接数。
+  FONT_URL: [
+    'https://fonts.googleapis.com/css2?family=Bitter&family=Noto+Sans+SC:wght@300&family=Noto+Serif+SC:wght@300&display=swap'
+  ],
   // 无衬线字体 例如'"LXGW WenKai"'
   FONT_SANS: [
     // '"LXGW WenKai"',
