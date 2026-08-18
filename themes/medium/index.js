@@ -329,31 +329,32 @@ const LayoutArchive = props => {
  * @param {*} props
  * @returns
  */
-const Layout404 = props => {
-  const router = useRouter()
-  useEffect(() => {
-    // 延时3秒如果加载失败就返回首页
-    setTimeout(() => {
-      const article =
-        typeof document !== 'undefined' &&
-        document.getElementById('notion-article')
-      if (!article) {
-        router.push('/').then(() => {
-          // console.log('找不到页面', router.asPath)
-        })
-      }
-    }, 3000)
-  })
+const Layout404 = () => {
   return (
-    <>
-      <div className='w-full h-96 py-80 flex flex-col justify-center items-center'>未找到页面，不过别灰心这可能是由于网络问题导致
-          <div>
-              您可以尝试访问本站的
-              <a href='https://alphaboom.notion.site/alphaboom/32c16f6bb85e4e949eba49dee2d73a5c?v=e7c99abff7b6444683b94893a4f838a1' target="_blank" className='text-blue-600 hover:underline underline-offset-4'>Notion公开网页</a>
-              来寻找原始内容
-          </div>
+    <div className='flex min-h-[60vh] w-full flex-col items-center justify-center px-6 text-center'>
+      <div className='text-6xl font-bold text-gray-300 dark:text-gray-600'>404</div>
+      <h1 className='mt-6 text-xl font-medium text-gray-800 dark:text-gray-200'>
+        未找到页面
+      </h1>
+      <p className='mt-3 max-w-xl leading-7 text-gray-500 dark:text-gray-400'>
+        这可能是链接发生了变化，或页面暂时无法从 Notion 加载。您可以返回首页，
+        也可以前往 Notion 公开页面寻找原始内容。
+      </p>
+      <div className='mt-8 flex flex-wrap justify-center gap-3'>
+        <SmartLink
+          href='/'
+          className='inline-flex h-10 items-center justify-center rounded-md bg-gray-800 px-5 text-sm leading-none text-white transition-colors hover:bg-gray-700 dark:bg-gray-200 dark:text-gray-900 dark:hover:bg-white'>
+          返回首页
+        </SmartLink>
+        <a
+          href='https://alphaboom.notion.site/alphaboom/32c16f6bb85e4e949eba49dee2d73a5c?v=e7c99abff7b6444683b94893a4f838a1'
+          target='_blank'
+          rel='noopener noreferrer'
+          className='inline-flex h-10 items-center justify-center rounded-md border border-gray-300 px-5 text-sm leading-none text-gray-700 transition-colors hover:border-gray-500 hover:text-gray-900 dark:border-gray-600 dark:text-gray-300 dark:hover:border-gray-400 dark:hover:text-white'>
+          访问 Notion 公开页面
+        </a>
       </div>
-    </>
+    </div>
   )
 }
 
