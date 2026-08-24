@@ -33,9 +33,9 @@ export default function ArticleInfo(props) {
                 </div>
                 {showArticleStats && (
                     <div className='flex shrink-0 items-center whitespace-nowrap'>
-                        <span><i className='fas fa-file-word mr-1' />{locale.COMMON.WORD_COUNT}: {post.wordCount}</span>
+                        <span><i className='mr-1 hidden md:inline fas fa-file-word' />{locale.COMMON.WORD_COUNT}: {post.wordCount}</span>
                         <span className='mx-2 shrink-0'>|</span>
-                        <span><i className='fas fa-clock mr-1' />{locale.COMMON.READ_TIME}: {post.readTime} {locale.COMMON.MINUTE}</span>
+                        <span><i className='mr-1 hidden md:inline fas fa-clock' />{locale.COMMON.READ_TIME}: {post.readTime} {locale.COMMON.MINUTE}</span>
                     </div>
                 )}
             </div>
