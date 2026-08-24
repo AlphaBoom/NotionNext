@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic'
 import { useEffect, useRef } from 'react'
 import { NotionRenderer } from 'react-notion-x'
 import OriginalityProof from './OriginalityProof'
+import WordCount from './WordCount'
 
 /**
  * 整个站点的核心组件
@@ -115,6 +116,12 @@ const NotionPage = ({ post, className }) => {
     <div
       id='notion-article'
       className={`mx-auto overflow-x-clip overflow-y-visible ${className || ''}`}>
+      {typeof post?.wordCount === 'number' &&
+        typeof post?.readTime === 'number' && (
+          <div className='mb-4 flex justify-end text-sm text-gray-500 dark:text-gray-400'>
+            <WordCount wordCount={post.wordCount} readTime={post.readTime} />
+          </div>
+        )}
       <NotionRenderer
         recordMap={post?.blockMap}
         mapPageUrl={mapPageUrl}
