@@ -12,9 +12,9 @@ jest.mock('@/lib/config', () => ({
 const { compressImage } = require('@/lib/db/notion/mapImage')
 
 describe('compressImage', () => {
-  it('compresses legacy S3-backed Notion proxy URLs', () => {
+  it('compresses non-attachment Notion proxy URLs', () => {
     const source =
-      'https://www.notion.so/image/https%3A%2F%2Fs3.us-west-2.amazonaws.com%2Fsecure.notion-static.com%2Ffile.png?table=block&id=page-id'
+      'https://www.notion.so/image/https%3A%2F%2Fimages.example.test%2Ffile.png?table=block&id=page-id'
 
     const result = new URL(compressImage(source, 800))
 
