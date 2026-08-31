@@ -12,14 +12,21 @@ jest.mock('@/lib/config', () => ({
 const { compressImage } = require('@/lib/db/notion/mapImage')
 
 describe('compressImage', () => {
-  it('compresses newer Notion attachment proxy URLs', () => {
+  it('compresses legacy S3-backed Notion proxy URLs', () => {
     const source =
-      'https://www.notion.so/image/attachment%3Apage-id%3Acover.png?table=block&id=page-id'
+      'https://www.notion.so/image/https%3A%2F%2Fs3.us-west-2.amazonaws.com%2Fsecure.notion-static.com%2Ffile.png?table=block&id=page-id'
 
     const result = new URL(compressImage(source, 800))
 
     expect(result.searchParams.get('width')).toBe('800')
     expect(result.searchParams.get('cache')).toBe('v2')
+  })
+
+  it('leaves newer attachment proxy URLs unchanged', () => {
+    const source =
+      'https://www.notion.so/image/attachment%3Apage-id%3Acover.png?table=block&id=page-id'
+
+    expect(compressImage(source, 800)).toBe(source)
   })
 
   it('does not append Notion parameters to unrelated image hosts', () => {
