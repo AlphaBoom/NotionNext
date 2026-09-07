@@ -642,16 +642,6 @@ summary > .notion-h {
 
 .notion-link:hover {
   text-decoration: underline;
-  animation: shake 1.5s ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-@keyframes shake { 
-  10%, 90% { transform: translate3d(0, -1px, 0); }
-  20%, 80% { transform: translate3d(0, +2px, 0); }
-  30%, 70% { transform: translate3d(0, -3px, 0); }
-  40%, 60% { transform: translate3d(0, +3px, 0); }
-  50% { transform: translate3d(0, -3px, 0); }
 }
 
 .notion-blank {

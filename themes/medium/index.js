@@ -3,14 +3,12 @@ import Live2D from '@/components/Live2D'
 import replaceSearchResult from '@/components/Mark'
 import NotionPage from '@/components/NotionPage'
 import ShareBar from '@/components/ShareBar'
-import Tabs from '@/components/Tabs'
 import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
 import { isBrowser } from '@/lib/utils'
 import SmartLink from '@/components/SmartLink'
 import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useState } from 'react'
-import Announcement from './components/Announcement'
 import ArticleAround from './components/ArticleAround'
 import ArticleInfo from './components/ArticleInfo'
 import { ArticleLock } from './components/ArticleLock'
@@ -23,15 +21,14 @@ import Catalog from './components/Catalog'
 import CategoryGroup from './components/CategoryGroup'
 import CategoryItem from './components/CategoryItem'
 import Footer from './components/Footer'
-import InfoCard from './components/InfoCard'
 import JumpToTopButton from './components/JumpToTopButton'
-import RevolverMaps from './components/RevolverMaps'
 import RouteTransition from './components/RouteTransition'
 import SearchInput from './components/SearchInput'
 import TagGroups from './components/TagGroups'
 import TagItemMini from './components/TagItemMini'
 import TocDrawer from './components/TocDrawer'
 import TopNavBar from './components/TopNavBar'
+import HomeIntro from './components/HomeIntro'
 import CONFIG from './config'
 import { Style } from './style'
 
@@ -41,97 +38,45 @@ export const useMediumGlobal = () => useContext(ThemeGlobalMedium)
 
 /**
  * 基础布局
- * 采用左右两侧布局，移动端使用顶部导航栏
+ * 正文居中，宽屏目录位于外侧留白区域
  * @returns {JSX.Element}
  * @constructor
  */
 const LayoutBase = props => {
-  const { children, showInfoCard = true, post, notice } = props
-  const { locale } = useGlobal()
+  const { children, post, lock } = props
+  const { fullWidth } = useGlobal()
   const router = useRouter()
   const [tocVisible, changeTocVisible] = useState(false)
-  const { fullWidth } = useGlobal()
-  const [slotRight, setSlotRight] = useState(null)
+  const hasToc = !lock && post?.toc?.length > 0
 
   useEffect(() => {
-    if (post?.toc?.length > 0) {
-      setSlotRight(
-        <div key={locale.COMMON.TABLE_OF_CONTENTS}>
-          <Catalog toc={post?.toc} />
-        </div>
-      )
-    } else {
-      setSlotRight(null)
-    }
-  }, [post])
-
-  const slotTop = <BlogPostBar {...props} />
+    changeTocVisible(false)
+  }, [router.asPath])
 
   return (
     <ThemeGlobalMedium.Provider value={{ tocVisible, changeTocVisible }}>
-      {/* CSS样式 */}
       <Style />
-
-      <div
-        id='theme-medium'
-        className={`${siteConfig('FONT_STYLE')} bg-day dark:bg-hexo-black-gray w-full h-full min-h-screen justify-center dark:text-gray-300 scroll-smooth`}>
-        <main
-          id='wrapper'
-          className={
-            (JSON.parse(siteConfig('LAYOUT_SIDEBAR_REVERSE'))
-              ? 'flex-row-reverse'
-              : '') + 'relative flex justify-between w-full h-full mx-auto'
-          }>
-          {/* 桌面端左侧菜单 */}
-          {/* <LeftMenuBar/> */}
-
-          {/* 主区 */}
-          <div id='container-wrapper' className='w-full relative z-10'>
-            {/* 顶部导航栏 */}
-            <TopNavBar {...props} />
-
-            <div
-              id='container-inner'
-              className={`px-7 ${fullWidth ? '' : 'max-w-5xl'} bg-white dark:bg-transparent justify-center mx-auto min-h-screen`}>
-              <RouteTransition>
-                {slotTop}
-                {children}
-              </RouteTransition>
-
-              {/* Keep fixed-position UI outside the transformed route content. */}
-              {!props.lock && post && <TocDrawer {...props} />}
-
-              <JumpToTopButton className='hidden md:flex' />
-            </div>
-
-            {/* 底部 */}
-            <Footer title={siteConfig('TITLE')} />
-          </div>
-
-          {/* 桌面端右侧 */}
-          {fullWidth ? null : (
-            <div
-              className={`bg-slate-50 dark:bg-transparent hidden xl:block border-l dark:border-transparent w-80 flex-shrink-0 relative z-10 ${siteConfig('MEDIUM_RIGHT_PANEL_DARK', null, CONFIG) ? 'bg-hexo-black-gray dark' : ''}`}>
-              <div className='py-14 px-6 sticky top-0'>
-                <Tabs>
-                  {slotRight}
-                  <div key={locale.NAV.ABOUT}>
-                    {router.pathname !== '/search' && (
-                      <SearchInput className='mt-6  mb-12' />
-                    )}
-                    {showInfoCard && <InfoCard {...props} />}
-                    {siteConfig('MEDIUM_WIDGET_REVOLVER_MAPS', null, CONFIG) ===
-                      'true' && <RevolverMaps />}
-                  </div>
-                </Tabs>
-                <Live2D />
-              </div>
-            </div>
+      <div id='theme-medium' className={`medium-site ${post ? 'medium-reading' : ''} ${fullWidth ? 'medium-full-width' : ''}`}>
+        <a className='medium-skip-link' href='#container-inner'>跳至内容</a>
+        <TopNavBar {...props} />
+        <div id='wrapper' className='medium-layout'>
+          <main id='container-inner' tabIndex={-1}>
+            <RouteTransition>
+              <BlogPostBar {...props} />
+              {children}
+            </RouteTransition>
+          </main>
+          {hasToc && !fullWidth && (
+            <aside className='medium-desktop-toc' aria-label='文章目录'>
+              <Catalog key={post.id} toc={post.toc} />
+            </aside>
           )}
-        </main>
-
-        {/* 移动端底部导航栏 */}
-        <BottomMenuBar {...props} className='block md:hidden' />
+        </div>
+        {hasToc && <TocDrawer post={post} />}
+        <JumpToTopButton className='medium-desktop-top' />
+        <Footer />
+        <BottomMenuBar {...props} />
+        <Live2D />
       </div>
     </ThemeGlobalMedium.Provider>
   )
@@ -144,7 +89,12 @@ const LayoutBase = props => {
  * @returns
  */
 const LayoutIndex = props => {
-  return <LayoutPostList {...props} />
+  return (
+    <>
+      <HomeIntro {...props} />
+      <LayoutPostList {...props} />
+    </>
+  )
 }
 
 /**
@@ -170,13 +120,6 @@ const LayoutPostList = props => {
  */
 const LayoutSlug = props => {
   const { post, prev, next, lock, validPassword } = props
-  const { locale } = useGlobal()
-  const slotRight = post?.toc && post?.toc?.length >= 3 && (
-    <div key={locale.COMMON.TABLE_OF_CONTENTS}>
-      <Catalog toc={post?.toc} />
-    </div>
-  )
-
   const router = useRouter()
   const waiting404 = siteConfig('POST_WAITING_TIME_FOR_404') * 1000
   useEffect(() => {
@@ -211,12 +154,12 @@ const LayoutSlug = props => {
           <ArticleInfo {...props} />
 
           {/* Notion文章主体 */}
-          <article id='article-wrapper' className='px-1 max-w-4xl'>
+          <article id='article-wrapper' aria-label={post.title}>
             {post && <NotionPage post={post} />}
           </article>
 
           {/* 文章底部区域  */}
-          <section>
+          <section className='medium-article-end'>
             {/* 分享 */}
             <ShareBar post={post} />
             {/* 文章分类和标签信息 */}
@@ -360,7 +303,7 @@ const LayoutCategoryIndex = props => {
   const { locale } = useGlobal()
   return (
     <>
-      <div className='bg-white dark:bg-gray-700 py-10'>
+      <div className='py-10'>
         <div className='dark:text-gray-200 mb-5'>
           <i className='mr-4 fas fa-th' />
           {locale.COMMON.CATEGORY}:
@@ -399,7 +342,7 @@ const LayoutTagIndex = props => {
   const { locale } = useGlobal()
   return (
     <>
-      <div className='bg-white dark:bg-gray-700 py-10'>
+      <div className='py-10'>
         <div className='dark:text-gray-200 mb-5'>
           <i className='mr-4 fas fa-tag' />
           {locale.COMMON.TAGS}:

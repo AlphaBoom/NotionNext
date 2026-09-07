@@ -22,7 +22,9 @@ import { getPageCanCopy } from '@/lib/utils/copyPermission'
 const ExternalPlugin = props => {
   // 读取自Notion的配置
   const { NOTION_CONFIG } = props
-  const { lang } = useGlobal()
+  const { lang, theme } = useGlobal()
+  const router = useRouter()
+  const showRibbon = (router.query.theme || theme) !== 'medium'
   const [pluginsIdle, setPluginsIdle] = useState(false)
   const innerLinkPages = props?.allLinkPages || props?.allNavPages
   const DISABLE_PLUGIN = siteConfig('DISABLE_PLUGIN', null, NOTION_CONFIG)
@@ -199,7 +201,6 @@ const ExternalPlugin = props => {
     }
   }, [ANIMATE_CSS_URL, IMG_SHADOW, externalCssList, externalJsList])
 
-  const router = useRouter()
   useEffect(() => {
     // 异步渲染谷歌广告
     if (ADSENSE_GOOGLE_ID) {
@@ -271,9 +272,9 @@ const ExternalPlugin = props => {
       {STARRY_SKY && <StarrySky />}
       {MUSIC_PLAYER && <MusicPlayer />}
       {NEST && <Nest />}
-      {FLUTTERINGRIBBON && <FlutteringRibbon />}
+      {showRibbon && FLUTTERINGRIBBON && <FlutteringRibbon />}
       {COMMENT_TWIKOO_COUNT_ENABLE && <TwikooCommentCounter {...props} />}
-      {RIBBON && <Ribbon />}
+      {showRibbon && RIBBON && <Ribbon />}
       {DIFY_CHATBOT_ENABLED && <DifyChatbot />}
       {CUSTOM_RIGHT_CLICK_CONTEXT_MENU && (
         <CustomContextMenu {...props} canCopy={canCopy} />

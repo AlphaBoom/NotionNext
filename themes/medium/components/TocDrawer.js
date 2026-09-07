@@ -1,48 +1,37 @@
+import { useEffect, useRef } from 'react'
 import { useMediumGlobal } from '..'
 import Catalog from './Catalog'
 
-/**
- * 悬浮抽屉目录
- * @param toc
- * @param post
- * @returns {JSX.Element}
- * @constructor
- */
-const TocDrawer = ({ post, cRef }) => {
+export default function TocDrawer({ post }) {
   const { tocVisible, changeTocVisible } = useMediumGlobal()
-  const switchVisible = () => {
-    changeTocVisible(!tocVisible)
-  }
+  const buttonRef = useRef(null)
+  const panelRef = useRef(null)
+  useEffect(() => {
+    if (!tocVisible) return
+    const onKeyDown = e => {
+      if (e.key === 'Escape') {
+        changeTocVisible(false)
+        buttonRef.current?.focus()
+      }
+    }
+    const onPointerDown = e => {
+      if (!panelRef.current?.contains(e.target)) changeTocVisible(false)
+    }
+    document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+    }
+  }, [tocVisible, changeTocVisible])
   return (
-    <>
-      <div id='medium-toc-float' className='fixed top-0 right-0 z-40'>
-        {/* 侧边菜单 */}
-        <div
-          className={
-            (tocVisible
-              ? 'animate__slideInRight '
-              : ' -mr-72 animate__slideOutRight') +
-            ' overflow-y-hidden shadow-card w-60 duration-200 fixed right-1 bottom-16 rounded py-2 bg-white dark:bg-gray-600'
-          }>
-          {post && (
-            <>
-              <div className='dark:text-gray-400 text-gray-600 h-56'>
-                <Catalog toc={post.toc} />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-      {/* 背景蒙版 */}
-      <div
-        id='right-drawer-background'
-        className={
-          (tocVisible ? 'block' : 'hidden') +
-          ' fixed top-0 left-0 z-30 w-full h-full'
-        }
-        onClick={switchVisible}
-      />
-    </>
+    <div className='medium-mobile-toc' ref={panelRef}>
+      <button type='button' className='medium-toc-toggle' ref={buttonRef} aria-expanded={tocVisible} aria-controls='medium-toc-panel' onClick={() => changeTocVisible(!tocVisible)}>
+        <i className='fas fa-list-ul' aria-hidden='true' />{tocVisible ? '关闭目录' : '目录'}
+      </button>
+      {tocVisible && <section id='medium-toc-panel' className='medium-toc-panel' aria-label='文章目录'>
+        <Catalog key={post.id} toc={post.toc} onNavigate={() => changeTocVisible(false)} />
+      </section>}
+    </div>
   )
 }
-export default TocDrawer
