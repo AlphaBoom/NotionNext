@@ -1,3 +1,5 @@
+import BLOG from '@/blog.config'
+import { installBookmarkImageFallback } from '@/lib/db/notion/bookmarkImages.mjs'
 import { siteConfig } from '@/lib/config'
 import { compressImage, mapImgUrl } from '@/lib/db/notion/mapImage'
 import NotionEmbed from '@/components/NotionEmbed'
@@ -22,7 +24,13 @@ const NotionPage = ({ post, className }) => {
   const POST_DISABLE_DATABASE_CLICK = siteConfig('POST_DISABLE_DATABASE_CLICK')
   const SPOILER_TEXT_TAG = siteConfig('SPOILER_TEXT_TAG')
 
+  const articleRef = useRef(null)
   const zoomRef = useRef(null)
+  useEffect(() => {
+    if (articleRef.current) {
+      return installBookmarkImageFallback(articleRef.current, BLOG.NOTION_HOST)
+    }
+  }, [post?.id])
   const IMAGE_ZOOM_IN_WIDTH = siteConfig('IMAGE_ZOOM_IN_WIDTH', 1200)
   // 页面首次打开时执行的勾子
   useEffect(() => {
@@ -113,6 +121,7 @@ const NotionPage = ({ post, className }) => {
 
   return (
     <div
+      ref={articleRef}
       id='notion-article'
       className={`mx-auto overflow-x-clip overflow-y-visible ${className || ''}`}>
       <NotionRenderer

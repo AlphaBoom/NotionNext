@@ -178,15 +178,14 @@ const Style = () => (
     #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .notion-link) { background-image: linear-gradient(var(--accent), var(--accent)); background-position: 0 100%; background-size: 0% 1px; background-repeat: no-repeat; transition: background-size 240ms ease, color 180ms ease; box-decoration-break: clone; }
     #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .notion-link):is(:hover, :focus-visible) { background-size: 100% 1px; text-decoration: none; }
     #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle) { transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease; }
-    #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle):active { transform: translateY(1px) scale(.995); }
+    #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle):active { border-color: var(--accent); }
     #theme-medium .medium-post-cover img { transition: transform 420ms cubic-bezier(.2,.7,.2,1); }
     #theme-medium .medium-theme-toggle i { transition: transform 300ms ease; }
     #theme-medium .medium-theme-toggle:hover i { transform: rotate(-18deg); }
     #theme-medium :is(.medium-submenu:not([hidden]), .medium-toc-panel) { animation: medium-page-enter 180ms ease-out both; }
     @media (hover: hover) {
-      #theme-medium .notion-bookmark:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 5px 16px #00000009; }
+      #theme-medium .notion-bookmark:hover { border-color: var(--accent); box-shadow: 0 5px 16px #00000009; }
       #theme-medium .medium-post-cover:hover img { transform: scale(1.035); }
-      #theme-medium .medium-article-around a:hover { transform: translateY(-2px); }
     }
     @keyframes medium-page-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
     @keyframes medium-route-progress { from { transform: scaleX(.08); } to { transform: scaleX(.9); } }
