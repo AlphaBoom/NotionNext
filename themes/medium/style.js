@@ -6,9 +6,9 @@ const Style = () => (
   <style jsx global>{`
     ${themeConsoleStyle('medium', CONFIG)}
 
-    body:has(#theme-medium) { background: #faf9f6; }
-    .dark body:has(#theme-medium) { background: #1c201e; }
-    body:has(#theme-medium) #canvasRibbon { opacity: .16 !important; }
+    body:has(#theme-medium) { background: #f1f0eb; }
+    .dark body:has(#theme-medium) { background: #171b18; }
+    body:has(#theme-medium) #canvasRibbon { display: none; }
     #theme-medium {
       --paper: #faf9f6;
       --ink: #292e2b;
@@ -19,7 +19,7 @@ const Style = () => (
       position: relative;
       z-index: 1;
       min-height: 100vh;
-      background: transparent;
+      background: linear-gradient(90deg, transparent, var(--paper) 20%, var(--paper) 80%, transparent);
       color: var(--ink);
       font-family: 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
       font-size: 15px;
@@ -131,10 +131,10 @@ const Style = () => (
     #theme-medium .medium-article-dates { display: flex; gap: 14px; min-width: 0; }
     #theme-medium .medium-article-stats { white-space: nowrap; font-variant-numeric: tabular-nums; }
     #theme-medium #article-wrapper { width: 100%; min-width: 0; }
-    #theme-medium #notion-article { overflow-x: visible; }
+    #theme-medium #notion-article { width: 100%; max-width: 740px; min-width: 0; margin-inline: auto; overflow-x: visible; }
     #theme-medium #article-wrapper .notion { font-size: 18px; font-weight: 400; line-height: 1.85; color: var(--ink); }
     #theme-medium #article-wrapper .notion-page-content-inner { width: 100%; min-width: 0; }
-    #theme-medium #article-wrapper :is(.notion-page, .notion-page-content-inner) > :not(.notion-viewport) { max-width: 740px; margin-left: auto !important; margin-right: auto !important; }
+    #theme-medium #article-wrapper :is(.notion-page, .notion-page-content-inner) > :not(.notion-viewport) { max-width: 100%; min-width: 0; margin-left: auto !important; margin-right: auto !important; }
     #theme-medium #article-wrapper :is(.notion-page, .notion-page-content-inner) > :is(.notion-code, .notion-code-container, .collapse-wrapper, .notion-collection, .notion-simple-table, .notion-simple-table-wrapper, .notion-asset-wrapper, .notion-row) { max-width: 100%; }
     #theme-medium #article-wrapper .notion-text { line-height: 1.85; margin-top: .4em !important; margin-bottom: .8em !important; }
     #theme-medium #article-wrapper .notion-h { line-height: 1.5; margin-top: 1.8em; margin-bottom: .55em; font-weight: 500; }
@@ -151,7 +151,16 @@ const Style = () => (
     #theme-medium #article-wrapper .notion-simple-table-wrapper { width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
     #theme-medium #article-wrapper .notion-collection { min-width: 0; width: 100%; }
     #theme-medium #article-wrapper :is(.notion-table, .notion-table-view, .notion-board) { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
-    #theme-medium #article-wrapper .notion-asset-wrapper { margin-top: 1.5em; margin-bottom: 1.5em; }
+    #theme-medium #article-wrapper :is(.notion-page, .notion-page-content-inner, .notion-row, .notion-column, .notion-callout-text, .notion-toggle) { min-width: 0; max-width: 100%; }
+    #theme-medium #article-wrapper .notion-asset-wrapper { min-width: 0; max-width: 100%; margin-top: 1.5em; margin-bottom: 1.5em; }
+    #theme-medium #article-wrapper .notion-asset-wrapper > div { max-width: 100%; min-width: 0; }
+    #theme-medium #article-wrapper .notion-asset-wrapper :is(img:not(.medium-zoom-image--opened), video, iframe) { max-width: 100%; }
+    #theme-medium #article-wrapper .notion-bookmark { max-width: 100%; min-width: 0; }
+    #theme-medium #article-wrapper .notion-bookmark > div { min-width: 0; }
+    #theme-medium #article-wrapper .notion-bookmark-link { max-width: 100%; }
+    #theme-medium #article-wrapper .notion-bookmark-link-icon { flex: 0 0 16px; width: 16px; height: 16px; margin-right: 6px; }
+    #theme-medium #article-wrapper .notion-bookmark-image { flex: 0 0 25%; }
+    #theme-medium.medium-full-width #notion-article { max-width: 100%; }
     #theme-medium #article-wrapper .notion-asset-caption { font-size: 12px; line-height: 1.7; color: var(--muted); margin-top: 10px; }
     #theme-medium #article-wrapper .notion-bookmark { border: 1px solid var(--line); border-radius: 4px; }
     #theme-medium.medium-full-width #article-wrapper :is(.notion-page, .notion-page-content-inner) > :not(.notion-viewport) { max-width: 100%; }
@@ -161,6 +170,26 @@ const Style = () => (
     #theme-medium .medium-article-around span { font-size: 11px; color: var(--muted); }
     #theme-medium .medium-article-around strong { font-size: 14px; font-weight: 500; line-height: 1.8; }
     #theme-medium .medium-next-article { grid-column: 2; text-align: right; }
+
+    /* Motion is limited to deliberate interaction and navigation. */
+    #theme-medium .medium-route-content { animation: medium-page-enter 360ms cubic-bezier(.2,.7,.2,1) both; }
+    #theme-medium .medium-route-progress { position: fixed; inset: 0 0 auto; height: 2px; z-index: 100; pointer-events: none; overflow: hidden; }
+    #theme-medium .medium-route-progress::after { content: ''; display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left; animation: medium-route-progress 8s cubic-bezier(.1,.8,.1,1) both; }
+    #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .notion-link) { background-image: linear-gradient(var(--accent), var(--accent)); background-position: 0 100%; background-size: 0% 1px; background-repeat: no-repeat; transition: background-size 240ms ease, color 180ms ease; box-decoration-break: clone; }
+    #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .notion-link):is(:hover, :focus-visible) { background-size: 100% 1px; text-decoration: none; }
+    #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle) { transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease; }
+    #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle):active { transform: translateY(1px) scale(.995); }
+    #theme-medium .medium-post-cover img { transition: transform 420ms cubic-bezier(.2,.7,.2,1); }
+    #theme-medium .medium-theme-toggle i { transition: transform 300ms ease; }
+    #theme-medium .medium-theme-toggle:hover i { transform: rotate(-18deg); }
+    #theme-medium :is(.medium-submenu:not([hidden]), .medium-toc-panel) { animation: medium-page-enter 180ms ease-out both; }
+    @media (hover: hover) {
+      #theme-medium .notion-bookmark:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 5px 16px #00000009; }
+      #theme-medium .medium-post-cover:hover img { transform: scale(1.035); }
+      #theme-medium .medium-article-around a:hover { transform: translateY(-2px); }
+    }
+    @keyframes medium-page-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    @keyframes medium-route-progress { from { transform: scaleX(.08); } to { transform: scaleX(.9); } }
 
     /* Directory and small-screen controls. */
     #theme-medium .medium-catalog { font-size: 12px; color: var(--muted); }
