@@ -5,6 +5,7 @@
  */
 const idRibbon = 'canvasRibbon'
 function createRibbon() {
+  destroyRibbon()
   !(function () {
     const t = document.getElementById('__next')
     const e = {
@@ -22,7 +23,7 @@ function createRibbon() {
       a = window.innerWidth,
       l = window.innerHeight,
       d = e.s
-    i.id = '__next'
+    i.id = idRibbon
     let r, s
     const u = Math
     let h = 0
@@ -73,7 +74,7 @@ function createRibbon() {
         e.z +
         ';width:100%;height:100%;pointer-events:none;'),
       document.getElementsByTagName('body')[0].appendChild(i),
-      'false' !== e.c && ((document.onclick = x), (document.ontouchstart = x)),
+      'false' !== e.c && !document.getElementById('theme-medium') && ((document.onclick = x), (document.ontouchstart = x)),
       x()
   })()
 }

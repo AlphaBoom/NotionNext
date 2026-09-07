@@ -1,32 +1,15 @@
 import SmartLink from '@/components/SmartLink'
 
-/**
- * 上一篇，下一篇文章
- * @param {prev,next} param0
- * @returns
- */
-export default function ArticleAround ({ prev, next }) {
-  if (!prev || !next) {
-    return <></>
-  }
+export default function ArticleAround({ prev, next }) {
+  if (!prev && !next) return null
   return (
-    <section className='text-gray-800 dark:text-gray-400 h-12 flex items-center justify-between space-x-5 my-4'>
-      <SmartLink
-        href={`/${prev.slug}`}
-        passHref
-        className='text-sm cursor-pointer justify-start items-center flex hover:underline duration-300'>
-
-        <i className='mr-1 fas fa-angle-double-left' />{prev.title}
-
-      </SmartLink>
-      <SmartLink
-        href={`/${next.slug}`}
-        passHref
-        className='text-sm cursor-pointer justify-end items-center flex hover:underline duration-300'>
-        {next.title}
-        <i className='ml-1 my-1 fas fa-angle-double-right' />
-
-      </SmartLink>
-    </section>
+    <nav className='medium-article-around' aria-label='继续阅读'>
+      {prev && <SmartLink href={prev.href || `/${prev.slug}`}>
+        <span>← 上一篇</span><strong>{prev.title}</strong>
+      </SmartLink>}
+      {next && <SmartLink href={next.href || `/${next.slug}`} className='medium-next-article'>
+        <span>下一篇 →</span><strong>{next.title}</strong>
+      </SmartLink>}
+    </nav>
   )
 }

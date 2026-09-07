@@ -1,99 +1,70 @@
-import throttle from 'lodash.throttle'
 import { uuidToId } from 'notion-utils'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import Progress from './Progress'
+import { useEffect, useMemo, useState } from 'react'
 
-/**
- * 目录导航组件
- * @param toc
- * @returns {JSX.Element}
- * @constructor
- */
-const Catalog = ({ toc }) => {
-  const tocIds = []
+export default function Catalog({ toc = [], onNavigate }) {
+  const [activeId, setActiveId] = useState(null)
+  const [showAll, setShowAll] = useState(false)
+  const items = useMemo(() => {
+    const rootLevel = Math.min(...toc.map(item => item.indentLevel || 0))
+    let group = null
+    return toc.map(item => {
+      const id = uuidToId(item.id)
+      const level = (item.indentLevel || 0) - rootLevel
+      if (level === 0 || !group) group = id
+      return { ...item, id, level, group }
+    })
+  }, [toc])
+  const activeGroup = items.find(item => item.id === activeId)?.group || items[0]?.group
 
-  // 目录自动滚动
-  const tRef = useRef(null)
-  // 同步选中目录事件
-  const [activeSection, setActiveSection] = useState(null)
-
-  // 监听滚动事件
   useEffect(() => {
-    window.addEventListener('scroll', actionSectionScrollSpy, { passive: true })
-    actionSectionScrollSpy()
-    return () => {
-      window.removeEventListener('scroll', actionSectionScrollSpy)
-    }
-  }, [])
-
-  const throttleMs = 200
-  const actionSectionScrollSpy = useCallback(
-    throttle(() => {
-      const sections = document.getElementsByClassName('notion-h')
-      let prevBBox = null
-      let currentSectionId = activeSection
-      for (let i = 0; i < sections.length; ++i) {
-        const section = sections[i]
-        if (!section || !(section instanceof Element)) continue
-        if (!currentSectionId) {
-          currentSectionId = section.getAttribute('data-id')
-        }
-        const bbox = section.getBoundingClientRect()
-        const prevHeight = prevBBox ? bbox.top - prevBBox.bottom : 0
-        const offset = Math.max(150, prevHeight / 4)
-        // GetBoundingClientRect returns values relative to viewport
-        if (bbox.top - offset < 0) {
-          currentSectionId = section.getAttribute('data-id')
-          prevBBox = bbox
-          continue
-        }
-        // No need to continue loop, if last element has been detected
-        break
+    let frame = null
+    const update = () => {
+      frame = null
+      let current = items[0]?.id
+      for (const item of items) {
+        const anchor = document.getElementById(item.id)
+        if (!anchor || !anchor.getClientRects().length) continue
+        if (anchor.getBoundingClientRect().top > 120) break
+        current = item.id
       }
-      setActiveSection(currentSectionId)
-      const index = tocIds.indexOf(currentSectionId) || 0
-      tRef?.current?.scrollTo({ top: 28 * index, behavior: 'smooth' })
-    }, throttleMs)
-  )
+      setActiveId(current)
+    }
+    const onScroll = () => { if (frame === null) frame = requestAnimationFrame(update) }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (frame !== null) cancelAnimationFrame(frame)
+    }
+  }, [items])
 
-  // 无目录就直接返回空
-  if (!toc || toc.length < 1) {
-    return <></>
-  }
-
+  if (!items.length) return null
   return (
-    <div className='px-3'>
-      <div className='w-full mt-2 mb-4'>
-        <Progress />
+    <div className='medium-catalog'>
+      <div className='medium-catalog-heading'>
+        <span>本篇目录</span>
+        {items.some(item => item.level > 0) && <button type='button' aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>{showAll ? '收起' : '展开全部'}</button>}
       </div>
-      <div
-        className='overflow-y-auto max-h-96 overscroll-none scroll-hidden'
-        ref={tRef}>
-        <nav className='h-full  text-black'>
-          {toc.map(tocItem => {
-            const id = uuidToId(tocItem.id)
-            tocIds.push(id)
-            return (
-              <a
-                key={id}
-                href={`#${id}`}
-                className={`notion-table-of-contents-item duration-300 transform font-light dark:text-gray-300
-              notion-table-of-contents-item-indent-level-${tocItem.indentLevel} catalog-item `}>
-                <span
-                  style={{
-                    display: 'inline-block',
-                    marginLeft: tocItem.indentLevel * 16
-                  }}
-                  className={`truncate ${activeSection === id ? 'font-bold text-green-500 underline' : ''}`}>
-                  {tocItem.text}
-                </span>
-              </a>
-            )
-          })}
-        </nav>
-      </div>
+      <nav aria-label='本篇目录'>
+        <ol>
+          {items.map(item => (
+            <li key={item.id} hidden={!showAll && item.level > 0 && item.group !== activeGroup}>
+              <a href={`#${item.id}`} aria-current={activeId === item.id ? 'location' : undefined} style={{ paddingLeft: 12 + item.level * 12 }} onClick={() => {
+                // Headings inside a Notion toggle must be revealed before following their anchor.
+                let parent = document.getElementById(item.id)?.parentElement
+                while (parent) {
+                  if (parent.tagName === 'DETAILS') parent.open = true
+                  parent = parent.parentElement
+                }
+                setActiveId(item.id)
+                onNavigate?.()
+              }}>{item.text}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
     </div>
   )
 }
-
-export default Catalog

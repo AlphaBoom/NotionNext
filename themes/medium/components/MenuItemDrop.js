@@ -1,81 +1,32 @@
 import SmartLink from '@/components/SmartLink'
 import { useRouter } from 'next/router'
-import { useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 
 export const MenuItemDrop = ({ link }) => {
-  const [show, changeShow] = useState(false)
-  //   const show = true
-  //   const changeShow = () => {}
+  const [open, setOpen] = useState(false)
   const router = useRouter()
-
-  if (!link || !link.show) {
-    return null
-  }
-  const hasSubMenu = link?.subMenus?.length > 0
-  const selected = router.pathname === link.href || router.asPath === link.href
-
+  const menuId = useId()
+  useEffect(() => setOpen(false), [router.asPath])
+  if (!link || !link.show) return null
+  const hasChildren = link.subMenus?.length > 0
+  const selected = router.asPath.split('?')[0] === link.href
   return (
-    <li
-      className='cursor-pointer list-none items-center flex mx-2'
-      onMouseOver={() => changeShow(true)}
-      onMouseOut={() => changeShow(false)}>
-      {hasSubMenu && (
-        <div
-          className={
-            'px-3 h-full whitespace-nowrap duration-300 text-sm justify-between dark:text-gray-300 cursor-pointer flex flex-nowrap items-center ' +
-            (selected
-              ? 'bg-green-600 text-white hover:text-white'
-              : 'hover:text-green-600')
-          }>
-          <div>
-            {link?.icon && <i className={link?.icon} />} {link?.name}
-            {hasSubMenu && (
-              <i
-                className={`ml-2 fas fa-chevron-down duration-500 transition-all ${show ? ' rotate-180' : ''}`}></i>
-            )}
-          </div>
-        </div>
-      )}
-
-      {!hasSubMenu && (
-        <div
-          className={
-            'px-3 h-full whitespace-nowrap duration-300 text-sm justify-between dark:text-gray-300 cursor-pointer flex flex-nowrap items-center ' +
-            (selected
-              ? 'bg-green-600 text-white hover:text-white'
-              : 'hover:text-green-600')
-          }>
-          <SmartLink href={link?.href} target={link?.target}>
-            {link?.icon && <i className={link?.icon} />} {link?.name}
-          </SmartLink>
-        </div>
-      )}
-
-      {/* 子菜单 */}
-      {hasSubMenu && (
-        <ul
-          className={`${show ? 'visible opacity-100 top-12 ' : 'invisible opacity-0 top-10 '} border-gray-100  bg-white  dark:bg-black dark:border-gray-800 transition-all duration-300 z-20 absolute block drop-shadow-lg `}>
-          {link?.subMenus?.map(sLink => {
-            return (
-              <li
-                key={sLink.id}
-                className='not:last-child:border-b-0 border-b text-gray-700 dark:text-gray-200  hover:bg-gray-50 dark:hover:bg-gray-900 tracking-widest transition-all duration-200  dark:border-gray-800 py-3 pr-6 pl-3'>
-                <SmartLink href={sLink.href} target={link?.target}>
-                  <span className='flex items-center gap-2 text-xs font-extralight'>
-                    {sLink?.icon && (
-                      <i
-                        className={`${sLink.icon} w-4 shrink-0 text-center leading-none`}
-                        aria-hidden='true'
-                      />
-                    )}
-                    <span>{sLink.title}</span>
-                  </span>
-                </SmartLink>
-              </li>
-            )
-          })}
+    <li className={`medium-nav-item ${selected ? 'is-current' : ''}`} onKeyDown={e => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        e.currentTarget.querySelector('button')?.focus()
+      }
+    }} onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false) }}>
+      {hasChildren ? <>
+        <button type='button' onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={menuId}>
+          {link.name}<i className='fas fa-chevron-down' aria-hidden='true' />
+        </button>
+        <ul id={menuId} className='medium-submenu' hidden={!open}>
+          {link.subMenus.filter(item => item.show !== false).map((item, index) => (
+            <li key={item.id || index}><SmartLink href={item.href} target={item.target || link.target}>{item.title || item.name}</SmartLink></li>
+          ))}
         </ul>
-      )}
+      </> : <SmartLink href={link.href} target={link.target} aria-current={selected ? 'page' : undefined}>{link.name}</SmartLink>}
     </li>
   )
 }
