@@ -18,12 +18,16 @@ const SecretDungeon = dynamic(loadDungeon, {
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   const [view, setView] = useState('profile')
   const [leaving, setLeaving] = useState(false)
+  const [preparing, setPreparing] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [height, setHeight] = useState()
   const content = useRef(null)
   const avatar = useRef(null)
   const returnButton = useRef(null)
   const transition = useRef(null)
   const hasSwitched = useRef(false)
+  const prepareId = useRef(0)
+  const dungeonReady = useRef(false)
 
   useEffect(() => {
     const media = window.matchMedia(GAME_MEDIA)
@@ -31,12 +35,15 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
       if (!media.matches) {
         clearTimeout(transition.current)
         transition.current = null
+        prepareId.current++
+        setPreparing(false)
         setLeaving(false)
         setView('profile')
       }
     }
     media.addEventListener('change', closeOnMobile)
     return () => {
+      prepareId.current++
       clearTimeout(transition.current)
       media.removeEventListener('change', closeOnMobile)
     }
@@ -60,7 +67,6 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
       (next === 'game' && !window.matchMedia(GAME_MEDIA).matches)
     )
       return
-    if (next === 'game') void loadDungeon().catch(() => {})
     setLeaving(true)
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
@@ -91,20 +97,57 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   )
 
   function preloadGame() {
-    if (window.matchMedia(GAME_MEDIA).matches)
-      void loadDungeon().catch(() => {})
+    if (window.matchMedia(GAME_MEDIA).matches) {
+      void loadDungeon()
+        .then(() => {
+          dungeonReady.current = true
+        })
+        .catch(() => {})
+    }
+  }
+
+  async function openGame() {
+    if (
+      preparing ||
+      transition.current ||
+      !window.matchMedia(GAME_MEDIA).matches
+    )
+      return
+    setLoadFailed(false)
+    if (dungeonReady.current) {
+      switchView('game')
+      return
+    }
+    const requestId = ++prepareId.current
+    setPreparing(true)
+    try {
+      await loadDungeon()
+      if (requestId !== prepareId.current) return
+      dungeonReady.current = true
+      setPreparing(false)
+      switchView('game')
+    } catch {
+      if (requestId !== prepareId.current) return
+      setPreparing(false)
+      setLoadFailed(true)
+    }
   }
 
   return (
     <header className='medium-home-intro'>
-      <div className='medium-intro-stage' style={{ height }}>
+      <div
+        className={`medium-intro-stage ${view === 'game' ? 'is-playing' : ''}`}
+        style={{ height }}
+      >
         <div
           ref={content}
           key={view}
           className={`medium-intro-content ${leaving ? 'is-leaving' : 'is-entering'}`}
         >
           {view === 'profile' ? (
-            <div className='medium-masthead'>
+            <div
+              className={`medium-masthead ${preparing ? 'is-preparing' : ''}`}
+            >
               <div className='medium-intro-copy'>
                 <p className='medium-eyebrow'>
                   <span className='medium-intro-mark' aria-hidden='true'>
@@ -122,6 +165,11 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
                   </SmartLink>
                 </h1>
                 <p className='medium-bio'>{siteConfig('BIO')}</p>
+                {loadFailed && (
+                  <p className='medium-game-load-error' role='status'>
+                    暂时没能打开，再点头像重试。
+                  </p>
+                )}
               </div>
               <div className='medium-portrait'>
                 <span className='medium-portrait-orbit' aria-hidden='true' />
@@ -132,7 +180,8 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
                   aria-label={`${siteConfig('AUTHOR')} 的头像，探索隐藏地牢`}
                   onPointerEnter={preloadGame}
                   onFocus={preloadGame}
-                  onClick={() => switchView('game')}
+                  aria-busy={preparing}
+                  onClick={openGame}
                 >
                   {portrait}
                 </button>

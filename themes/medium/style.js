@@ -102,6 +102,12 @@ const Style = () => (
     #theme-medium .medium-intro-content { display: flow-root; }
     #theme-medium .medium-intro-content.is-entering { animation: medium-intro-enter 320ms ease both; }
     #theme-medium .medium-intro-content.is-leaving { animation: medium-intro-leave 160ms ease both; pointer-events: none; }
+    #theme-medium .medium-intro-stage.is-playing .medium-intro-content.is-entering { animation: medium-game-opening 520ms cubic-bezier(.2,.7,.2,1) both; }
+    #theme-medium .medium-masthead.is-preparing .medium-portrait-orbit { animation: medium-orbit-loading 1.2s linear infinite; }
+    #theme-medium .medium-masthead.is-preparing .medium-portrait-frame { box-shadow: 0 0 52px color-mix(in srgb, var(--accent) 26%, transparent); transform: scale(1.04); }
+    #theme-medium .medium-game-load-error { font-size: 11px; color: var(--muted); margin-top: 12px; }
+    @keyframes medium-orbit-loading { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes medium-game-opening { from { opacity: 0; transform: translateY(18px) scale(.985); filter: blur(3px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
     #theme-medium .medium-inline-game { padding-top: 24px; }
     #theme-medium .medium-game-return { border: 0; background: transparent; color: var(--muted); padding: 4px 0; font-size: 11px; cursor: pointer; }
     #theme-medium .medium-game-loading { min-height: 280px; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
