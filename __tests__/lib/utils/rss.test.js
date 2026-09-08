@@ -135,13 +135,13 @@ describe('generateRss', () => {
     })
     expect(addItemMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
       title: 'Generated',
-      description: '[AI 生成] 本文由 AI 生成。 摘要',
-      content: '<p>本文由 AI 生成。</p><div>rss-content</div>'
+      description: '[AI 生成] 本文由我提供大纲和写作思路，使用 AI 辅助生成正文。 摘要',
+      content: '<p>本文由我提供大纲和写作思路，使用 AI 辅助生成正文。</p><div>rss-content</div>'
     }))
     expect(addItemMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
       title: 'Polished',
-      description: '[AI 润色] 本文由作者撰写，AI 辅助润色。 锁定摘要',
-      content: '[AI 润色] 本文由作者撰写，AI 辅助润色。 锁定摘要'
+      description: '[AI 润色] 本文由我撰写初稿，使用 AI 辅助润色措辞和语句，保留原有观点和主要内容。 锁定摘要',
+      content: '[AI 润色] 本文由我撰写初稿，使用 AI 辅助润色措辞和语句，保留原有观点和主要内容。 锁定摘要'
     }))
     expect(getPostBlocks).toHaveBeenCalledTimes(1)
   })
