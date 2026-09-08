@@ -6,6 +6,7 @@ const ART = '/images/new-game/hifumi-soujirou.webp'
 const ICON = '/images/new-game/hifumi-icon.webp'
 const LOGO = '/images/new-game/logo-official.png'
 const SOUJIROU = '/images/new-game/soujirou-closeup.webp'
+const HIFUMI_PROFILE = 'https://newgame-anime.com/assets/character/c4.png'
 
 export function prepareArtwork() {
   return Promise.all(
@@ -76,10 +77,12 @@ export function NewGameHero() {
       </div>
       <div className='ng-character-panel'>
         <div className='ng-character-scene'>
-          <div
+          <a
             className='ng-hero-art'
-            role='img'
-            aria-label='泷本日富美双手捧着刺猬宗次郎'
+            href={HIFUMI_PROFILE}
+            target='_blank'
+            rel='noopener noreferrer'
+            aria-label='ひふみ立绘：官网角色介绍（新标签页）'
           />
           <svg
             className='ng-detail-connector'
@@ -97,9 +100,15 @@ export function NewGameHero() {
             />
           </figure>
         </div>
-        <p className='ng-character-name'>
+        <a
+          className='ng-character-name'
+          href={HIFUMI_PROFILE}
+          target='_blank'
+          rel='noopener noreferrer'
+          aria-label='ひふみ：官网角色介绍（新标签页）'
+        >
           <span>HIFUMI & SOUJIROU</span>ひふみ と 宗次郎
-        </p>
+        </a>
         <span className='ng-character-number' aria-hidden='true'>
           ✦
         </span>
@@ -136,11 +145,27 @@ export default function NewGameTheme({
             className='ng-character-card'
             aria-label='NEW GAME! 主题角色卡'
           >
-            <div className='ng-card-art' role='img' aria-label='泷本日富美' />
+            <a
+              className='ng-card-art'
+              href={HIFUMI_PROFILE}
+              target='_blank'
+              rel='noopener noreferrer'
+              aria-label='ひふみ头像：官网角色介绍（新标签页）'
+            />
             <span>CHARACTER / 04</span>
-            <strong>滝本ひふみ</strong>
+            <strong>
+              <a
+                className='ng-character-link'
+                href={HIFUMI_PROFILE}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                滝本ひふみ
+              </a>
+            </strong>
             <small>ひふみ と 宗次郎</small>
             <a
+              className='ng-official-site-link'
               href='https://newgame-anime.com/'
               target='_blank'
               rel='noreferrer'
@@ -979,6 +1004,7 @@ export default function NewGameTheme({
           color: white;
         }
         .ng-card-art {
+          display: block;
           width: 124px;
           height: 124px;
           margin: 0 auto 16px;
@@ -1000,7 +1026,21 @@ export default function NewGameTheme({
         .ng-character-card small {
           font-size: 11px;
         }
-        .ng-character-card a {
+        .ng-character-link {
+          color: inherit;
+          text-underline-offset: 0.2em;
+        }
+        .ng-character-link:hover {
+          text-decoration: underline;
+        }
+        .ng-hero-art:focus-visible,
+        .ng-character-name:focus-visible,
+        .ng-card-art:focus-visible,
+        .ng-character-link:focus-visible {
+          outline: 2px solid #fff0b3;
+          outline-offset: 5px;
+        }
+        .ng-character-card .ng-official-site-link {
           display: block;
           margin-top: 19px;
           padding: 10px;
@@ -1038,7 +1078,10 @@ export default function NewGameTheme({
             #d59cc8 12deg 24deg
           );
           background-color: #a681c9;
-          clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+          /* Animation removal must fall back to an invisible layer. */
+          opacity: 0;
+          visibility: hidden;
+          clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
         }
         .ng-unlock-opening[data-stage='cover'] {
           animation: ng-unlock-cover 270ms both;
@@ -1069,31 +1112,55 @@ export default function NewGameTheme({
         }
         @keyframes ng-unlock-cover {
           from {
+            opacity: 1;
+            visibility: visible;
             clip-path: polygon(0 45%, 100% 45%, 100% 55%, 0 55%);
           }
           to {
+            opacity: 1;
+            visibility: visible;
             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
           }
         }
         @keyframes ng-unlock-cover-still {
           from,
           to {
+            opacity: 1;
+            visibility: visible;
             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
           }
         }
         @keyframes ng-unlock-reveal-still {
-          from,
-          to {
+          0%,
+          80% {
+            opacity: 1;
+            visibility: visible;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+          }
+          81%,
+          100% {
+            opacity: 0;
+            visibility: hidden;
             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
           }
         }
         @keyframes ng-unlock-reveal {
           0%,
           59% {
+            opacity: 1;
+            visibility: visible;
             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
             transform: none;
           }
+          96% {
+            opacity: 1;
+            visibility: visible;
+          }
+          /* Hold the hidden endpoint before React removes the overlay. */
+          97%,
           100% {
+            opacity: 0;
+            visibility: hidden;
             clip-path: polygon(100% 0, 100% 0, 100% 100%, 100% 100%);
             transform: translateX(8%);
           }

@@ -23,9 +23,11 @@ jest.mock(
     }
 )
 
+// jsdom does not run keyframes. Include the hidden fallback layer when driving
+// animation events; browser checks verify the visible cover and hidden endpoint.
 const finishAnimation = () =>
   act(async () => {
-    fireEvent.animationEnd(screen.getByRole('status'))
+    fireEvent.animationEnd(screen.getByRole('status', { hidden: true }))
   })
 
 const wrapper = ({ children }) => <RewardProvider>{children}</RewardProvider>
@@ -78,17 +80,21 @@ test('first victory saves the unlock, shows 3 / 2 / 1, then opens the theme once
   expect(game.result.current.active).toBe(false)
   await advance(100)
   expect(game.result.current.active).toBe(false)
-  expect(screen.getByRole('status').dataset.stage).toBe('cover')
+  expect(screen.getByRole('status', { hidden: true }).dataset.stage).toBe(
+    'cover'
+  )
   expect(game.closed).not.toHaveBeenCalled()
   // Wall time alone must never reveal the new background ahead of the cover.
   await advance(5000)
   expect(game.result.current.active).toBe(false)
   await finishAnimation()
-  expect(screen.getByRole('status').dataset.stage).toBe('reveal')
+  expect(screen.getByRole('status', { hidden: true }).dataset.stage).toBe(
+    'reveal'
+  )
   expect(game.result.current.active).toBe(true)
   expect(game.closed).toHaveBeenCalledTimes(1)
   await finishAnimation()
-  expect(screen.queryByRole('status')).toBeNull()
+  expect(screen.queryByRole('status', { hidden: true })).toBeNull()
   expect(game.closed).toHaveBeenCalledTimes(1)
 })
 
@@ -199,7 +205,9 @@ test('child animation events cannot prematurely switch the background', async ()
   await advance(3000)
   fireEvent.animationEnd(screen.getByText('EXTRA STAGE / UNLOCKED'))
   expect(game.result.current.active).toBe(false)
-  expect(screen.getByRole('status').dataset.stage).toBe('cover')
+  expect(screen.getByRole('status', { hidden: true }).dataset.stage).toBe(
+    'cover'
+  )
   await finishAnimation()
   expect(game.result.current.active).toBe(true)
 })
@@ -211,7 +219,7 @@ test('leaving the game during the cover animation cancels the pending reveal', a
   game.rerender({ phase: 'playing' })
   await finishAnimation()
   expect(game.result.current.active).toBe(false)
-  expect(screen.queryByRole('status')).toBeNull()
+  expect(screen.queryByRole('status', { hidden: true })).toBeNull()
   expect(game.closed).not.toHaveBeenCalled()
 })
 
@@ -225,10 +233,12 @@ test('manual re-entry uses the same cover-first order and can be cancelled', asy
   fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
   await flush()
   expect(game.result.current.active).toBe(false)
-  expect(screen.getByRole('status').dataset.stage).toBe('cover')
+  expect(screen.getByRole('status', { hidden: true }).dataset.stage).toBe(
+    'cover'
+  )
   fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
   await flush()
-  expect(screen.queryByRole('status')).toBeNull()
+  expect(screen.queryByRole('status', { hidden: true })).toBeNull()
   expect(game.result.current.active).toBe(false)
   fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
   await flush()
