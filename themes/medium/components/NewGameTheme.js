@@ -49,12 +49,12 @@ export function NewGameHero() {
       </div>
       <div className='ng-hero-copy'>
         <p className='ng-section-label'>
-          EXTRA STAGE <span>01 / CLEAR</span>
+          SECRET SAVE <span>BONUS UNLOCKED</span>
         </p>
         <h2>
           <Wordmark />
         </h2>
-        <p className='ng-small-jp'>小さな出会い、新しい毎日。</p>
+        <p className='ng-small-jp'>今日も一日、おつかれさま！</p>
         <div className='ng-hero-message'>
           <span className='ng-message-index'>＋</span>
           <p>
@@ -64,9 +64,9 @@ export function NewGameHero() {
           </p>
         </div>
         <p className='ng-hero-description'>
-          你发现了 {siteConfig('AUTHOR')} 的另一面。
+          小刺猬带你来的，是我的另一个世界。
           <br />
-          从宗次郎开始，进入《NEW GAME!》的日常。
+          收藏喜欢的日常，也认真玩好每一局。
         </p>
         <span className='ng-clear-chip'>
           HIDDEN THEME <b>UNLOCKED!</b>
@@ -82,9 +82,14 @@ export function NewGameHero() {
           <span>TAKIMOTO HIFUMI</span>滝本ひふみ
         </p>
         <span className='ng-character-number' aria-hidden='true'>
-          04
+          ✦
         </span>
       </div>
+      <span className='ng-hero-sticker' aria-hidden='true'>
+        好きなものを、
+        <br />
+        好きなだけ。
+      </span>
       <div className='ng-hero-footer'>
         <span>
           NEW GAME! <b>×</b> {siteConfig('AUTHOR')}
@@ -154,33 +159,34 @@ export default function NewGameTheme({ active, opening, onToggle }) {
       )}
       <style jsx global>{`
         body:has(#theme-medium.medium-newgame) {
-          background: #f68096;
+          background: #b9a9e7;
         }
         #theme-medium.medium-newgame {
-          --paper: #fff;
-          --ink: #454553;
-          --muted: #767684;
-          --line: #e7dde2;
-          --accent: #cc4f78;
-          --wash: #fff0f5;
-          background-color: #f68096;
-          background-image: conic-gradient(
-            from 45deg,
-            #ffffff12 0 25%,
-            #ef638133 0 50%,
-            #ffffff26 0 75%,
-            #e8597612 0
-          );
-          background-size: 64px 64px;
+          --paper: #fffaff;
+          --ink: #49415c;
+          --muted: #81718c;
+          --line: #e9d9ee;
+          --accent: #ad4e95;
+          --wash: #f5eafb;
+          background:
+            radial-gradient(circle, #ffffff6b 1.5px, transparent 1.7px) 0 0 /
+              19px 19px,
+            linear-gradient(
+              145deg,
+              #aa9be2 0%,
+              #e7a8d2 42%,
+              #bea7ed 72%,
+              #96d8d8 100%
+            );
         }
         #theme-medium.medium-newgame .medium-nav {
-          background: #f47b92ed;
+          background: #725493ed;
           border: 0;
-          box-shadow: none;
+          box-shadow: 0 5px 0 #fff3;
         }
         #theme-medium.medium-newgame .medium-nav-inner {
-          min-height: 86px;
-          border-bottom: 3px dashed #ffffffb3;
+          min-height: 82px;
+          border-bottom: 0;
         }
         #theme-medium.medium-newgame .medium-nav .logo {
           padding: 0;
@@ -223,11 +229,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           min-height: 130px;
           padding: 17px 26px;
           margin: 24px 0 18px;
-          border: 0;
-          border-left: 6px solid #82cbd5;
-          border-radius: 0;
-          background: #fff;
-          box-shadow: none;
+          border: 2px solid #fff;
+          border-radius: 19px 19px 19px 3px;
+          background: #fffaffed;
+          box-shadow: 5px 5px 0 #9576bd4d;
         }
         #theme-medium.medium-newgame .medium-masthead h1 {
           font:
@@ -273,13 +278,15 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         #theme-medium.medium-newgame .medium-post {
           position: relative;
           padding: 28px;
-          margin-bottom: 18px;
-          border: 0;
-          border-top: 5px solid #8bd0da;
-          border-radius: 0;
-          background: #fff;
-          box-shadow: none;
-          transition: transform 160ms;
+          margin-bottom: 22px;
+          border: 3px solid #fff;
+          border-top: 5px solid #bca3e0;
+          border-radius: 18px 5px 18px 5px;
+          background: #fffaff;
+          box-shadow: 5px 5px 0 #8e72b63b;
+          transition:
+            transform 160ms,
+            box-shadow 160ms;
         }
         #theme-medium.medium-newgame .medium-post:nth-child(3n + 2) {
           border-top-color: #eea0be;
@@ -298,9 +305,9 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           color: #bb5579;
         }
         #theme-medium.medium-newgame .medium-post-cover {
-          border-radius: 0;
-          border: 4px solid #f5edf3;
-          transform: none;
+          border-radius: 10px;
+          border: 3px solid #f1e4f3;
+          transform: rotate(2deg);
         }
         #theme-medium.medium-newgame .medium-post-tags a {
           padding: 2px 6px;
@@ -311,10 +318,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         #theme-medium.medium-newgame .medium-article-header {
           padding: 32px;
           margin: 30px 0 24px;
-          border: 8px solid white;
-          border-radius: 0;
-          background: #fff5f8;
-          box-shadow: none;
+          border: 3px solid #fff;
+          border-radius: 20px 5px 20px 5px;
+          background: #fff4fb;
+          box-shadow: 6px 6px 0 #9979bc55;
         }
         #theme-medium.medium-newgame .medium-article-header::before {
           content: 'STORY / NEW GAME!!';
@@ -339,10 +346,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           margin-bottom: 0;
         }
         #theme-medium.medium-newgame #notion-article {
-          background: #fff;
+          background: #fffaff;
           padding: 26px 30px;
-          border-radius: 0;
-          box-shadow: none;
+          border-radius: 16px;
+          box-shadow: 6px 6px 0 #a18ac64d;
         }
         #theme-medium.medium-newgame #article-wrapper .notion {
           color: var(--ink);
@@ -411,21 +418,27 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           isolation: isolate;
           overflow: hidden;
           min-height: 486px;
-          border: 9px solid #fff;
-          background: #84cbd6;
+          border: 3px solid #fff;
+          border-radius: 26px 7px 26px 7px;
+          background: linear-gradient(120deg, #765aa5, #9673b7 48%, #de93c2);
+          box-shadow:
+            8px 8px 0 #76549b55,
+            0 0 0 5px #fff2;
         }
         .ng-hero-geometry {
           position: absolute;
           inset: 0;
           z-index: -1;
-          background: conic-gradient(
-              from 45deg,
-              #ffffff12 0 25%,
-              #60b6c526 0 50%,
-              #ffffff24 0 75%,
-              transparent 0
-            )
-            0 0 / 56px 56px;
+          background:
+            radial-gradient(circle, #ffffff20 1.5px, transparent 2px) 0 0 / 9px
+              9px,
+            linear-gradient(
+              135deg,
+              transparent 60%,
+              #ffcae333 60% 68%,
+              transparent 68%
+            ),
+            radial-gradient(ellipse at 80% 80%, #ffc5e744, transparent 60%);
         }
         .ng-hero-copy {
           position: relative;
@@ -439,12 +452,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           align-items: center;
           padding-bottom: 12px;
           margin-bottom: 29px;
-          border-bottom: 3px dashed #fffc;
-          color: white;
-          font:
-            700 16px 'Arial Narrow',
-            monospace;
-          letter-spacing: 0.08em;
+          border-bottom: 1px solid #ffffff6b;
+          color: #fff3ad;
+          font: 700 12px monospace;
+          letter-spacing: 0.14em;
         }
         .ng-section-label span {
           font-size: 9px;
@@ -458,9 +469,9 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           background: url('${LOGO}') left center / contain no-repeat;
         }
         .ng-small-jp {
-          color: #fff;
+          color: #f7d6eb;
           font-size: 11px;
-          letter-spacing: 0.25em;
+          letter-spacing: 0.22em;
           margin: 17px 0 24px;
         }
         .ng-hero-message {
@@ -481,7 +492,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           line-height: 1.5;
         }
         .ng-hero-description {
-          color: #285e6c;
+          color: #f2dfee;
           font-size: 12px;
           line-height: 1.9;
           margin: 18px 0;
@@ -489,67 +500,77 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-clear-chip {
           display: inline-flex;
           gap: 10px;
-          padding: 7px 11px;
+          padding: 8px 12px;
+          border: 1px dashed #fff;
+          border-radius: 4px;
           font: 10px monospace;
-          background: #fff;
-          color: #4f8691;
-          letter-spacing: 0.04em;
+          background: #fff4;
+          color: white;
+          letter-spacing: 0.06em;
         }
         .ng-clear-chip b {
-          color: #c8557a;
+          color: #fff3a0;
         }
         .ng-character-panel {
           position: absolute;
           z-index: 1;
-          top: 0;
-          right: 0;
-          bottom: 28px;
-          width: 43%;
+          top: 30px;
+          right: 6%;
+          bottom: 67px;
+          width: 27%;
           background: #fff;
+          border: 7px solid #fff;
+          border-radius: 6px;
+          box-shadow: 9px 12px 0 #58427c4d;
+          transform: rotate(4deg);
         }
         .ng-character-panel::before {
           content: '';
           position: absolute;
-          top: 0;
-          bottom: 0;
-          left: -45px;
-          width: 46px;
-          background: #fff;
-          clip-path: polygon(100% 0, 100% 100%, 0 100%);
+          top: -20px;
+          left: 25%;
+          width: 90px;
+          height: 32px;
+          z-index: 3;
+          background: #ffe9a9b3;
+          transform: rotate(-9deg);
         }
         .ng-hero-art {
           position: absolute;
           z-index: 1;
-          width: 153px;
-          height: 440px;
+          width: 135px;
+          height: 390px;
           bottom: 0;
-          left: 5px;
-          background: url('${ART}') left center / auto 440px no-repeat;
+          left: 12px;
+          background: url('${ART}') left center / auto 390px no-repeat;
         }
         .ng-character-name {
           position: absolute;
           z-index: 2;
-          right: 19px;
-          top: 35px;
-          color: #d6658c;
-          writing-mode: vertical-rl;
-          font-size: 21px;
-          letter-spacing: 0.18em;
+          right: -21px;
+          bottom: -25px;
+          color: #9162a7;
+          background: #fff0fa;
+          border: 3px solid #fff;
+          padding: 9px 18px;
+          transform: rotate(-7deg);
+          font-size: 17px;
+          letter-spacing: 0.14em;
         }
         .ng-character-name span {
-          margin-left: 7px;
-          font: 10px monospace;
-          letter-spacing: 0.18em;
+          display: block;
+          margin-bottom: 4px;
+          font: 8px monospace;
+          letter-spacing: 0.12em;
         }
         .ng-character-number {
           position: absolute;
-          right: 12px;
-          bottom: 14px;
-          color: #f6e0eb;
-          font:
-            700 74px 'Arial Narrow',
-            sans-serif;
-          line-height: 1;
+          z-index: 4;
+          left: -28px;
+          top: -26px;
+          color: #fff0a6;
+          font: 700 65px/1 sans-serif;
+          text-shadow: 3px 3px #9d6eac;
         }
         .ng-hero-footer {
           position: absolute;
@@ -562,21 +583,36 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           align-items: center;
           gap: 8px;
           min-height: 29px;
-          padding: 7px 13px;
-          color: #b45d7c;
-          background: white;
+          padding: 9px 18px;
+          color: #f5daec;
+          background: #503d706b;
           font: 9px monospace;
-          letter-spacing: 0.04em;
+          letter-spacing: 0.08em;
         }
         .ng-hero-footer b {
           color: #83c1cf;
           margin-inline: 5px;
         }
         .ng-hero-footer a {
-          color: #8c7886;
+          color: #f0dcec;
           font:
             8px 'Noto Sans SC',
             sans-serif;
+        }
+        .ng-hero-sticker {
+          position: absolute;
+          z-index: 4;
+          right: 18px;
+          top: 42px;
+          padding: 12px 10px;
+          background: #fff3a9;
+          color: #9b6095;
+          border: 3px solid white;
+          border-radius: 45% 45% 45% 5px;
+          font-size: 11px;
+          line-height: 1.6;
+          transform: rotate(11deg);
+          box-shadow: 3px 3px 0 #77508444;
         }
         .ng-character-card {
           display: none;
@@ -614,8 +650,11 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           display: block;
           margin-top: 19px;
           padding: 10px;
-          background: #fff;
-          color: #d26485;
+          background: #fff3aa;
+          border: 3px solid white;
+          border-radius: 6px;
+          transform: rotate(-4deg);
+          color: #90609f;
           font:
             700 12px/1.6 'Arial Narrow',
             monospace;
@@ -632,11 +671,11 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           letter-spacing: 0.2em;
         }
         .ng-theme-credit {
-          padding: 18px 20px 28px;
-          color: #864253;
-          background: #f9c0cd;
+          padding: 10px 20px 14px;
+          color: #806080;
+          background: #e8cbea;
           text-align: center;
-          font-size: 9px;
+          font-size: 8px;
           line-height: 1.8;
         }
         .ng-theme-credit a {
@@ -651,16 +690,11 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           place-items: center;
           pointer-events: none;
           text-align: center;
-          background:
-            conic-gradient(
-                from 45deg,
-                #fff2 0 25%,
-                #e9658633 0 50%,
-                #fff3 0 75%,
-                transparent 0
-              )
-              0 0 / 100px 100px,
-            #f47b95;
+          background: repeating-conic-gradient(
+            from 15deg at 50% 50%,
+            #a681c9 0deg 12deg,
+            #d59cc8 12deg 24deg
+          );
           animation: ng-unlock-reveal 1800ms both;
         }
         .ng-unlock-opening > div {
@@ -706,22 +740,22 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           inset: -80px;
           pointer-events: none;
           background:
-            linear-gradient(
-              135deg,
-              transparent 22%,
-              #fff2 22% 27%,
-              transparent 27% 73%,
-              #ffedb42b 73% 80%,
-              transparent 80%
+            radial-gradient(
+              circle at 8% 25%,
+              #fff0ad55 0 105px,
+              transparent 106px
             ),
-            conic-gradient(
-                from 45deg,
-                #fff1 0 25%,
-                transparent 0 50%,
-                #fff2 0 75%,
-                transparent 0
-              )
-              0 0 / 112px 112px;
+            radial-gradient(
+              circle at 91% 45%,
+              #83dfdf66 0 190px,
+              transparent 191px
+            ),
+            repeating-linear-gradient(
+              -35deg,
+              transparent 0 180px,
+              #fff2 180px 195px,
+              transparent 195px 300px
+            );
           animation: ng-world-drift 24s ease-in-out infinite alternate;
         }
         #theme-medium.medium-newgame::after {
@@ -881,7 +915,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             transform: translateX(70px);
           }
           to {
-            transform: none;
+            transform: rotate(4deg);
           }
         }
         @keyframes ng-card-enter {
@@ -969,23 +1003,27 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             gap: 5px;
           }
           .ng-character-panel {
-            width: 30%;
+            width: 27%;
+            right: 3%;
+            top: 70px;
           }
           .ng-hero-art {
-            left: -37px;
-            width: 125px;
-            height: 322px;
-            background-size: auto 322px;
+            left: -6px;
+            width: 105px;
+            height: 300px;
+            background-size: auto 300px;
           }
           .ng-character-name {
-            top: 16px;
-            right: 5px;
-            font-size: 15px;
+            bottom: -20px;
+            right: -8px;
+            padding: 7px;
+            font-size: 12px;
           }
           .ng-character-name span {
             display: none;
           }
-          .ng-character-number {
+          .ng-character-number,
+          .ng-hero-sticker {
             display: none;
           }
           .ng-hero-footer {
@@ -1010,7 +1048,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         }
         @media (prefers-reduced-motion: reduce) {
           .ng-unlock-opening {
-            background: #f47b95;
+            background: #9770b7;
             animation: none;
           }
           .ng-unlock-opening > div {

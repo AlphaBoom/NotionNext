@@ -1,6 +1,6 @@
 # NEW GAME! reward theme assets
 
-The visual direction follows the anime official site: coral-pink / cyan geometric backgrounds, white frames and dashed rules, condensed uppercase labels, circular character portraits and the original wordmark. The blog layout and CSS are original implementations.
+The official site is a reference for the authentic character designs and wordmark only. This is an independent, expressive personal-blog reward theme: lilac / pink scenery, a taped character photo, handwritten-style decorations, floating game props and oversized type. It does not reproduce the official site layout. The blog layout and CSS are original implementations.
 
 Sources inspected on 2026-09-08:
 
