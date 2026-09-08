@@ -573,6 +573,8 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           margin-bottom: 18px;
         }
         #theme-medium.medium-newgame .medium-archive-group {
+          /* Theme-console utility colors use !important; give them this palette too. */
+          --medium-console-text-secondary: #493953;
           padding: 23px 26px;
           margin-bottom: 20px;
           border: 2px solid #fff;
@@ -616,6 +618,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           padding: 10px 8px;
         }
         #theme-medium.medium-newgame .medium-archive-date {
+          --medium-console-text-secondary: #776180;
           flex: 0 0 94px;
           color: #776180;
           font: 12px/1.8 monospace;
@@ -628,6 +631,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         }
         #theme-medium.medium-newgame
           .medium-archive-link:is(:hover, :focus-visible) {
+          --medium-console-text-secondary: #81345f;
           color: #81345f;
         }
         #theme-medium.medium-newgame .medium-search-panel {
@@ -644,6 +648,9 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         }
         #theme-medium.medium-newgame
           :is(.medium-category-link, .medium-tag-link) {
+          --medium-console-text-secondary: #624477;
+          --medium-console-primary: #68487f;
+          --medium-console-primary-hover: #68487f;
           align-self: flex-start;
           padding: 6px 10px;
           border: 1px solid #ddc9e7;
@@ -664,6 +671,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             :hover,
             :focus-visible
           ) {
+          --medium-console-text-secondary: #fff;
           background: #68487f;
           border-color: #68487f;
           color: #fff;
