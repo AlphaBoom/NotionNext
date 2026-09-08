@@ -669,6 +669,9 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             transform: translateX(8%);
           }
         }
+        body:has(#theme-medium.medium-full-width) .ng-character-card {
+          display: none;
+        }
         @media (min-width: 1480px) {
           .ng-character-card {
             display: block;

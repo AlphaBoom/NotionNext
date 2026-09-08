@@ -130,7 +130,7 @@ export default function SecretSurvivors({ onClose, onVictory }) {
           run.sparks = []
           resize()
         }
-        if (verdict.stop) {
+        if (verdict.stop && run.phase === 'playing') {
           run.phase = 'unavailable'
           stop()
         }
@@ -414,15 +414,9 @@ export default function SecretSurvivors({ onClose, onVictory }) {
             {hud.phase === 'lost' && (
               <>
                 <p className='survivors-overlay-kicker'>
-                  {hud.phase === 'won'
-                    ? 'DAWN HAS ARRIVED'
-                    : 'ANOTHER NIGHT, ANOTHER TRY'}
+                  ANOTHER NIGHT, ANOTHER TRY
                 </p>
-                <h3>
-                  {hud.phase === 'won'
-                    ? '天亮了，小刺猬。'
-                    : '先回窝，暖一暖。'}
-                </h3>
+                <h3>先回窝，暖一暖。</h3>
                 <p>
                   坚持 {hud.time} / {RUN_SECONDS} 秒 · 击退 {hud.kills} · LV.
                   {hud.level}
