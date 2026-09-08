@@ -64,6 +64,7 @@ export default function SecretSurvivors({ onClose }) {
       slowWindows = 0,
       totalFrames = 0
     const keys = new Set()
+    const taps = new Set()
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const sync = () => {
       setHud(snapshot(run))
@@ -85,6 +86,7 @@ export default function SecretSurvivors({ onClose }) {
       frame = 0
       previous = 0
       keys.clear()
+      taps.clear()
     }
     function tick(now) {
       frame = 0
@@ -93,20 +95,22 @@ export default function SecretSurvivors({ onClose }) {
       if (previous) intervals.push(now - previous)
       previous = now
       const start = performance.now()
+      const pressed = code => keys.has(code) || taps.has(code)
       stepRun(
         run,
         {
           x:
-            Number(keys.has('KeyD') || keys.has('ArrowRight')) -
-            Number(keys.has('KeyA') || keys.has('ArrowLeft')),
+            Number(pressed('KeyD') || pressed('ArrowRight')) -
+            Number(pressed('KeyA') || pressed('ArrowLeft')),
           y:
-            Number(keys.has('KeyS') || keys.has('ArrowDown')) -
-            Number(keys.has('KeyW') || keys.has('ArrowUp'))
+            Number(pressed('KeyS') || pressed('ArrowDown')) -
+            Number(pressed('KeyW') || pressed('ArrowUp'))
         },
         elapsed,
         width,
         height
       )
+      taps.clear()
       draw()
       samples.push(performance.now() - start)
       totalFrames++
@@ -169,6 +173,7 @@ export default function SecretSurvivors({ onClose }) {
       if (MOVEMENT.has(event.code) && run.phase === 'playing') {
         event.preventDefault()
         keys.add(event.code)
+        taps.add(event.code)
       }
       if (run.phase === 'upgrade' && /^Digit[123]$/.test(event.code)) {
         event.preventDefault()
@@ -266,7 +271,7 @@ export default function SecretSurvivors({ onClose }) {
         className='survivors-xp'
         role='progressbar'
         aria-label='升级经验'
-        aria-valuenow={hud.xp}
+        aria-valuenow={Math.min(hud.xp, hud.nextXp)}
         aria-valuemax={hud.nextXp}
         aria-valuemin={0}
       >
