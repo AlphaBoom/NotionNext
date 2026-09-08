@@ -100,15 +100,9 @@ export function NewGameHero() {
             />
           </figure>
         </div>
-        <a
-          className='ng-character-name'
-          href={OFFICIAL_CHARACTERS}
-          target='_blank'
-          rel='noopener noreferrer'
-          aria-label='ひふみ：官网角色介绍（新标签页）'
-        >
+        <p className='ng-character-name'>
           <span>HIFUMI & SOUJIROU</span>ひふみ と 宗次郎
-        </a>
+        </p>
         <span className='ng-character-number' aria-hidden='true'>
           ✦
         </span>
@@ -911,8 +905,6 @@ export default function NewGameTheme({
           transform: rotate(-4deg);
           font-size: 15px;
           letter-spacing: 0.08em;
-          text-underline-offset: 0.25em;
-          transition: background-color 180ms ease;
         }
         .ng-character-name span {
           display: block;
@@ -1042,7 +1034,6 @@ export default function NewGameTheme({
         }
         .ng-hero-art,
         .ng-card-art,
-        .ng-character-name,
         .ng-character-link {
           cursor: pointer;
         }
@@ -1057,13 +1048,8 @@ export default function NewGameTheme({
           .ng-card-art:hover {
             transform: scale(1.05);
           }
-          .ng-character-name:hover {
-            background-color: #fff3b9;
-            text-decoration: underline;
-          }
         }
         .ng-hero-art:focus-visible,
-        .ng-character-name:focus-visible,
         .ng-card-art:focus-visible,
         .ng-character-link:focus-visible {
           outline: 2px solid #fff0b3;
