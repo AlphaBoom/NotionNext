@@ -289,7 +289,8 @@ const Style = () => (
     #theme-medium .medium-portrait-orbit::after { content: ''; position: absolute; top: 20px; right: 20px; width: 8px; height: 8px; background: var(--accent); border: 2px solid var(--paper); border-radius: 50%; }
     #theme-medium .medium-masthead:hover .medium-portrait-orbit { transform: rotate(0deg); }
     #theme-medium .medium-portrait-frame { position: relative; z-index: 1; padding: 7px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); box-shadow: 0 0 44px color-mix(in srgb, var(--accent) 14%, transparent); transition: transform 300ms ease, box-shadow 300ms ease; cursor: pointer; }
-    #theme-medium .medium-portrait-frame:is(:hover, :focus-visible) { transform: scale(1.06); box-shadow: 0 0 48px color-mix(in srgb, var(--accent) 24%, transparent); }
+    /* Returning from the game restores keyboard focus; keep the avatar circular. */
+    #theme-medium .medium-portrait-frame:is(:hover, :focus-visible) { border-radius: 50%; transform: scale(1.06); box-shadow: 0 0 48px color-mix(in srgb, var(--accent) 24%, transparent); }
     #theme-medium .medium-mobile-avatar { display: none; }
     @media (max-width: 768px), (hover: none), (pointer: coarse) {
       #theme-medium .medium-portrait-trigger { display: none; }
