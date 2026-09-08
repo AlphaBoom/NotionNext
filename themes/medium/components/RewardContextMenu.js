@@ -83,8 +83,8 @@ export default function RewardContextMenu({ active, onToggle }) {
   useEffect(() => {
     if (!position || !menu.current) return
     const rect = menu.current.getBoundingClientRect()
-    menu.current.style.left = `${Math.max(8, Math.min(position.x, window.innerWidth - rect.width - 8))}px`
-    menu.current.style.top = `${Math.max(8, Math.min(position.y, window.innerHeight - rect.height - 8))}px`
+    menu.current.style.left = `${Math.max(8, Math.min(position.x, document.documentElement.clientWidth - rect.width - 8))}px`
+    menu.current.style.top = `${Math.max(8, Math.min(position.y, document.documentElement.clientHeight - rect.height - 8))}px`
     menu.current.querySelector('button')?.focus({ preventScroll: true })
   }, [position])
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { handleMovementKey } from '../lib/survivorsInput'
 import {
   assessPerformance,
   chooseUpgrade,
@@ -12,16 +13,6 @@ import {
   HEDGEHOG_COLORS
 } from '../lib/survivorsCanvas'
 
-const MOVEMENT = new Set([
-  'KeyW',
-  'KeyA',
-  'KeyS',
-  'KeyD',
-  'ArrowUp',
-  'ArrowLeft',
-  'ArrowDown',
-  'ArrowRight'
-])
 function snapshot(run) {
   return {
     phase: run.phase,
@@ -173,11 +164,27 @@ export default function SecretSurvivors({ onClose, onVictory }) {
         else if (run.phase === 'paused') start()
         return
       }
-      if (MOVEMENT.has(event.code) && run.phase === 'playing') {
-        event.preventDefault()
-        keys.add(event.code)
-        taps.add(event.code)
-      }
+      if (
+        handleMovementKey(event, run.phase, {
+          move: code => {
+            keys.add(code)
+            taps.add(code)
+          },
+          select: direction => {
+            const choices = Array.from(
+              panel.current.querySelectorAll('.survivors-choices button')
+            )
+            if (!choices.length) return
+            const current = choices.indexOf(document.activeElement)
+            const next =
+              current < 0
+                ? 0
+                : (current + direction + choices.length) % choices.length
+            choices[next].focus({ preventScroll: true })
+          }
+        })
+      )
+        return
       if (run.phase === 'upgrade' && /^Digit[123]$/.test(event.code)) {
         event.preventDefault()
         const choice = run.choices[Number(event.code.slice(-1)) - 1]
@@ -259,41 +266,6 @@ export default function SecretSurvivors({ onClose, onVictory }) {
             棘夜 <span>QUILL SURVIVORS</span>
           </h2>
         </div>
-        <div className='survivors-hud'>
-          <span
-            aria-label={`生命 ${hud.hp}/${hud.maxHp}`}
-            className='survivors-health'
-          >
-            ♥ {hud.hp}
-            <small> / {hud.maxHp}</small>
-          </span>
-          <span>LV.{String(hud.level).padStart(2, '0')}</span>
-          <span>
-            {time}
-            <small> / 01:30</small>
-          </span>
-          <span>击退 {hud.kills}</span>
-          <button
-            type='button'
-            disabled={hud.phase !== 'playing'}
-            onClick={() => actions.current?.pause()}
-            aria-label='暂停游戏'
-          >
-            Ⅱ
-          </button>
-        </div>
-      </div>
-      <div
-        className='survivors-xp'
-        role='progressbar'
-        aria-label='升级经验'
-        aria-valuenow={Math.min(hud.xp, hud.nextXp)}
-        aria-valuemax={hud.nextXp}
-        aria-valuemin={0}
-      >
-        <span
-          style={{ width: `${Math.min(100, (hud.xp / hud.nextXp) * 100)}%` }}
-        />
       </div>
       <div className='survivors-arena'>
         <canvas
@@ -301,6 +273,60 @@ export default function SecretSurvivors({ onClose, onVictory }) {
           tabIndex={0}
           aria-label='刺猬生存战场，用 WASD 或方向键移动，自动攻击，P 暂停，Esc 返回博客'
         />
+        <div className='survivors-hud' aria-label='游戏状态'>
+          <div
+            className='survivors-stat survivors-health'
+            aria-label={`生命 ${hud.hp}/${hud.maxHp}`}
+          >
+            <span>
+              ♥ {hud.hp}
+              <small> / {hud.maxHp}</small>
+            </span>
+            <div className='survivors-health-track' aria-hidden='true'>
+              <span style={{ width: `${(100 * hud.hp) / hud.maxHp}%` }} />
+            </div>
+          </div>
+          <div
+            className='survivors-stat survivors-clock'
+            aria-label={`已生存 ${hud.time} 秒，目标 90 秒`}
+          >
+            {time}
+            <small> / 01:30</small>
+          </div>
+          <div className='survivors-stat survivors-combat'>
+            <span>
+              击退 <b>{hud.kills}</b>
+            </span>
+            <button
+              type='button'
+              disabled={hud.phase !== 'playing'}
+              onClick={() => actions.current?.pause()}
+              aria-label='暂停游戏'
+            >
+              Ⅱ
+            </button>
+          </div>
+        </div>
+        <div className='survivors-xp-hud'>
+          <span>LV.{String(hud.level).padStart(2, '0')}</span>
+          <div
+            className='survivors-xp'
+            role='progressbar'
+            aria-label='升级经验'
+            aria-valuenow={Math.min(hud.xp, hud.nextXp)}
+            aria-valuemax={hud.nextXp}
+            aria-valuemin={0}
+          >
+            <span
+              style={{
+                width: `${Math.min(100, (hud.xp / hud.nextXp) * 100)}%`
+              }}
+            />
+          </div>
+          <small>
+            {hud.xp} / {hud.nextXp}
+          </small>
+        </div>
         {hud.boss && hud.phase === 'playing' && (
           <span className='survivors-boss-warning'>夜巡者出现了</span>
         )}
@@ -350,7 +376,7 @@ export default function SecretSurvivors({ onClose, onVictory }) {
                   LEVEL {hud.level} / MAKE IT YOURS
                 </p>
                 <h3>长出一点新本事</h3>
-                <p>选一份强化，继续这场夜行。</p>
+                <p>方向键 / WASD 选择，Enter 确认；也可按 1 / 2 / 3。</p>
                 <div className='survivors-choices'>
                   {hud.choices.map((choice, i) => (
                     <button
@@ -485,37 +511,102 @@ export default function SecretSurvivors({ onClose, onVictory }) {
           letter-spacing: 0.13em;
         }
         .survivors-hud {
+          position: absolute;
+          z-index: 3;
+          top: 12px;
+          left: 12px;
+          right: 12px;
           display: flex;
-          gap: 20px;
-          align-items: center;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 12px;
+          pointer-events: none;
+          color: #e8ebd8;
           font: 12px monospace;
           font-variant-numeric: tabular-nums;
         }
+        .survivors-stat {
+          padding: 8px 11px;
+          background: #102019e8;
+          border: 1px solid #72866a66;
+        }
         .survivors-hud small {
-          opacity: 0.5;
+          color: #a0b198;
           font-size: 10px;
         }
         .survivors-health {
-          color: var(--accent);
+          color: #e3b899;
+          min-width: 92px;
+        }
+        .survivors-health-track {
+          height: 3px;
+          margin-top: 6px;
+          background: #435140;
+        }
+        .survivors-health-track span {
+          display: block;
+          height: 100%;
+          background: #d8a78b;
+          transition: width 120ms;
+        }
+        .survivors-clock {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 19px;
+          letter-spacing: 0.04em;
+        }
+        .survivors-combat {
+          display: flex;
+          gap: 15px;
+          align-items: center;
+          padding: 4px 5px 4px 11px;
+        }
+        .survivors-combat b {
+          font-weight: 400;
+          color: #e4d594;
         }
         .survivors-hud button {
+          pointer-events: auto;
           width: 30px;
           height: 30px;
-          border: 1px solid var(--line);
+          color: #e8ebd8;
+          border: 1px solid #72866a88;
           cursor: pointer;
         }
         .survivors-hud button:disabled {
           opacity: 0.3;
           cursor: default;
         }
+        .survivors-xp-hud {
+          position: absolute;
+          z-index: 3;
+          bottom: 12px;
+          left: 12px;
+          right: 12px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 8px 10px;
+          background: #102019d9;
+          color: #c9d8ad;
+          pointer-events: none;
+          font: 10px monospace;
+        }
+        .survivors-xp-hud small {
+          color: #a0b198;
+          min-width: 42px;
+          text-align: right;
+        }
         .survivors-xp {
-          height: 3px;
-          background: var(--line);
+          flex: 1;
+          height: 5px;
+          background: #344537;
         }
         .survivors-xp span {
           display: block;
           height: 100%;
-          background: var(--accent);
+          background: #b3cf88;
           transition: width 150ms linear;
         }
         .survivors-arena {
@@ -526,7 +617,7 @@ export default function SecretSurvivors({ onClose, onVictory }) {
         canvas {
           display: block;
           width: 100%;
-          height: clamp(320px, 43vh, 440px);
+          height: clamp(390px, 48vh, 480px);
           outline: none;
           image-rendering: pixelated;
         }
@@ -540,7 +631,8 @@ export default function SecretSurvivors({ onClose, onVictory }) {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          padding: 22px;
+          z-index: 2;
+          padding: 70px 22px 48px;
           background: #172720ed;
           color: #e7e8d5;
           text-align: center;
@@ -647,7 +739,7 @@ export default function SecretSurvivors({ onClose, onVictory }) {
         .survivors-boss-warning {
           position: absolute;
           left: 50%;
-          top: 18px;
+          top: 66px;
           transform: translateX(-50%);
           color: #ecc4a6;
           font-size: 11px;

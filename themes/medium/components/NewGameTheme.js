@@ -182,7 +182,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           min-height: 86px;
           border-bottom: 3px dashed #ffffffb3;
         }
-        #theme-medium.medium-newgame .logo {
+        #theme-medium.medium-newgame .medium-nav .logo {
           padding: 0;
           border: 0;
           border-radius: 0;
@@ -520,7 +520,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-hero-art {
           position: absolute;
           z-index: 1;
-          width: 174px;
+          width: 153px;
           height: 440px;
           bottom: 0;
           left: 5px;
