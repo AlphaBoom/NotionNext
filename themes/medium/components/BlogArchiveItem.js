@@ -1,4 +1,5 @@
 import SmartLink from '@/components/SmartLink'
+import WritingModeBadge from './WritingModeBadge'
 
 /**
  * 归档分组
@@ -31,7 +32,8 @@ export default function BlogArchiveItem({ archiveTitle, archivePosts }) {
                   className='medium-archive-link dark:text-gray-400  dark:hover:text-gray-300 overflow-x-hidden hover:underline cursor-pointer text-gray-600'
                 >
                   {post.title}
-                </SmartLink>
+                </SmartLink>{' '}
+                <WritingModeBadge writingMode={post.writingMode} />
               </div>
             </li>
           )

@@ -13,6 +13,7 @@ export interface SiteInfo {
 }
 
 export type PageStatus = 'Published' | 'Invisible'
+export type WritingMode = '' | 'ai-polished' | 'ai-generated'
 export type PageType = 'Post' | 'Page' | 'Notice' | 'Menu' | 'SubMenu'
 
 export interface PageDate {
@@ -29,6 +30,8 @@ export interface TagItem {
 }
 
 export interface BasePage {
+  aiSummary?: string
+  writingMode?: WritingMode
   id?: string
   title: string
   slug: string
@@ -48,6 +51,7 @@ export interface BasePage {
 }
 
 export interface NavPage {
+  writingMode?: WritingMode
   id?: string
   short_id?: string
   title: string

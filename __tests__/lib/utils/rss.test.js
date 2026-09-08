@@ -122,4 +122,27 @@ describe('generateRss', () => {
       shouldGenerateRssForLocale({ locale: 'en', defaultLocale: 'zh-CN' })
     ).toBe(false)
   })
+
+  it('includes AI disclosure in full feeds and in the summary-only locked article path', async () => {
+    getPostBlocks.mockResolvedValue({ block: {} })
+    await generateRss({
+      NOTION_CONFIG: { AUTHOR: 'author', LANG: 'zh-CN', SUB_PATH: '', CONTACT_EMAIL: '' },
+      siteInfo: { title: 'site', description: 'desc', link: 'https://example.com' },
+      latestPosts: [
+        { id: 'generated', slug: 'generated', title: 'Generated', summary: '摘要', publishDay: '2026-09-08', writingMode: 'ai-generated' },
+        { id: 'polished', slug: 'polished', title: 'Polished', summary: '锁定摘要', publishDay: '2026-09-08', writingMode: 'ai-polished', password: 'locked' }
+      ]
+    })
+    expect(addItemMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      title: 'Generated',
+      description: '[AI 生成] 本文由我提供大纲和写作思路，使用 AI 辅助生成正文。 摘要',
+      content: '<p>本文由我提供大纲和写作思路，使用 AI 辅助生成正文。</p><div>rss-content</div>'
+    }))
+    expect(addItemMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      title: 'Polished',
+      description: '[AI 润色] 本文由我撰写初稿，使用 AI 辅助润色措辞和语句，保留原有观点和主要内容。 锁定摘要',
+      content: '[AI 润色] 本文由我撰写初稿，使用 AI 辅助润色措辞和语句，保留原有观点和主要内容。 锁定摘要'
+    }))
+    expect(getPostBlocks).toHaveBeenCalledTimes(1)
+  })
 })

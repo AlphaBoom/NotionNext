@@ -1150,7 +1150,12 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         }
         #theme-medium.medium-newgame
           .medium-post
-          :is(.medium-post-meta a, .medium-post-tags a, .medium-post-cover) {
+          :is(
+            .medium-post-meta a,
+            .medium-post-meta .medium-writing-label,
+            .medium-post-tags a,
+            .medium-post-cover
+          ) {
           position: relative;
           z-index: 2;
         }
