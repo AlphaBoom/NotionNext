@@ -5,10 +5,11 @@ import RewardPlayground from './RewardPlayground'
 const ART = '/images/new-game/hifumi-soujirou.webp'
 const ICON = '/images/new-game/hifumi-icon.webp'
 const LOGO = '/images/new-game/logo-official.png'
+const SOUJIROU = '/images/new-game/soujirou-closeup.webp'
 
 export function prepareArtwork() {
   return Promise.all(
-    [ART, LOGO].map(
+    [ART, LOGO, SOUJIROU].map(
       src =>
         new Promise(resolve => {
           const art = new Image()
@@ -79,6 +80,16 @@ export function NewGameHero() {
           role='img'
           aria-label='泷本日富美双手捧着刺猬宗次郎'
         />
+        <figure className='ng-soujirou-closeup'>
+          <div
+            className='ng-soujirou-face'
+            role='img'
+            aria-label='刺猬宗次郎的表情特写：ご機嫌ななめ，一脸不领情'
+          />
+          <figcaption>
+            宗次郎 <span aria-hidden='true'>···</span>
+          </figcaption>
+        </figure>
         <p className='ng-character-name'>
           <span>HIFUMI & SOUJIROU</span>ひふみ と 宗次郎
         </p>
@@ -163,16 +174,56 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             );
         }
         #theme-medium.medium-newgame .medium-nav {
-          background: #725493ed;
+          isolation: isolate;
+          background:
+            radial-gradient(ellipse at 12% 0, #b780c655, transparent 48%),
+            linear-gradient(115deg, #48335f, #76528d 58%, #584576);
           border: 0;
-          box-shadow: 0 5px 0 #fff3;
+          box-shadow:
+            0 5px 0 #ffffff65,
+            0 12px 30px #60437526;
+        }
+        #theme-medium.medium-newgame .medium-nav::before {
+          content: '';
+          position: absolute;
+          z-index: -1;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(circle, #ffffff16 1px, transparent 1.5px) 0 0 / 8px
+              8px,
+            repeating-linear-gradient(
+              -50deg,
+              transparent 0 160px,
+              #ffffff06 160px 190px,
+              transparent 190px 280px
+            );
+        }
+        #theme-medium.medium-newgame .medium-nav::after {
+          content: '';
+          position: absolute;
+          inset: auto 0 0;
+          height: 3px;
+          pointer-events: none;
+          background: linear-gradient(
+            90deg,
+            #f3acd3,
+            #fff1ac,
+            #a8ebdf,
+            #c3aff4,
+            #f3acd3
+          );
+          background-size: 200% 100%;
+          animation: ng-nav-spectrum 12s linear infinite;
         }
         #theme-medium.medium-newgame .medium-nav-inner {
-          min-height: 82px;
+          min-height: 92px;
           border-bottom: 0;
         }
         #theme-medium.medium-newgame .medium-nav .logo {
-          padding: 0;
+          position: relative;
+          display: inline-block;
+          padding: 0 0 0 39px;
           border: 0;
           border-radius: 0;
           background: none;
@@ -182,16 +233,116 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             sans-serif;
           box-shadow: none;
           transform: none;
+          letter-spacing: 0.035em;
+          text-shadow: 2px 2px 0 #32234466;
+        }
+        #theme-medium.medium-newgame .medium-nav .logo::before {
+          content: '✦';
+          position: absolute;
+          left: 0;
+          top: 5px;
+          color: #fff0ae;
+          font: 32px/1 sans-serif;
+          filter: drop-shadow(0 0 9px #ffe6a755);
+          transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        #theme-medium.medium-newgame .medium-nav .logo::after {
+          content: 'PLAYER 01 / EXTRA WORLD';
+          display: block;
+          margin-top: 5px;
+          color: #e9d5f2;
+          font: 8px/1.3 monospace;
+          letter-spacing: 0.15em;
+          text-shadow: none;
+        }
+        #theme-medium.medium-newgame
+          .medium-nav
+          .logo:is(:hover, :focus-visible)::before {
+          transform: rotate(180deg) scale(1.2);
+        }
+        #theme-medium.medium-newgame #medium-navigation > ul {
+          gap: 9px;
+          padding: 6px;
+          border: 1px solid #ffffff29;
+          border-radius: 18px;
+          background: #34234530;
+          box-shadow: inset 0 1px 0 #ffffff14;
         }
         #theme-medium.medium-newgame .medium-nav-item > :is(a, button) {
+          position: relative;
+          overflow: hidden;
+          padding: 10px 16px;
           color: white;
           font-weight: 700;
-          border-radius: 0;
+          border: 1px solid transparent;
+          border-radius: 12px;
           letter-spacing: 0.07em;
+          transition:
+            transform 180ms,
+            background-color 180ms,
+            box-shadow 180ms;
+        }
+        #theme-medium.medium-newgame .medium-nav-item > :is(a, button)::after {
+          content: '';
+          position: absolute;
+          inset: -50% -80%;
+          pointer-events: none;
+          background: linear-gradient(
+            110deg,
+            transparent 42%,
+            #ffffff60 48%,
+            transparent 54%
+          );
+          transform: translateX(-70%);
+        }
+        #theme-medium.medium-newgame
+          .medium-nav-item
+          > :is(a, button):is(:hover, :focus-visible, [aria-expanded='true']) {
+          color: #fff6bd;
+          background-color: #ffffff18;
+          border-color: #ffffff54;
+          box-shadow:
+            0 3px 0 #2f1c4633,
+            0 0 18px #f1add321;
+          transform: translateY(-2px);
+        }
+        #theme-medium.medium-newgame
+          .medium-nav-item
+          > :is(a, button):is(:hover, :focus-visible)::after {
+          animation: ng-nav-glint 650ms ease-out;
         }
         #theme-medium.medium-newgame .medium-nav-item.is-current > a {
-          box-shadow: inset 0 -3px 0 #fff59e;
-          color: #fff8ad;
+          background: #fff2bb;
+          color: #50395f;
+          border-color: #fff9df;
+          box-shadow:
+            0 3px 0 #c895ae,
+            0 0 17px #fff1a72b;
+        }
+        #theme-medium.medium-newgame
+          .medium-nav-item
+          > :is(a, button):focus-visible {
+          outline: 2px solid #a8ebdf;
+          outline-offset: 4px;
+        }
+        #theme-medium.medium-newgame .medium-nav-item button i {
+          transition: transform 180ms;
+        }
+        #theme-medium.medium-newgame
+          .medium-nav-item
+          button[aria-expanded='true']
+          i {
+          transform: rotate(180deg);
+        }
+        @keyframes ng-nav-glint {
+          to {
+            transform: translateX(70%);
+          }
+        }
+        @keyframes ng-nav-spectrum {
+          to {
+            background-position: 200% 0;
+          }
         }
         #theme-medium.medium-newgame .medium-theme-toggle {
           display: none;
@@ -245,18 +396,26 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           border-color: #ed86ab;
         }
         #theme-medium.medium-newgame .medium-topics {
-          border: 0;
-          border-top: 3px dashed #fff9;
-          border-bottom: 3px dashed #fff9;
-          padding: 15px 4px;
+          gap: 10px 14px;
+          border: 2px solid white;
+          border-radius: 15px;
+          background: #fff7fd;
+          padding: 12px 18px;
           margin-bottom: 25px;
-          color: #fff;
+          color: #624977;
         }
         #theme-medium.medium-newgame .medium-topics-label {
-          color: #fff6ae;
+          color: #624977;
+        }
+        #theme-medium.medium-newgame .medium-topics a {
+          padding: 5px 10px;
+          border-radius: 8px;
+          background: #eee2f5;
+          color: #624977;
         }
         #theme-medium.medium-newgame .medium-topics a:hover {
-          color: #fff6ae;
+          background: #68487f;
+          color: white;
         }
         #theme-medium.medium-newgame .medium-post {
           position: relative;
@@ -384,18 +543,136 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           color: #bd5a7c;
         }
         #theme-medium.medium-newgame .medium-submenu {
-          background: #fff;
-          border: 1px solid #ecc9d7;
-          box-shadow: 0 5px 18px #bc506322;
+          margin-top: 10px;
+          padding: 8px;
+          background: #fffaff;
+          border: 2px solid #fff;
+          border-radius: 15px;
+          box-shadow:
+            4px 5px 0 #49325933,
+            0 12px 28px #49325926;
         }
         #theme-medium.medium-newgame .medium-submenu a {
-          color: #80566b;
+          border-radius: 9px;
+          color: #624977;
+        }
+        #theme-medium.medium-newgame
+          .medium-submenu
+          a:is(:hover, :focus-visible) {
+          background: #efe2f7;
+          color: #493257;
         }
         #theme-medium.medium-newgame [class*='dark:text-gray-'] {
           color: var(--ink);
         }
         #theme-medium.medium-newgame [class*='dark:bg-'] {
           background-color: var(--paper);
+        }
+        #theme-medium.medium-newgame .medium-archive {
+          padding: 30px 0 8px;
+          margin-bottom: 18px;
+        }
+        #theme-medium.medium-newgame .medium-archive-group {
+          padding: 23px 26px;
+          margin-bottom: 20px;
+          border: 2px solid #fff;
+          border-radius: 20px;
+          background: #fffaff;
+          box-shadow: 5px 5px 0 #8e72b633;
+        }
+        #theme-medium.medium-newgame .medium-archive-month {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 0 0 14px;
+          color: #65427f;
+          font: 700 22px/1.4 monospace;
+          letter-spacing: 0.04em;
+        }
+        #theme-medium.medium-newgame .medium-archive-month::before {
+          content: '✦';
+          color: #a45584;
+          font-size: 19px;
+        }
+        #theme-medium.medium-newgame .medium-archive-list {
+          border-top: 1px dashed #d7bfdf;
+          padding-top: 8px;
+        }
+        #theme-medium.medium-newgame .medium-archive-row {
+          padding: 0;
+          border: 0;
+          border-radius: 9px;
+          transform: none;
+          transition: background-color 150ms;
+        }
+        #theme-medium.medium-newgame
+          .medium-archive-row:has(a:is(:hover, :focus-visible)) {
+          background: #f2e7f8;
+        }
+        #theme-medium.medium-newgame .medium-archive-entry {
+          display: flex;
+          align-items: baseline;
+          gap: 16px;
+          padding: 10px 8px;
+        }
+        #theme-medium.medium-newgame .medium-archive-date {
+          flex: 0 0 94px;
+          color: #776180;
+          font: 12px/1.8 monospace;
+        }
+        #theme-medium.medium-newgame .medium-archive-link {
+          color: #493953;
+          font-size: 15px;
+          font-weight: 500;
+          line-height: 1.8;
+        }
+        #theme-medium.medium-newgame
+          .medium-archive-link:is(:hover, :focus-visible) {
+          color: #81345f;
+        }
+        #theme-medium.medium-newgame .medium-search-panel {
+          margin-top: 30px;
+          padding: 24px;
+          border: 2px solid white;
+          border-radius: 20px;
+          background: #fffaff;
+          color: #493953;
+          box-shadow: 5px 5px 0 #8e72b633;
+        }
+        #theme-medium.medium-newgame #category-list > .flex {
+          gap: 8px;
+        }
+        #theme-medium.medium-newgame
+          :is(.medium-category-link, .medium-tag-link) {
+          align-self: flex-start;
+          padding: 6px 10px;
+          border: 1px solid #ddc9e7;
+          border-radius: 9px;
+          background: #f1e7f7;
+          color: #624477;
+          font-weight: 500;
+        }
+        #theme-medium.medium-newgame
+          :is(.medium-category-link, .medium-tag-link)
+          > div {
+          color: inherit;
+          font-weight: inherit;
+        }
+        #theme-medium.medium-newgame
+          :is(.medium-category-link, .medium-tag-link):is(
+            .is-selected,
+            :hover,
+            :focus-visible
+          ) {
+          background: #68487f;
+          border-color: #68487f;
+          color: #fff;
+          box-shadow: none;
+        }
+        #theme-medium.medium-newgame
+          :is(.medium-category-link, .medium-tag-link):focus-visible {
+          outline: 2px solid #8d5ba4;
+          outline-offset: 3px;
         }
         #theme-medium.medium-newgame .medium-game-return {
           color: #b34c74;
@@ -541,6 +818,60 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           margin-bottom: 4px;
           font: 8px monospace;
           letter-spacing: 0.12em;
+        }
+        .ng-soujirou-closeup {
+          position: absolute;
+          z-index: 3;
+          left: -110px;
+          bottom: 28px;
+          width: 166px;
+          margin: 0;
+          padding: 5px;
+          border: 2px solid #785368;
+          border-radius: 48% 44% 45% 16%;
+          background: #fff;
+          box-shadow:
+            5px 6px 0 #5535664d,
+            0 0 0 3px #fff;
+          transform: rotate(-8deg);
+          transition: transform 240ms;
+        }
+        .ng-soujirou-closeup::before {
+          content: '';
+          position: absolute;
+          right: -17px;
+          top: -12px;
+          width: 11px;
+          height: 11px;
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 15px -17px 0 -2px #fff9;
+        }
+        .ng-soujirou-closeup:hover {
+          transform: rotate(-3deg) translateY(-3px);
+        }
+        .ng-soujirou-face {
+          aspect-ratio: 1;
+          border-radius: 48% 44% 42% 15%;
+          background: #fff7e5 url('${SOUJIROU}') center / cover no-repeat;
+        }
+        .ng-soujirou-closeup figcaption {
+          position: absolute;
+          bottom: -10px;
+          left: 7px;
+          padding: 3px 11px;
+          border: 2px solid #fff;
+          border-radius: 7px;
+          background: #fff0b3;
+          color: #684a64;
+          font:
+            700 12px/1.5 'Noto Sans SC',
+            sans-serif;
+          letter-spacing: 0.1em;
+          transform: rotate(4deg);
+        }
+        .ng-soujirou-closeup figcaption span {
+          margin-left: 8px;
         }
         .ng-character-number {
           position: absolute;
@@ -744,10 +1075,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         }
         .ng-floating-pad {
           position: absolute;
-          width: 126px;
-          right: 40%;
-          bottom: 45px;
-          opacity: 0.75;
+          width: 62px;
+          right: 42%;
+          top: 64px;
+          opacity: 0.35;
           transform: rotate(17deg);
           animation: ng-pad-drift 7s ease-in-out infinite alternate;
         }
@@ -966,19 +1297,52 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             right: 10px;
             font-size: 18px;
           }
+          .ng-soujirou-closeup {
+            width: 135px;
+            left: -90px;
+          }
         }
         @media (max-width: 767px) {
           #theme-medium.medium-newgame .medium-nav-inner {
-            min-height: 68px;
+            min-height: 76px;
+          }
+          #theme-medium.medium-newgame .medium-nav .logo {
+            font-size: 20px;
           }
           #theme-medium.medium-newgame #medium-navigation {
-            background: #fff;
+            top: 76px;
+            padding: 12px 20px 18px;
+            background: #fffaff;
+            border-radius: 0 0 20px 20px;
+          }
+          #theme-medium.medium-newgame #medium-navigation > ul {
+            background: #f2e7f8;
+            border-color: #e3cfed;
           }
           #theme-medium.medium-newgame
             #medium-navigation
             .medium-nav-item
             > :is(a, button) {
             color: #a74e71;
+          }
+          #theme-medium.medium-newgame
+            #medium-navigation
+            .medium-nav-item.is-current
+            > a {
+            color: #50395f;
+          }
+          #theme-medium.medium-newgame .medium-archive-group {
+            padding: 18px 14px;
+          }
+          #theme-medium.medium-newgame .medium-archive-entry {
+            display: block;
+          }
+          #theme-medium.medium-newgame .medium-archive-date {
+            display: block;
+            margin-bottom: 3px;
+          }
+          #theme-medium.medium-newgame .medium-search-panel {
+            padding: 18px 14px;
           }
           .ng-hero {
             min-height: 455px;
@@ -1022,6 +1386,15 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             width: 43%;
             right: -5%;
             top: 110px;
+          }
+          .ng-soujirou-closeup {
+            width: 96px;
+            left: -20px;
+            bottom: 20px;
+          }
+          .ng-soujirou-closeup figcaption {
+            padding-inline: 6px;
+            font-size: 10px;
           }
           .ng-hero-art {
             inset: 0;
@@ -1071,6 +1444,8 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             transform: none;
           }
           #theme-medium.medium-newgame *,
+          #theme-medium.medium-newgame *::before,
+          #theme-medium.medium-newgame *::after,
           #theme-medium.medium-newgame::before,
           #theme-medium.medium-newgame::after,
           .ng-character-card::before {

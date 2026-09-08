@@ -220,7 +220,7 @@ const LayoutSearch = props => {
   return (
     <>
       {/* 搜索导航栏 */}
-      <div className='py-12'>
+      <div className='medium-search-panel py-12'>
         <div className='pb-4 w-full'>{locale.NAV.SEARCH}</div>
         <SearchInput currentSearch={currentSearch} {...props} />
         {!currentSearch && (
@@ -254,7 +254,7 @@ const LayoutArchive = props => {
   const { archivePosts } = props
   return (
     <>
-      <div className='mb-10 pb-20 md:py-12 py-3  min-h-full'>
+      <div className='medium-archive mb-10 pb-20 md:py-12 py-3 min-h-full'>
         {Object.keys(archivePosts)?.map(archiveTitle => (
           <BlogArchiveItem
             key={archiveTitle}
