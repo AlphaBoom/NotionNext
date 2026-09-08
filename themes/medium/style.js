@@ -123,6 +123,40 @@ const Style = () => (
     #theme-medium .medium-post-cover { width: 180px; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 4px; background: var(--wash); }
     #theme-medium .medium-post-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
+    /* Text-first covers use existing metadata; a Notion image always takes priority. */
+    #theme-medium .medium-text-cover {
+      --cover-paper: #e9eee2; --cover-ink: #334d3f; --cover-accent: #78936c;
+      position: relative; isolation: isolate; display: flex; flex-direction: column;
+      width: 100%; height: 100%; padding: 12px 14px; gap: 6px;
+      overflow: hidden; background: var(--cover-paper); color: var(--cover-ink);
+      border: 1px solid color-mix(in srgb, var(--cover-accent) 28%, transparent);
+      border-radius: inherit; text-align: left;
+    }
+    #theme-medium .medium-text-cover-tone-1 { --cover-paper: #f1e8dc; --cover-ink: #60452f; --cover-accent: #b08c5f; }
+    #theme-medium .medium-text-cover-tone-2 { --cover-paper: #ece8f2; --cover-ink: #514460; --cover-accent: #9b88b0; }
+    #theme-medium .medium-text-cover::after {
+      content: ''; position: absolute; z-index: -1; width: 90px; height: 90px;
+      right: -48px; bottom: -46px; border: 14px solid var(--cover-accent);
+      border-radius: 50%; opacity: .16;
+    }
+    #theme-medium .medium-text-cover-category {
+      display: block; max-width: 100%; align-self: flex-start; padding-left: 6px;
+      border-left: 2px solid var(--cover-accent); font-size: 9px; line-height: 1.2;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #theme-medium .medium-text-cover-title {
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden; overflow-wrap: anywhere; margin: auto 0;
+      font-size: 16px; font-weight: 700; line-height: 1.35; letter-spacing: -.03em;
+    }
+    #theme-medium .medium-text-cover-summary {
+      display: block; flex-shrink: 0; overflow: hidden; white-space: nowrap;
+      text-overflow: ellipsis; font-size: 8px; line-height: 1.4; opacity: .8;
+    }
+    .dark #theme-medium .medium-text-cover { --cover-paper: #29392f; --cover-ink: #dce7d5; --cover-accent: #9bb38d; }
+    .dark #theme-medium .medium-text-cover-tone-1 { --cover-paper: #3c3329; --cover-ink: #eaddca; --cover-accent: #c4a679; }
+    .dark #theme-medium .medium-text-cover-tone-2 { --cover-paper: #36303f; --cover-ink: #e3dcec; --cover-accent: #b7a2ca; }
+
     /* Authorship disclosure stays visible before opening or reading an article. */
     #theme-medium .medium-writing-badge {
       display: inline-flex; align-items: center; align-self: flex-start; width: fit-content;
@@ -257,6 +291,10 @@ const Style = () => (
       #theme-medium .medium-post-with-cover { grid-template-columns: minmax(0, 1fr) 96px; }
       #theme-medium .medium-post h2 { font-size: 19px; }
       #theme-medium .medium-post-cover { width: 96px; aspect-ratio: 1; align-self: start; margin-top: 28px; }
+      #theme-medium .medium-text-cover { padding: 9px; gap: 5px; }
+      #theme-medium .medium-text-cover-category { font-size: 7px; padding-left: 4px; }
+      #theme-medium .medium-text-cover-title { font-size: 11px; line-height: 1.45; }
+      #theme-medium .medium-text-cover-summary { display: none; }
       #theme-medium .medium-post-summary { font-size: 13px; }
       #theme-medium .medium-post-meta { font-size: 10px; gap: 10px; }
       #theme-medium .medium-article-header { padding-top: 30px; padding-bottom: 16px; }

@@ -20,3 +20,11 @@ Medium 主题在文章列表、搜索结果、归档、上一篇/下一篇及正
 尚未发布的文章将 `status` 留空。`Invisible` 是隐藏发布，可通过链接访问，不是草稿。通过 AI 创建文章时应同时填写对应的 `writingMode`，在内容确认后再设为 `Published`。
 
 验证：`node --test tests/writingMode.test.mjs`，并检查文章列表、详情、归档及三种订阅格式。
+
+## 无封面文章的文字封面
+
+Medium 主题默认启用 `MEDIUM_POST_AUTO_COVER`。文章设置了 Notion 封面时，继续使用原图；没有封面时，列表及搜索结果根据标题、摘要、分类（或第一个标签）生成文字排版封面。相同分类使用一致的纸面配色，支持深色模式；手机上保留分类与标题，省略摘要以保证可读性。长标题最多显示三行，完整标题仍在文章链接中。
+
+此功能由网页 HTML/CSS 渲染，不调用 AI、不生成或下载额外图片，也不回写 Notion。它与 `writingMode` 无关，不会把本人撰写的文章误标为 AI 内容。分享卡片的社交平台图片保持原有行为。
+
+可在 Notion 配置表设 `MEDIUM_POST_AUTO_COVER=false`，或在部署环境设 `NEXT_PUBLIC_MEDIUM_POST_AUTO_COVER=false`，恢复无图文章的纯文字列表。`MEDIUM_POST_LIST_COVER=false` 则同时关闭图片封面和文字封面。
