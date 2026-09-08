@@ -16,12 +16,12 @@ All assets are served locally. They are referenced only by the optional reward m
 
 ## Soujirou expression inset
 
-`soujirou-closeup.webp`: 420 × 420, 20,576 bytes. Created with the built-in imagegen tool on 2026-09-08 using direct image-to-image restoration of a crop from `hifumi-soujirou.webp`, as requested by the owner.
+`soujirou-closeup.webp`: 960 × 960, 52,246 bytes. Created with the built-in imagegen tool on 2026-09-08 using direct image-to-image restoration of a crop from `hifumi-soujirou.webp`, as requested by the owner.
 
 The input was the original 386 × 420 character artwork, cropped at x=142, y=149, width=80, height=80 and enlarged to 1024 × 1024 using nearest-neighbor sampling. That crop was the **only** generation input and the edit target. Previous generated close-ups and the avatar were not supplied as references. The source's sleeve, knee, surrounding hair and clothing remain in the inset to preserve the original hand positions and occlusion. The prompt asks to restore the pixelated linework while retaining the exact source composition, rather than reconstructing a new holding pose from a written anatomy description.
 
 This is an AI-assisted restored detail, not an unmodified official animation frame. The full character artwork remains unchanged.
 
-Converted to WebP quality 87. The optional theme presents it in a rounded rectangular detail panel, with a solid connector to a locator around the hedgehog in her hands. The accepted image is framed at 160% with its focus at 58% / 10%, enlarging the hedgehog and cropping excess sleeve, knee and background without regenerating its anatomy. The full artwork, locator and inset share one aspect-ratio scene so resizing and animation do not separate them. There are no thought-bubble dots or visible caption labels.
+Converted from the accepted generated original to WebP quality 85 at a higher resolution so the facial crop remains sharp. The optional theme presents it in a rounded rectangular detail panel, with a solid connector to a locator around the hedgehog in her hands. The accepted image is framed at 320% with its focus at 74% / 32%, concentrating on the eyes and muzzle rather than retaining the whole body. Most hands, clothing and surroundings fall outside the frame; the artwork itself is not regenerated. The full artwork, locator and inset share one aspect-ratio scene so resizing and animation do not separate them. There are no thought-bubble dots or visible caption labels.
 
 The exact direct image-to-image prompt and crop input are documented in [soujirou-pose-prompt.txt](soujirou-pose-prompt.txt).

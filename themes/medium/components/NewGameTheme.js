@@ -915,7 +915,7 @@ export default function NewGameTheme({
         .ng-soujirou-face {
           aspect-ratio: 1;
           border-radius: 7px;
-          background: #fff7e5 url('${SOUJIROU}') 58% 10% / 160% no-repeat;
+          background: #fff7e5 url('${SOUJIROU}') 74% 32% / 320% no-repeat;
         }
         .ng-character-number {
           position: absolute;
