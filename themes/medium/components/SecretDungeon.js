@@ -1,5 +1,4 @@
-import { Dialog } from '@headlessui/react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   createRun,
   LAST_FLOOR,
@@ -91,10 +90,18 @@ function Sprite({ kind }) {
 export default function SecretDungeon({ onClose }) {
   const [run, setRun] = useState(createRun)
   const board = useRef(null)
+  useEffect(() => {
+    board.current?.focus({ preventScroll: true })
+  }, [])
   function step(dx, dy) {
     setRun(current => move(current, dx, dy))
   }
   function onKeyDown(event) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      onClose()
+      return
+    }
     const keys = {
       ArrowUp: [0, -1],
       w: [0, -1],
@@ -120,227 +127,209 @@ export default function SecretDungeon({ onClose }) {
   const ended = run.phase === 'won' || run.phase === 'lost'
 
   return (
-    <Dialog
-      open
-      onClose={onClose}
-      initialFocus={board}
-      className='medium-dungeon'
-    >
-      <div className='dungeon-backdrop' aria-hidden='true' />
-      <div className='dungeon-position'>
-        <Dialog.Panel className='dungeon-panel' onKeyDown={onKeyDown}>
-          <div className='dungeon-heading'>
-            <div>
-              <p className='dungeon-eyebrow'>A SECRET BETWEEN PAGES</p>
-              <Dialog.Title>纸间迷宫</Dialog.Title>
-            </div>
-            <button
-              type='button'
-              className='dungeon-close'
-              aria-label='关闭游戏'
-              onClick={onClose}
-            >
-              ×
-            </button>
+    <div className='medium-dungeon'>
+      <div className='dungeon-panel' onKeyDown={onKeyDown}>
+        <div className='dungeon-heading'>
+          <div>
+            <p className='dungeon-eyebrow'>A SECRET BETWEEN PAGES</p>
+            <h2>纸间迷宫</h2>
           </div>
-          <Dialog.Description className='dungeon-description'>
-            三层随机地牢，一次小小的冒险。
-          </Dialog.Description>
-          <div className='dungeon-stats'>
+        </div>
+        <p className='dungeon-description'>三层随机地牢，一次小小的冒险。</p>
+        <div className='dungeon-stats'>
+          <span>
+            深度{' '}
+            <b>
+              {run.floor} / {LAST_FLOOR}
+            </b>
+          </span>
+          <span className='dungeon-health'>
+            生命{' '}
+            <b>
+              {run.player.hp} / {run.player.maxHp}
+            </b>
+          </span>
+          <span>
+            攻击 <b>{run.player.attack}</b>
+          </span>
+          {run.player.shield > 0 && (
             <span>
-              深度{' '}
-              <b>
-                {run.floor} / {LAST_FLOOR}
-              </b>
+              护盾 <b>{run.player.shield}</b>
             </span>
-            <span className='dungeon-health'>
-              生命{' '}
-              <b>
-                {run.player.hp} / {run.player.maxHp}
-              </b>
-            </span>
-            <span>
-              攻击 <b>{run.player.attack}</b>
-            </span>
-            {run.player.shield > 0 && (
-              <span>
-                护盾 <b>{run.player.shield}</b>
-              </span>
-            )}
-          </div>
-          <div className='dungeon-map-wrap'>
-            <div
-              ref={board}
-              tabIndex={0}
-              className='dungeon-map'
-              role='group'
-              aria-label='地牢地图，使用方向键或 WASD 移动'
-            >
-              {run.tiles.flatMap((row, y) =>
-                row.map((tile, x) => {
-                  const playerHere = run.player.x === x && run.player.y === y
-                  const enemy = run.enemies.find(e => e.x === x && e.y === y)
-                  const potion = run.supplies.find(p => p.x === x && p.y === y)
-                  const exit = run.exit.x === x && run.exit.y === y
-                  const kind = playerHere
-                    ? 'player'
-                    : enemy?.kind || (potion ? 'potion' : exit ? 'exit' : null)
-                  const adjacent =
-                    Math.abs(run.player.x - x) + Math.abs(run.player.y - y) ===
-                    1
-                  const label = playerHere
-                    ? '你'
-                    : enemy
-                      ? `${enemy.kind === 'warden' ? '看守者' : '守卫'}，生命 ${enemy.hp}`
-                      : potion
-                        ? '药水，恢复 3 点生命'
-                        : exit
-                          ? run.enemies.length
-                            ? '封闭的出口'
-                            : '出口'
-                          : '地板'
-                  if (tile === '#')
-                    return (
-                      <span
-                        key={`${x}-${y}`}
-                        className='dungeon-tile tile-wall'
-                        aria-hidden='true'
-                      />
-                    )
+          )}
+        </div>
+        <div className='dungeon-map-wrap'>
+          <div
+            ref={board}
+            tabIndex={0}
+            className='dungeon-map'
+            role='group'
+            aria-label='地牢地图，使用方向键或 WASD 移动'
+          >
+            {run.tiles.flatMap((row, y) =>
+              row.map((tile, x) => {
+                const playerHere = run.player.x === x && run.player.y === y
+                const enemy = run.enemies.find(e => e.x === x && e.y === y)
+                const potion = run.supplies.find(p => p.x === x && p.y === y)
+                const exit = run.exit.x === x && run.exit.y === y
+                const kind = playerHere
+                  ? 'player'
+                  : enemy?.kind || (potion ? 'potion' : exit ? 'exit' : null)
+                const adjacent =
+                  Math.abs(run.player.x - x) + Math.abs(run.player.y - y) === 1
+                const label = playerHere
+                  ? '你'
+                  : enemy
+                    ? `${enemy.kind === 'warden' ? '看守者' : '守卫'}，生命 ${enemy.hp}`
+                    : potion
+                      ? '药水，恢复 3 点生命'
+                      : exit
+                        ? run.enemies.length
+                          ? '封闭的出口'
+                          : '出口'
+                        : '地板'
+                if (tile === '#')
                   return (
-                    <button
+                    <span
                       key={`${x}-${y}`}
-                      type='button'
-                      tabIndex={-1}
-                      data-x={x}
-                      data-y={y}
-                      className={`dungeon-tile tile-floor ${adjacent ? 'tile-adjacent' : ''} ${playerHere ? 'tile-player' : ''} ${exit && !run.enemies.length ? 'tile-open' : ''}`}
-                      aria-label={`${label}，第 ${y} 行第 ${x} 列`}
-                      onClick={() => {
-                        if (adjacent) step(x - run.player.x, y - run.player.y)
-                        board.current?.focus()
-                      }}
-                    >
-                      {kind && <Sprite kind={kind} />}
-                      {enemy && (
-                        <span
-                          className='dungeon-enemy-health'
-                          aria-hidden='true'
-                        >
-                          {'·'.repeat(enemy.hp)}
-                        </span>
-                      )}
-                    </button>
+                      className='dungeon-tile tile-wall'
+                      aria-hidden='true'
+                    />
                   )
-                })
-              )}
-            </div>
-            {run.phase === 'upgrade' && (
-              <div className='dungeon-choice'>
-                <p className='dungeon-eyebrow'>A MOMENT TO BREATHE</p>
-                <h3>带走一份馈赠</h3>
-                <p>进入下一层时恢复 2 点生命。</p>
-                {UPGRADES.map(item => (
+                return (
                   <button
+                    key={`${x}-${y}`}
                     type='button'
-                    key={item.id}
+                    tabIndex={-1}
+                    data-x={x}
+                    data-y={y}
+                    className={`dungeon-tile tile-floor ${adjacent ? 'tile-adjacent' : ''} ${playerHere ? 'tile-player' : ''} ${exit && !run.enemies.length ? 'tile-open' : ''}`}
+                    aria-label={`${label}，第 ${y} 行第 ${x} 列`}
                     onClick={() => {
-                      setRun(current => upgrade(current, item.id))
+                      if (adjacent) step(x - run.player.x, y - run.player.y)
                       board.current?.focus()
                     }}
                   >
-                    <strong>{item.name}</strong>
-                    <span>{item.description}</span>
-                    <span aria-hidden='true'>↗</span>
+                    {kind && <Sprite kind={kind} />}
+                    {enemy && (
+                      <span className='dungeon-enemy-health' aria-hidden='true'>
+                        {'·'.repeat(enemy.hp)}
+                      </span>
+                    )}
                   </button>
-                ))}
-              </div>
-            )}
-            {ended && (
-              <div className='dungeon-ending'>
-                <span className='dungeon-ending-symbol' aria-hidden='true'>
-                  {run.phase === 'won' ? '✧' : '☾'}
-                </span>
-                <h3>
-                  {run.phase === 'won' ? '翻到有光的一页' : '冒险暂告一段落'}
-                </h3>
-                <p>
-                  深入 {run.floor} 层 · 击败 {run.kills} 个守卫 · {run.turns}{' '}
-                  回合
-                </p>
-                <button type='button' onClick={restart}>
-                  再翻开一本 ↗
-                </button>
-              </div>
+                )
+              })
             )}
           </div>
-          <p className='dungeon-message' role='status'>
-            {run.message}
-          </p>
-          <div className='dungeon-bottom'>
-            <div className='dungeon-help'>
-              <p>方向键 / WASD 移动</p>
-              <p>走向敌人攻击 · 空格等待</p>
-              <p>清空守卫后，走入金色出口</p>
-            </div>
-            <div className='dungeon-pad' aria-label='移动控制'>
-              {[
-                [0, -1, '↑', '向上'],
-                [-1, 0, '←', '向左'],
-                [0, 0, '·', '等待一回合'],
-                [1, 0, '→', '向右'],
-                [0, 1, '↓', '向下']
-              ].map(([dx, dy, text, name]) => (
+          {run.phase === 'upgrade' && (
+            <div className='dungeon-choice'>
+              <p className='dungeon-eyebrow'>A MOMENT TO BREATHE</p>
+              <h3>带走一份馈赠</h3>
+              <p>进入下一层时恢复 2 点生命。</p>
+              {UPGRADES.map(item => (
                 <button
-                  key={name}
                   type='button'
-                  style={{ gridColumn: dx + 2, gridRow: dy + 2 }}
-                  aria-label={name}
-                  disabled={run.phase !== 'playing'}
-                  onClick={() => step(dx, dy)}
+                  key={item.id}
+                  onClick={() => {
+                    setRun(current => upgrade(current, item.id))
+                    board.current?.focus()
+                  }}
                 >
-                  {text}
+                  <strong>{item.name}</strong>
+                  <span>{item.description}</span>
+                  <span aria-hidden='true'>↗</span>
                 </button>
               ))}
             </div>
+          )}
+          {ended && (
+            <div className='dungeon-ending'>
+              <span className='dungeon-ending-symbol' aria-hidden='true'>
+                {run.phase === 'won' ? '✧' : '☾'}
+              </span>
+              <h3>
+                {run.phase === 'won' ? '翻到有光的一页' : '冒险暂告一段落'}
+              </h3>
+              <p>
+                深入 {run.floor} 层 · 击败 {run.kills} 个守卫 · {run.turns} 回合
+              </p>
+              <button type='button' onClick={restart}>
+                再翻开一本 ↗
+              </button>
+            </div>
+          )}
+        </div>
+        <p className='dungeon-message' role='status'>
+          {run.message}
+        </p>
+        <div className='dungeon-bottom'>
+          <div className='dungeon-help'>
+            <p>方向键 / WASD 移动</p>
+            <p>走向敌人攻击 · 空格等待</p>
+            <p>清空守卫后，走入金色出口</p>
           </div>
-        </Dialog.Panel>
+          <div className='dungeon-pad' aria-label='移动控制'>
+            {[
+              [0, -1, '↑', '向上'],
+              [-1, 0, '←', '向左'],
+              [0, 0, '·', '等待一回合'],
+              [1, 0, '→', '向右'],
+              [0, 1, '↓', '向下']
+            ].map(([dx, dy, text, name]) => (
+              <button
+                key={name}
+                type='button'
+                style={{ gridColumn: dx + 2, gridRow: dy + 2 }}
+                aria-label={name}
+                disabled={run.phase !== 'playing'}
+                onClick={() => step(dx, dy)}
+              >
+                {text}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       <style jsx global>{`
         .medium-dungeon {
           position: relative;
-          z-index: 200;
-          color: #e3e8d8;
+          color: var(--ink);
           font-family: 'Noto Sans SC', sans-serif;
         }
         .medium-dungeon * {
           box-sizing: border-box;
         }
-        .dungeon-backdrop {
-          position: fixed;
-          inset: 0;
-          background: #101914b8;
-          backdrop-filter: blur(8px);
-        }
-        .dungeon-position {
-          position: fixed;
-          inset: 0;
-          overflow-y: auto;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-        }
         .dungeon-panel {
-          position: relative;
-          width: 440px;
-          max-width: 100%;
-          margin: auto;
-          padding: 24px;
-          border: 1px solid #465649;
-          border-radius: 16px;
-          background: #1a261f;
-          box-shadow: 0 30px 100px #0006;
+          display: grid;
+          grid-template-columns: minmax(200px, 1fr) minmax(260px, 360px);
+          grid-template-rows: auto auto auto auto 1fr;
+          gap: 12px 40px;
+          align-items: start;
+          padding: 18px 0 28px;
+        }
+        .dungeon-heading {
+          grid-column: 1;
+          grid-row: 1;
+        }
+        .dungeon-description {
+          grid-column: 1;
+          grid-row: 2;
+        }
+        .dungeon-stats {
+          grid-column: 1;
+          grid-row: 3;
+        }
+        .dungeon-message {
+          grid-column: 1;
+          grid-row: 4;
+        }
+        .dungeon-bottom {
+          grid-column: 1;
+          grid-row: 5;
+        }
+        .dungeon-map-wrap {
+          grid-column: 2;
+          grid-row: 1 / 6;
         }
         .dungeon-heading {
           display: flex;
@@ -348,7 +337,7 @@ export default function SecretDungeon({ onClose }) {
           align-items: center;
         }
         .dungeon-eyebrow {
-          color: #9bac8e;
+          color: var(--muted);
           font-size: 9px;
           letter-spacing: 0.2em;
           margin: 0 0 6px;
@@ -361,7 +350,7 @@ export default function SecretDungeon({ onClose }) {
         }
         .dungeon-description {
           font-size: 11px;
-          color: #a3b39f;
+          color: var(--muted);
           margin: 8px 0 18px;
         }
         .medium-dungeon button {
@@ -374,35 +363,25 @@ export default function SecretDungeon({ onClose }) {
           opacity: 0.45;
         }
         .medium-dungeon :is(button, [tabindex]):focus-visible {
-          outline: 2px solid #cfdaa2;
+          outline: 2px solid var(--accent);
           outline-offset: 3px;
-        }
-        .dungeon-close {
-          border: 1px solid #435045;
-          background: transparent;
-          color: #c5ceb9;
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          font-size: 22px !important;
-          line-height: 1;
         }
         .dungeon-stats {
           display: flex;
           gap: 16px;
           flex-wrap: wrap;
-          color: #aab8a3;
+          color: var(--muted);
           font-size: 10px;
           margin-bottom: 12px;
           font-variant-numeric: tabular-nums;
         }
         .dungeon-stats b {
-          color: #e7ead7;
+          color: var(--ink);
           font-weight: 500;
           margin-left: 3px;
         }
         .dungeon-health b {
-          color: #b9dca3;
+          color: var(--accent);
         }
         .dungeon-map-wrap {
           position: relative;
@@ -497,7 +476,7 @@ export default function SecretDungeon({ onClose }) {
           margin: 12px 0 6px;
           font-size: 11px;
           line-height: 1.6;
-          color: #c3d2b8;
+          color: var(--accent);
         }
         .dungeon-bottom {
           display: flex;
@@ -506,7 +485,7 @@ export default function SecretDungeon({ onClose }) {
           gap: 12px;
         }
         .dungeon-help {
-          color: #91a38e;
+          color: var(--muted);
           font-size: 10px;
           line-height: 1.8;
         }
@@ -520,10 +499,10 @@ export default function SecretDungeon({ onClose }) {
         }
         .dungeon-pad button {
           padding: 0;
-          border: 1px solid #435540;
+          border: 1px solid var(--line);
           border-radius: 5px;
-          background: #293b2b;
-          color: #d0dbb6;
+          background: var(--wash);
+          color: var(--accent);
         }
         .dungeon-choice,
         .dungeon-ending {
@@ -534,6 +513,7 @@ export default function SecretDungeon({ onClose }) {
           justify-content: center;
           padding: 24px;
           background: #16241af5;
+          color: #e3e8d8;
           border: 1px solid #657557;
           border-radius: 5px;
         }
@@ -593,13 +573,32 @@ export default function SecretDungeon({ onClose }) {
           color: #dce6c3;
           font-size: 12px;
         }
-        @media (max-width: 480px) {
-          .dungeon-position {
-            padding: 10px;
-          }
+        @media (max-width: 640px) {
           .dungeon-panel {
-            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 14px 0 24px;
           }
+          .dungeon-map-wrap {
+            width: 100%;
+            max-width: 360px;
+            align-self: center;
+          }
+          .dungeon-bottom {
+            width: 100%;
+          }
+          .dungeon-description {
+            margin: 0 0 8px;
+          }
+          .dungeon-stats {
+            margin: 0 0 8px;
+          }
+          .dungeon-message {
+            margin: 6px 0 0;
+            min-height: 20px;
+          }
+
           .dungeon-stats {
             gap: 10px;
           }
@@ -616,6 +615,6 @@ export default function SecretDungeon({ onClose }) {
           }
         }
       `}</style>
-    </Dialog>
+    </div>
   )
 }

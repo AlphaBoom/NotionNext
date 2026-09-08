@@ -98,6 +98,15 @@ const Style = () => (
     }
     #theme-medium .medium-desktop-toc > .medium-catalog { position: sticky; top: 36px; }
 
+    #theme-medium .medium-intro-stage { position: relative; overflow: clip; transition: height 380ms cubic-bezier(.2,.7,.2,1); }
+    #theme-medium .medium-intro-content { display: flow-root; }
+    #theme-medium .medium-intro-content.is-entering { animation: medium-intro-enter 320ms ease both; }
+    #theme-medium .medium-intro-content.is-leaving { animation: medium-intro-leave 160ms ease both; pointer-events: none; }
+    #theme-medium .medium-inline-game { padding-top: 24px; }
+    #theme-medium .medium-game-return { border: 0; background: transparent; color: var(--muted); padding: 4px 0; font-size: 11px; cursor: pointer; }
+    #theme-medium .medium-game-loading { min-height: 280px; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+    @keyframes medium-intro-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes medium-intro-leave { to { opacity: 0; transform: translateY(-8px); } }
     /* A personal card on the home page; article layouts keep their quiet typography. */
     #theme-medium .medium-masthead {
       position: relative; isolation: isolate; display: flex; align-items: center;
@@ -113,15 +122,21 @@ const Style = () => (
       font-weight: 500; line-height: 1.35; letter-spacing: -.035em; overflow-wrap: anywhere;
     }
     #theme-medium .medium-bio { margin-top: 14px; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
-    #theme-medium .medium-about-link { display: inline-block; margin-top: 20px; padding-bottom: 3px; color: var(--accent); font-size: 13px; }
+    #theme-medium .medium-author-link { color: inherit; }
     #theme-medium .medium-portrait { position: relative; flex: 0 0 184px; width: 184px; height: 184px; display: grid; place-items: center; }
-    #theme-medium .medium-portrait-orbit { position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 50%; transform: rotate(-25deg); transition: transform 700ms ease; }
+    #theme-medium .medium-portrait-orbit { pointer-events: none; position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 50%; transform: rotate(-25deg); transition: transform 700ms ease; }
     #theme-medium .medium-portrait-orbit::before { content: ''; position: absolute; inset: 13px -10px; border: 1px dashed color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 50%; transform: rotate(55deg); }
     #theme-medium .medium-portrait-orbit::after { content: ''; position: absolute; top: 20px; right: 20px; width: 8px; height: 8px; background: var(--accent); border: 2px solid var(--paper); border-radius: 50%; }
     #theme-medium .medium-masthead:hover .medium-portrait-orbit { transform: rotate(0deg); }
-    #theme-medium .medium-portrait-frame { padding: 7px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); box-shadow: 0 0 44px color-mix(in srgb, var(--accent) 14%, transparent); transition: transform 300ms ease, box-shadow 300ms ease; cursor: pointer; }
+    #theme-medium .medium-portrait-frame { position: relative; z-index: 1; padding: 7px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); box-shadow: 0 0 44px color-mix(in srgb, var(--accent) 14%, transparent); transition: transform 300ms ease, box-shadow 300ms ease; cursor: pointer; }
     #theme-medium .medium-portrait-frame:is(:hover, :focus-visible) { transform: scale(1.06); box-shadow: 0 0 48px color-mix(in srgb, var(--accent) 24%, transparent); }
-    #theme-medium .medium-avatar { display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 50%; }
+    #theme-medium .medium-mobile-avatar { display: none; }
+    @media (max-width: 768px), (hover: none), (pointer: coarse) {
+      #theme-medium .medium-portrait-trigger { display: none; }
+      #theme-medium .medium-mobile-avatar { display: block; cursor: default; }
+      #theme-medium .medium-mobile-avatar:hover { transform: none; }
+    }
+    #theme-medium .medium-avatar { pointer-events: none; display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 50%; }
     #theme-medium .medium-avatar-monogram { display: grid; place-items: center; width: 112px; height: 112px; font-family: 'Noto Serif SC', serif; font-size: 56px; color: var(--accent); }
     #theme-medium .medium-topics { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
     #theme-medium .medium-topics-label { font-size: 14px; font-weight: 500; color: var(--ink); margin-right: 8px; }
@@ -190,8 +205,8 @@ const Style = () => (
     #theme-medium .medium-route-content { animation: medium-page-enter 360ms cubic-bezier(.2,.7,.2,1) both; }
     #theme-medium .medium-route-progress { position: fixed; inset: 0 0 auto; height: 2px; z-index: 100; pointer-events: none; overflow: hidden; }
     #theme-medium .medium-route-progress::after { content: ''; display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left; animation: medium-route-progress 8s cubic-bezier(.1,.8,.1,1) both; }
-    #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .medium-about-link, .notion-link) { background-image: linear-gradient(var(--accent), var(--accent)); background-position: 0 100%; background-size: 0% 1px; background-repeat: no-repeat; transition: background-size 240ms ease, color 180ms ease; box-decoration-break: clone; }
-    #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .medium-about-link, .notion-link):is(:hover, :focus-visible) { background-size: 100% 1px; text-decoration: none; }
+    #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .medium-author-link, .notion-link) { background-image: linear-gradient(var(--accent), var(--accent)); background-position: 0 100%; background-size: 0% 1px; background-repeat: no-repeat; transition: background-size 240ms ease, color 180ms ease; box-decoration-break: clone; }
+    #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .medium-author-link, .notion-link):is(:hover, :focus-visible) { background-size: 100% 1px; text-decoration: none; }
     #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle) { transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease, background-color 200ms ease; }
     #theme-medium :is(.notion-bookmark, .medium-article-around a, .medium-toc-toggle):active { border-color: var(--accent); }
     #theme-medium .medium-post-cover img { transition: transform 420ms cubic-bezier(.2,.7,.2,1); }
