@@ -75,21 +75,29 @@ export function NewGameHero() {
         </span>
       </div>
       <div className='ng-character-panel'>
-        <div
-          className='ng-hero-art'
-          role='img'
-          aria-label='泷本日富美双手捧着刺猬宗次郎'
-        />
-        <figure className='ng-soujirou-closeup'>
+        <div className='ng-character-scene'>
           <div
-            className='ng-soujirou-face'
+            className='ng-hero-art'
             role='img'
-            aria-label='刺猬宗次郎的表情特写：ご機嫌ななめ，一脸不领情'
+            aria-label='泷本日富美双手捧着刺猬宗次郎'
           />
-          <figcaption>
-            宗次郎 <span aria-hidden='true'>···</span>
-          </figcaption>
-        </figure>
+          <svg
+            className='ng-detail-connector'
+            viewBox='0 0 386 420'
+            aria-hidden='true'
+          >
+            <path d='M 162 178 L 132 208 L 58 250' />
+            <rect x='161' y='157' width='47' height='41' rx='3' />
+          </svg>
+          <figure className='ng-soujirou-closeup'>
+            <div
+              className='ng-soujirou-face'
+              role='img'
+              aria-label='手中宗次郎的侧脸放大：ご機嫌ななめ，一脸不领情'
+            />
+            <figcaption>宗次郎 · 表情特写</figcaption>
+          </figure>
+        </div>
         <p className='ng-character-name'>
           <span>HIFUMI & SOUJIROU</span>ひふみ と 宗次郎
         </p>
@@ -799,6 +807,26 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-character-panel::before {
           content: none;
         }
+        .ng-character-scene {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 100%;
+          aspect-ratio: 386 / 420;
+        }
+        .ng-detail-connector {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          z-index: 2;
+          overflow: visible;
+          fill: none;
+          stroke: #fff1b8;
+          stroke-width: 2;
+          filter: drop-shadow(0 1px 1px #553566);
+          pointer-events: none;
+        }
         .ng-hero-art {
           position: absolute;
           z-index: 1;
@@ -830,56 +858,42 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-soujirou-closeup {
           position: absolute;
           z-index: 3;
-          left: -110px;
-          bottom: 28px;
-          width: 166px;
+          left: -28%;
+          bottom: 5%;
+          width: 44%;
           margin: 0;
           padding: 5px;
           border: 2px solid #785368;
-          border-radius: 48% 44% 45% 16%;
+          border-radius: 12px;
           background: #fff;
           box-shadow:
             5px 6px 0 #5535664d,
             0 0 0 3px #fff;
-          transform: rotate(-8deg);
-          transition: transform 240ms;
-        }
-        .ng-soujirou-closeup::before {
-          content: '';
-          position: absolute;
-          right: -17px;
-          top: -12px;
-          width: 11px;
-          height: 11px;
-          border: 2px solid white;
-          border-radius: 50%;
-          box-shadow: 15px -17px 0 -2px #fff9;
+          transition: box-shadow 240ms;
         }
         .ng-soujirou-closeup:hover {
-          transform: rotate(-3deg) translateY(-3px);
+          box-shadow:
+            5px 6px 0 #5535664d,
+            0 0 0 3px #fff0b3;
         }
         .ng-soujirou-face {
           aspect-ratio: 1;
-          border-radius: 48% 44% 42% 15%;
+          border-radius: 7px;
           background: #fff7e5 url('${SOUJIROU}') center / cover no-repeat;
         }
         .ng-soujirou-closeup figcaption {
           position: absolute;
           bottom: -10px;
           left: 7px;
-          padding: 3px 11px;
+          padding: 3px 8px;
           border: 2px solid #fff;
           border-radius: 7px;
           background: #fff0b3;
           color: #684a64;
           font:
-            700 12px/1.5 'Noto Sans SC',
+            700 11px/1.5 'Noto Sans SC',
             sans-serif;
-          letter-spacing: 0.1em;
-          transform: rotate(4deg);
-        }
-        .ng-soujirou-closeup figcaption span {
-          margin-left: 8px;
+          white-space: nowrap;
         }
         .ng-character-number {
           position: absolute;
@@ -1101,7 +1115,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             28px 206px 0 #ffe594;
           animation: ng-star-turn 12s ease-in-out infinite alternate;
         }
-        .ng-hero-art {
+        .ng-character-scene {
           transform-origin: 50% 100%;
           animation: ng-character-float 6s ease-in-out infinite alternate;
         }
@@ -1310,10 +1324,6 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             right: 10px;
             font-size: 18px;
           }
-          .ng-soujirou-closeup {
-            width: 135px;
-            left: -90px;
-          }
         }
         @media (max-width: 767px) {
           #theme-medium.medium-newgame .medium-nav-inner {
@@ -1401,13 +1411,12 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             top: 110px;
           }
           .ng-soujirou-closeup {
-            width: 96px;
-            left: -20px;
-            bottom: 20px;
+            width: 65%;
+            left: -49%;
           }
           .ng-soujirou-closeup figcaption {
-            padding-inline: 6px;
-            font-size: 10px;
+            padding-inline: 4px;
+            font-size: 8px;
           }
           .ng-hero-art {
             inset: 0;

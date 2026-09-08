@@ -1,5 +1,5 @@
 // Small, deterministic simulation. Rendering and browser lifecycle live elsewhere.
-export const RUN_SECONDS = 90
+export const RUN_SECONDS = 60
 export const LIMITS = { enemies: 96, shots: 160, gems: 100, sparks: 80 }
 export const UPGRADES = [
   {
@@ -30,9 +30,15 @@ export const UPGRADES = [
   }
 ]
 
-export function createRun(seed = Date.now()) {
+export function createRun(seed = Date.now(), mode = 'intro') {
+  const intro = mode !== 'endless'
   return {
     seed: seed >>> 0 || 1,
+    mode: intro ? 'intro' : 'endless',
+    wave: 1,
+    nextBoss: intro ? 40 : 60,
+    bosses: 0,
+    recoveryClock: 0,
     phase: 'ready',
     time: 0,
     kills: 0,
@@ -48,15 +54,15 @@ export function createRun(seed = Date.now()) {
     player: {
       x: 0,
       y: 0,
-      hp: 6,
-      maxHp: 6,
+      hp: intro ? 12 : 6,
+      maxHp: intro ? 12 : 6,
       speed: 150,
-      damage: 2,
-      rate: 0.48,
-      quills: 1,
+      damage: intro ? 3 : 2,
+      rate: intro ? 0.38 : 0.48,
+      quills: intro ? 2 : 1,
       pierce: 0,
-      orbit: 0,
-      magnet: 65,
+      orbit: intro ? 1 : 0,
+      magnet: intro ? 130 : 65,
       invincible: 0,
       facing: 1,
       moving: false
@@ -105,11 +111,11 @@ export function chooseUpgrade(run, id) {
   }
   if (id === 'orbit') p.orbit++
   if (id === 'magnet') {
-    p.magnet += 45
-    p.speed *= 1.1
+    p.magnet = Math.min(350, p.magnet + 45)
+    p.speed = Math.min(240, p.speed * 1.1)
   }
   if (id === 'heart') {
-    p.maxHp++
+    p.maxHp = Math.min(20, p.maxHp + 1)
     p.hp = Math.min(p.maxHp, p.hp + 3)
   }
   run.choices = []
@@ -120,7 +126,9 @@ export function chooseUpgrade(run, id) {
 function spawn(run, width, height, boss = false) {
   if (run.enemies.length >= LIMITS.enemies) {
     if (!boss) return
-    run.enemies.shift()
+    const expendable = run.enemies.findIndex(e => e.kind !== 'boss')
+    if (expendable < 0) return
+    run.enemies.splice(expendable, 1)
   }
   const side = Math.floor(random(run) * 4)
   const along = random(run) * 2 - 1
@@ -133,8 +141,11 @@ function spawn(run, width, height, boss = false) {
     : run.time > 18 && random(run) < 0.3
       ? 'moth'
       : 'blob'
+  const pressure = run.mode === 'endless' ? Math.max(0, run.wave - 1) : 0
   const hp = boss
-    ? 110
+    ? run.mode === 'intro'
+      ? 45
+      : 110 + pressure * 70
     : kind === 'moth'
       ? 2 + Math.floor(run.time / 40)
       : 2 + Math.floor(run.time / 24)
@@ -143,10 +154,17 @@ function spawn(run, width, height, boss = false) {
     x: run.player.x + x,
     y: run.player.y + y,
     kind,
-    hp,
-    maxHp: hp,
+    hp: hp + (boss ? 0 : pressure * 2),
+    maxHp: hp + (boss ? 0 : pressure * 2),
     radius: boss ? 25 : 11,
-    speed: boss ? 43 : kind === 'moth' ? 88 : 38 + run.time * 0.32,
+    speed:
+      run.mode === 'intro'
+        ? boss
+          ? 32
+          : kind === 'moth'
+            ? 58
+            : 30 + run.time * 0.12
+        : Math.min(205, (boss ? 43 : kind === 'moth' ? 88 : 42) + pressure * 8),
     flash: 0,
     orbitHit: 0
   })
@@ -176,7 +194,11 @@ function hit(run, enemy, damage) {
   run.kills++
   if (enemy.kind === 'boss') {
     run.bossDefeated = true
-    run.player.hp = run.player.maxHp
+    run.bosses++
+    run.player.hp =
+      run.mode === 'intro'
+        ? run.player.maxHp
+        : Math.min(run.player.maxHp, run.player.hp + 2)
   }
   const value = enemy.kind === 'boss' ? 20 : 1
   if (run.gems.length < LIMITS.gems)
@@ -206,7 +228,8 @@ export function stepRun(run, input, elapsed, width = 900, height = 400) {
   const dt = Math.max(0, Math.min(elapsed, 1 / 30))
   const p = run.player
   run.time += dt
-  if (run.time >= RUN_SECONDS) {
+  run.wave = 1 + Math.floor(run.time / 30)
+  if (run.mode === 'intro' && run.time >= RUN_SECONDS) {
     run.time = RUN_SECONDS
     run.phase = 'won'
     return
@@ -218,13 +241,25 @@ export function stepRun(run, input, elapsed, width = 900, height = 400) {
   if (input.x) p.facing = input.x > 0 ? 1 : -1
   p.invincible = Math.max(0, p.invincible - dt)
 
+  if (run.mode === 'intro') {
+    run.recoveryClock += dt
+    if (run.recoveryClock >= 5) {
+      p.hp = Math.min(p.maxHp, p.hp + 1)
+      run.recoveryClock = 0
+    }
+  }
   run.spawnClock -= dt
   if (run.spawnClock <= 0) {
-    const count = 1 + Math.floor(run.time / 22)
+    const count =
+      run.mode === 'intro'
+        ? 1 + Math.floor(run.time / 45)
+        : Math.min(10, 2 + Math.floor(run.wave / 2))
     for (let i = 0; i < count; i++) spawn(run, width, height)
-    run.spawnClock = Math.max(0.22, 0.65 - run.time * 0.004)
+    run.spawnClock =
+      run.mode === 'intro' ? 0.9 : Math.max(0.2, 0.65 - run.wave * 0.035)
   }
-  if (run.time >= 60 && !run.bossSpawned) {
+  if (run.time >= run.nextBoss) {
+    run.nextBoss = run.mode === 'intro' ? Infinity : run.nextBoss + 60
     run.bossSpawned = true
     spawn(run, width, height, true)
   }
@@ -267,7 +302,7 @@ export function stepRun(run, input, elapsed, width = 900, height = 400) {
     }
     if (e.hp > 0 && distance(e, p) < e.radius + 10 && !p.invincible) {
       p.hp = Math.max(0, p.hp - 1)
-      p.invincible = 1
+      p.invincible = run.mode === 'intro' ? 2 : 0.8
       e.x -= ((p.x - e.x) / d) * 35
       e.y -= ((p.y - e.y) / d) * 35
       burst(run, p.x, p.y, '#e6b785')

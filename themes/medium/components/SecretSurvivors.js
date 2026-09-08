@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useVictoryReveal } from '../lib/useVictoryReveal'
 import { handleMovementKey } from '../lib/survivorsInput'
 import {
   assessPerformance,
@@ -16,6 +17,9 @@ import {
 function snapshot(run) {
   return {
     phase: run.phase,
+    mode: run.mode,
+    wave: run.wave,
+    bosses: run.bosses,
     time: Math.floor(run.time),
     hp: run.player.hp,
     maxHp: run.player.maxHp,
@@ -24,22 +28,28 @@ function snapshot(run) {
     level: run.level,
     kills: run.kills,
     choices: run.choices,
-    boss: run.bossSpawned && !run.bossDefeated
+    boss: run.enemies.some(e => e.kind === 'boss' && e.hp > 0)
   }
 }
 
-export default function SecretSurvivors({ onClose, onVictory }) {
+export default function SecretSurvivors({
+  onClose,
+  onVictory,
+  unlocked = false
+}) {
   const panel = useRef(null),
     canvas = useRef(null),
     actions = useRef(null)
   const close = useRef(onClose)
-  const victory = useRef(onVictory)
-  const [rewardError, setRewardError] = useState(false)
-  const [hud, setHud] = useState(() => snapshot(createRun()))
+  const challenge = useRef(unlocked)
+  challenge.current = unlocked
+  const [hud, setHud] = useState(() =>
+    snapshot(createRun(undefined, unlocked ? 'endless' : 'intro'))
+  )
+  const reward = useVictoryReveal(hud.phase, onVictory, () => close.current())
   useEffect(() => {
     close.current = onClose
-    victory.current = onVictory
-  }, [onClose, onVictory])
+  }, [onClose])
   useEffect(() => {
     const element = canvas.current
     const renderer = createRenderer(element)
@@ -47,7 +57,7 @@ export default function SecretSurvivors({ onClose, onVictory }) {
       setHud(h => ({ ...h, phase: 'unavailable' }))
       return
     }
-    let run = createRun(),
+    let run = createRun(undefined, challenge.current ? 'endless' : 'intro'),
       frame = 0,
       previous = 0,
       lastHud = 0,
@@ -200,7 +210,7 @@ export default function SecretSurvivors({ onClose, onVictory }) {
       pause,
       restart: () => {
         stop()
-        run = createRun()
+        run = createRun(undefined, challenge.current ? 'endless' : 'intro')
         samples = []
         intervals = []
         slowWindows = 0
@@ -243,25 +253,21 @@ export default function SecretSurvivors({ onClose, onVictory }) {
         ?.querySelector('.survivors-overlay button')
         ?.focus({ preventScroll: true })
   }, [hud.phase])
-  useEffect(() => {
-    if (hud.phase !== 'won') {
-      setRewardError(false)
-      return
-    }
-    let cancelled = false
-    Promise.resolve(victory.current?.('won')).catch(() => {
-      if (!cancelled) setRewardError(true)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [hud.phase])
   const time = `${String(Math.floor(hud.time / 60)).padStart(2, '0')}:${String(hud.time % 60).padStart(2, '0')}`
   return (
-    <div ref={panel} className='medium-survivors' data-phase={hud.phase}>
+    <div
+      ref={panel}
+      className='medium-survivors'
+      data-phase={hud.phase}
+      data-mode={hud.mode}
+    >
       <div className='survivors-heading'>
         <div>
-          <span className='survivors-kicker'>AFTER HOURS / 01</span>
+          <span className='survivors-kicker'>
+            {hud.mode === 'endless'
+              ? `ENDLESS / WAVE ${hud.wave}`
+              : 'FIRST NIGHT / 60 SECONDS'}
+          </span>
           <h2>
             棘夜 <span>QUILL SURVIVORS</span>
           </h2>
@@ -288,10 +294,12 @@ export default function SecretSurvivors({ onClose, onVictory }) {
           </div>
           <div
             className='survivors-stat survivors-clock'
-            aria-label={`已生存 ${hud.time} 秒，目标 90 秒`}
+            aria-label={`已生存 ${hud.time} 秒，${hud.mode === 'endless' ? '无限挑战' : '目标 60 秒'}`}
           >
             {time}
-            <small> / 01:30</small>
+            <small>
+              {hud.mode === 'endless' ? ` / ∞ · 第 ${hud.wave} 波` : ' / 01:00'}
+            </small>
           </div>
           <div className='survivors-stat survivors-combat'>
             <span>
@@ -359,8 +367,16 @@ export default function SecretSurvivors({ onClose, onVictory }) {
                 <p className='survivors-overlay-kicker'>
                   A SMALL HEDGEHOG. A LONG NIGHT.
                 </p>
-                <h3>这片夜色，归小刺猬了。</h3>
-                <p>四面来敌，自动飞刺。拾起微光，长出新的力量。</p>
+                <h3>
+                  {hud.mode === 'endless'
+                    ? '这次，看看能走多远。'
+                    : '陪小刺猬散步一分钟。'}
+                </h3>
+                <p>
+                  {hud.mode === 'endless'
+                    ? '没有终点。每 30 秒更危险，每分钟迎战夜巡者。'
+                    : '移动躲开敌人，飞刺会自动攻击。拾起微光，选择新能力。'}
+                </p>
                 <button
                   type='button'
                   className='survivors-primary'
@@ -414,25 +430,42 @@ export default function SecretSurvivors({ onClose, onVictory }) {
                 <p className='survivors-overlay-kicker'>
                   SECRET CHAPTER UNLOCKED
                 </p>
-                <h3>通关了。故事才刚刚开始！</h3>
-                <p>这个头像，原来来自《NEW GAME!》。</p>
-                <p role='status'>
-                  {rewardError
-                    ? '主题暂时没能打开，奖励不会让你白等。'
-                    : '正在打开另一个世界…'}
-                </p>
-                {rewardError && (
+                <h3>恭喜通关！你发现了隐藏主题。</h3>
+                <p>一分钟的散步，通往另一个世界。</p>
+                <div
+                  className='survivors-countdown'
+                  role='status'
+                  aria-live='polite'
+                >
+                  {reward.stage === 'countdown' ? (
+                    <>
+                      <strong>{reward.seconds}</strong>
+                      <span>秒后开启隐藏主题</span>
+                    </>
+                  ) : reward.stage === 'loading' ? (
+                    '正在展开另一个世界…'
+                  ) : reward.stage === 'error' ? (
+                    '奖励已保存，主题暂时没能打开。'
+                  ) : (
+                    '奖励已保存，可通过主题菜单再次开启。'
+                  )}
+                </div>
+                {reward.stage === 'error' && (
                   <button
                     type='button'
                     className='survivors-primary'
-                    onClick={() => {
-                      setRewardError(false)
-                      Promise.resolve(victory.current?.('won')).catch(() =>
-                        setRewardError(true)
-                      )
-                    }}
+                    onClick={reward.retry}
                   >
-                    重试领取主题 ↗
+                    重试开启主题 ↗
+                  </button>
+                )}
+                {reward.stage === 'saved' && (
+                  <button
+                    type='button'
+                    className='survivors-primary'
+                    onClick={onClose}
+                  >
+                    返回博客 →
                   </button>
                 )}
               </>
@@ -444,7 +477,11 @@ export default function SecretSurvivors({ onClose, onVictory }) {
                 </p>
                 <h3>先回窝，暖一暖。</h3>
                 <p>
-                  坚持 {hud.time} / {RUN_SECONDS} 秒 · 击退 {hud.kills} · LV.
+                  生存 {time}
+                  {hud.mode === 'endless'
+                    ? ` · 第 ${hud.wave} 波 · 首领 ${hud.bosses}`
+                    : ` / ${RUN_SECONDS} 秒`}{' '}
+                  · 击退 {hud.kills} · LV.
                   {hud.level}
                 </p>
                 <button
@@ -482,6 +519,18 @@ export default function SecretSurvivors({ onClose, onVictory }) {
         </span>
       </div>
       <style jsx>{`
+        .survivors-countdown {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 14px;
+          min-height: 78px;
+          margin: 14px 0;
+          color: #f1d3a0;
+        }
+        .survivors-countdown strong {
+          font: 700 58px/1 monospace;
+        }
         .medium-survivors {
           margin: 15px 0 24px;
           color: var(--ink);

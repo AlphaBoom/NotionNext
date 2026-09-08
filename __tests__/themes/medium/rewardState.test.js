@@ -7,7 +7,7 @@ import {
   rewardAfterVictory,
   writeReward
 } from '@/themes/medium/lib/rewardState'
-import { createRun, stepRun } from '@/themes/medium/lib/survivors'
+import { createRun, RUN_SECONDS, stepRun } from '@/themes/medium/lib/survivors'
 
 describe('NEW GAME! completion reward', () => {
   test('only a completed survival run grants the theme', () => {
@@ -22,7 +22,7 @@ describe('NEW GAME! completion reward', () => {
       assert.equal(rewardAfterVictory(phase), null)
     const run = createRun(13)
     run.phase = 'playing'
-    run.time = 89.99
+    run.time = RUN_SECONDS - 0.01
     stepRun(run, { x: 0, y: 0 }, 1 / 60)
     assert.deepEqual(rewardAfterVictory(run.phase), {
       unlocked: true,
@@ -44,6 +44,10 @@ describe('NEW GAME! completion reward', () => {
     assert.deepEqual(readReward(storage), EMPTY_REWARD)
     data.set(REWARD_KEY, JSON.stringify({ unlocked: false, enabled: true }))
     assert.deepEqual(readReward(storage), EMPTY_REWARD)
+  })
+  test('later victories cannot reopen the reward, including after exiting the theme', () => {
+    for (const enabled of [true, false])
+      assert.equal(rewardAfterVictory('won', { unlocked: true, enabled }), null)
   })
   test('blocked browser storage does not throw or unlock the theme', () => {
     const blocked = {

@@ -23,6 +23,7 @@ export default function RewardProvider({ children }) {
   const [Appearance, setAppearance] = useState(null)
   const [Hero, setHero] = useState(null)
   const [opening, setOpening] = useState(false)
+  const currentReward = useRef(EMPTY_REWARD)
   const mounted = useRef(false)
   const loading = useRef(null)
   const revision = useRef(0)
@@ -49,6 +50,8 @@ export default function RewardProvider({ children }) {
       try {
         saved = readReward(window.localStorage)
       } catch {}
+      currentReward.current = saved
+      setReward(current => ({ ...current, unlocked: saved.unlocked }))
       if (!saved.unlocked) {
         setReward(EMPTY_REWARD)
         return
@@ -78,22 +81,38 @@ export default function RewardProvider({ children }) {
     return () => clearTimeout(timer)
   }, [opening])
   const persist = value => {
+    currentReward.current = value
     setReward(value)
     try {
       writeReward(window.localStorage, value)
     } catch {}
   }
-  const unlockReward = async phase => {
-    const next = rewardAfterVictory(phase)
-    if (!next) return false
+  const prepareReveal = next => {
     const request = ++revision.current
-    persist({ unlocked: true, enabled: false })
-    const module = await loadAppearance()
-    await module.prepareArtwork()
-    if (!mounted.current || request !== revision.current) return false
-    persist(next)
-    setOpening(true)
-    return true
+    persist({ ...next, enabled: currentReward.current.enabled })
+    // Warm the optional assets while congratulations/countdown are visible.
+    void loadAppearance()
+      .then(module => module.prepareArtwork())
+      .catch(() => {})
+    return async (isCurrent = () => true) => {
+      const module = await loadAppearance()
+      await module.prepareArtwork()
+      if (!mounted.current || request !== revision.current || !isCurrent())
+        return false
+      revision.current++
+      persist(next)
+      setOpening(true)
+      return true
+    }
+  }
+  const claimReward = phase => {
+    const next = rewardAfterVictory(phase, currentReward.current)
+    return next ? prepareReveal(next) : null
+  }
+  // Explicit console requests may reopen an existing unlock; game wins may not.
+  const unlockReward = async phase => {
+    if (phase !== 'won') return false
+    return prepareReveal({ unlocked: true, enabled: true })()
   }
   useEffect(() => {
     unlockCommand.current = () => unlockReward('won')
@@ -114,6 +133,7 @@ export default function RewardProvider({ children }) {
         active: reward.enabled,
         unlocked: reward.unlocked,
         unlockReward,
+        claimReward,
         Hero
       }}
     >

@@ -20,6 +20,7 @@ export function writeReward(storage, value) {
   }
 }
 
-export function rewardAfterVictory(phase) {
+export function rewardAfterVictory(phase, current = EMPTY_REWARD) {
+  if (current.unlocked) return null
   return phase === 'won' ? { unlocked: true, enabled: true } : null
 }

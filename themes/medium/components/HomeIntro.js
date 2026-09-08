@@ -9,7 +9,7 @@ const GAME_MEDIA = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 const loadGame = () => import('./SecretSurvivors')
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
-  const { unlockReward, active: rewardActive, Hero } = useReward()
+  const { claimReward, unlocked, active: rewardActive, Hero } = useReward()
   const [view, setView] = useState('profile')
   const [leaving, setLeaving] = useState(false)
   const [preparing, setPreparing] = useState(false)
@@ -188,9 +188,8 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
               {LoadedGame && (
                 <LoadedGame
                   onClose={() => switchView('profile')}
-                  onVictory={async phase => {
-                    if (await unlockReward(phase)) switchView('profile')
-                  }}
+                  unlocked={unlocked}
+                  onVictory={claimReward}
                 />
               )}
             </section>

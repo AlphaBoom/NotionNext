@@ -5,6 +5,7 @@ import {
   createRun,
   LIMITS,
   offerUpgrades,
+  RUN_SECONDS,
   stepRun
 } from '@/themes/medium/lib/survivors'
 
@@ -56,7 +57,7 @@ describe('inline survivors simulation', () => {
     assert.equal(run.phase, 'playing')
   })
   test('contact damage has invincibility frames and death stops the simulation', () => {
-    const run = createRun(4)
+    const run = createRun(4, 'endless')
     run.phase = 'playing'
     run.spawnClock = 100
     run.shotClock = 100
@@ -74,7 +75,7 @@ describe('inline survivors simulation', () => {
     assert.equal(JSON.stringify(run), before)
   })
   test('piercing cannot damage one enemy twice; orbit hits and capped drops preserve XP', () => {
-    const run = createRun(8)
+    const run = createRun(8, 'endless')
     run.phase = 'playing'
     run.spawnClock = 100
     run.shotClock = 100
@@ -105,8 +106,7 @@ describe('inline survivors simulation', () => {
     for (let seed = 1; seed <= 12; seed++) {
       const run = createRun(seed)
       run.phase = 'playing'
-      run.player.hp = run.player.maxHp = 10000
-      for (let frame = 0; frame < 5500; frame++) {
+      for (let frame = 0; frame < 3700; frame++) {
         const angle = frame / 110
         stepRun(
           run,
@@ -128,11 +128,72 @@ describe('inline survivors simulation', () => {
         assert.ok(run.sparks.length <= LIMITS.sparks)
       }
       assert.equal(run.phase, 'won')
+      assert.equal(run.time, RUN_SECONDS)
       assert.equal(run.bossSpawned, true)
       assert.ok(run.kills > 0)
       assert.ok(run.level > 1)
     }
     assert.equal(sides.size, 4)
+  })
+  test('the first minute is forgiving even for a visitor who does not move', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const run = createRun(seed)
+      run.phase = 'playing'
+      for (let frame = 0; frame < 3700; frame++) {
+        stepRun(run, idle, 1 / 60, 800, 400)
+        if (run.phase === 'upgrade') chooseUpgrade(run, run.choices[0].id)
+      }
+      assert.equal(run.phase, 'won')
+      assert.equal(run.time, 60)
+      assert.ok(run.player.hp > 0)
+    }
+  })
+  test('endless challenge crosses old finish lines and repeatedly scales bosses', () => {
+    const run = createRun(14, 'endless')
+    run.phase = 'playing'
+    run.spawnClock = 100
+    run.shotClock = 100
+    run.time = 59.99
+    stepRun(run, idle, 1 / 60)
+    const firstBoss = run.enemies.find(e => e.kind === 'boss')
+    assert.ok(firstBoss)
+    assert.equal(run.phase, 'playing')
+    run.time = 89.99
+    stepRun(run, idle, 1 / 60)
+    assert.equal(run.phase, 'playing')
+    run.time = 119.99
+    stepRun(run, idle, 1 / 60)
+    const bosses = run.enemies.filter(e => e.kind === 'boss')
+    assert.equal(bosses.length, 2)
+    assert.ok(bosses[1].maxHp > firstBoss.maxHp)
+    assert.ok(bosses[1].speed > firstBoss.speed)
+    assert.equal(run.wave, 5)
+    assert.equal(run.phase, 'playing')
+  })
+  test('endless pressure rises without unbounded entities, even over long sessions', () => {
+    const counts = []
+    for (const time of [1, 61, 181, 3601]) {
+      const run = createRun(9, 'endless')
+      run.phase = 'playing'
+      run.time = time
+      run.nextBoss = Infinity
+      stepRun(run, idle, 1 / 60)
+      counts.push(run.enemies.length)
+      const initialHp = run.enemies[0].maxHp
+      run.enemies = Array.from({ length: LIMITS.enemies }, (_, i) =>
+        enemy(i, 250, 250, 999)
+      )
+      run.spawnClock = 0
+      run.nextBoss = time
+      stepRun(run, idle, 1 / 60)
+      assert.equal(run.enemies.length, LIMITS.enemies)
+      assert.equal(run.enemies.filter(e => e.kind === 'boss').length, 1)
+      assert.ok(initialHp >= 2)
+      assert.equal(run.phase, 'playing')
+    }
+    assert.ok(counts[1] > counts[0])
+    assert.ok(counts[2] > counts[1])
+    assert.ok(counts[3] <= 10)
   })
   test('upgrade pool respects caps and performance adapts only after sustained measured cost', () => {
     const run = createRun(10)
