@@ -128,6 +128,12 @@ const LayoutPostList = props => {
 const LayoutSlug = props => {
   const { post, prev, next, lock, validPassword } = props
   const router = useRouter()
+  const showCategory = Boolean(
+    siteConfig('MEDIUM_POST_DETAIL_CATEGORY', null, CONFIG) && post?.category
+  )
+  const showTags = Boolean(
+    siteConfig('MEDIUM_POST_DETAIL_TAG', null, CONFIG) && post?.tagItems?.length
+  )
   const waiting404 = siteConfig('POST_WAITING_TIME_FOR_404') * 1000
   useEffect(() => {
     // 404
@@ -171,16 +177,16 @@ const LayoutSlug = props => {
             {/* 分享 */}
             <ShareBar post={post} />
             {/* 文章分类和标签信息 */}
-            <div className='flex justify-between'>
-              {siteConfig('MEDIUM_POST_DETAIL_CATEGORY', null, CONFIG) &&
-                post?.category && <CategoryItem category={post?.category} />}
-              <div>
-                {siteConfig('MEDIUM_POST_DETAIL_TAG', null, CONFIG) &&
-                  post?.tagItems?.map(tag => (
+            {(showCategory || showTags) && (
+              <div className='flex justify-between'>
+                {showCategory && <CategoryItem category={post.category} />}
+                {showTags && <div>
+                  {post.tagItems.map(tag => (
                     <TagItemMini key={tag.name} tag={tag} />
                   ))}
+                </div>}
               </div>
-            </div>
+            )}
             {/* 上一篇下一篇文章 */}
             {post?.type === 'Post' && <ArticleAround prev={prev} next={next} />}
             {/* 评论区 */}

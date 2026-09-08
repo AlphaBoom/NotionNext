@@ -49,6 +49,7 @@ const MyApp = ({ Component, pageProps }) => {
   }, [queryTheme, notionTheme, configTheme])
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return
     const source = queryTheme
       ? 'url:theme'
       : notionTheme

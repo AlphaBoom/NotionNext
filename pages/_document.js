@@ -1,6 +1,10 @@
 // eslint-disable-next-line @next/next/no-document-import-in-page
 import BLOG from '@/blog.config'
 import Document, { Head, Html, Main, NextScript } from 'next/document'
+import {
+  rewardBootScript,
+  rewardBootStyle
+} from '@/themes/medium/lib/rewardBoot'
 
 const isLocalFontAwesome = BLOG.FONT_AWESOME?.startsWith(
   '/vendor/fontawesome/'
@@ -44,6 +48,9 @@ class MyDocument extends Document {
   }
 
   render() {
+    const configuredTheme =
+      this.props.__NEXT_DATA__?.props?.pageProps?.NOTION_CONFIG?.THEME ||
+      BLOG.THEME
     return (
       <Html lang={BLOG.LANG}>
         <Head>
@@ -104,6 +111,12 @@ class MyDocument extends Document {
 
           {/* 预先设置深色模式，避免闪烁 */}
           <script dangerouslySetInnerHTML={{ __html: darkModeScript }} />
+          <style dangerouslySetInnerHTML={{ __html: rewardBootStyle }} />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: rewardBootScript(configuredTheme)
+            }}
+          />
         </Head>
 
         <body>

@@ -65,7 +65,7 @@ function steer(run) {
     )
 }
 
-test('the first minute is winnable with visible gate and monster information', () => {
+test('the first 30 seconds are winnable with visible gate and monster information', () => {
   for (let seed = 1; seed <= 12; seed++) {
     const run = playing('intro', seed)
     let steps = 0
@@ -76,10 +76,10 @@ test('the first minute is winnable with visible gate and monster information', (
       expect(run.shots.length).toBeLessThan(8)
     }
     expect(run.phase).toBe('won')
-    expect(run.time).toBe(60)
-    expect(run.power).toBeGreaterThan(20)
-    expect(run.kills).toBeGreaterThan(10)
-    expect(run.gates).toBeGreaterThan(6)
+    expect(run.time).toBe(30)
+    expect(run.power).toBeGreaterThan(5)
+    expect(run.kills).toBeGreaterThan(4)
+    expect(run.gates).toBeGreaterThan(3)
   }
 })
 

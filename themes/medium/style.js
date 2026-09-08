@@ -431,6 +431,8 @@ const Style = () => (
     #theme-medium #article-wrapper .notion-bookmark { border: 1px solid var(--line); border-radius: 4px; }
     #theme-medium.medium-full-width #article-wrapper :is(.notion-page, .notion-page-content-inner) > :not(.notion-viewport) { max-width: 100%; }
     #theme-medium .medium-article-end { max-width: var(--reading-width); margin: 52px auto 0; border-top: 1px solid var(--line); padding-top: 24px; }
+    /* Optional children can all render nothing; an empty footer needs no card or spacing. */
+    #theme-medium .medium-article-end:empty { display: none; }
     #theme-medium .medium-article-around { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 24px 0; margin: 28px 0; }
     #theme-medium .medium-article-around a { display: flex; flex-direction: column; gap: 8px; }
     #theme-medium .medium-article-around a > span { font-size: 11px; color: var(--muted); }
