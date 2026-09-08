@@ -101,8 +101,9 @@ describe('inline survivors simulation', () => {
       LIMITS.gems + 1
     )
   })
-  test('random full runs spawn from all sides, maintain bounds, and reach dawn', () => {
+  test('random full runs remain bounded and can end in either survival or defeat', () => {
     const sides = new Set()
+    const outcomes = new Set()
     for (let seed = 1; seed <= 12; seed++) {
       const run = createRun(seed)
       run.phase = 'playing'
@@ -127,15 +128,22 @@ describe('inline survivors simulation', () => {
         assert.ok(run.gems.length <= LIMITS.gems)
         assert.ok(run.sparks.length <= LIMITS.sparks)
       }
-      assert.equal(run.phase, 'won')
-      assert.equal(run.time, RUN_SECONDS)
-      assert.equal(run.bossSpawned, true)
+      outcomes.add(run.phase)
+      if (run.phase === 'won') assert.equal(run.time, RUN_SECONDS)
+      else {
+        assert.equal(run.phase, 'lost')
+        assert.equal(run.player.hp, 0)
+        assert.ok(run.time < RUN_SECONDS)
+      }
+      // The original boss arrives at 60 s; the shortened unlock run ends first.
+      assert.equal(run.bossSpawned, false)
       assert.ok(run.kills > 0)
       assert.ok(run.level > 1)
     }
     assert.equal(sides.size, 4)
+    assert.deepEqual([...outcomes].sort(), ['lost', 'won'])
   })
-  test('the first minute is forgiving even for a visitor who does not move', () => {
+  test('the original difficulty requires movement instead of granting an idle win', () => {
     for (let seed = 1; seed <= 12; seed++) {
       const run = createRun(seed)
       run.phase = 'playing'
@@ -143,10 +151,25 @@ describe('inline survivors simulation', () => {
         stepRun(run, idle, 1 / 60, 800, 400)
         if (run.phase === 'upgrade') chooseUpgrade(run, run.choices[0].id)
       }
-      assert.equal(run.phase, 'won')
-      assert.equal(run.time, 60)
-      assert.ok(run.player.hp > 0)
+      assert.equal(run.phase, 'lost')
+      assert.ok(run.time < 60)
+      assert.equal(run.player.hp, 0)
     }
+  })
+  test('the first run has the original equipment and no passive recovery', () => {
+    const run = createRun(5)
+    assert.equal(run.player.hp, 6)
+    assert.equal(run.player.maxHp, 6)
+    assert.equal(run.player.damage, 2)
+    assert.equal(run.player.rate, 0.48)
+    assert.equal(run.player.quills, 1)
+    assert.equal(run.player.orbit, 0)
+    assert.equal(run.player.magnet, 65)
+    run.phase = 'playing'
+    run.spawnClock = 100
+    run.player.hp = 3
+    for (let frame = 0; frame < 1200; frame++) stepRun(run, idle, 1 / 60)
+    assert.equal(run.player.hp, 3)
   })
   test('endless challenge crosses old finish lines and repeatedly scales bosses', () => {
     const run = createRun(14, 'endless')

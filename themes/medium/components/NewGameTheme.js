@@ -383,17 +383,12 @@ export default function NewGameTheme({
         }
         #theme-medium.medium-newgame .medium-masthead {
           min-height: 130px;
-          padding: 17px 12px;
+          padding: 17px 26px;
           margin: 24px 0 18px;
-          border: 0;
-          border-radius: 0;
-          background: transparent;
-          box-shadow: none;
-        }
-        #theme-medium.medium-newgame .medium-intro-copy {
-          text-shadow:
-            0 1px 9px #fffaff,
-            0 0 20px #fffaff;
+          border: 2px solid #fff;
+          border-radius: 19px;
+          background: linear-gradient(110deg, #fff1fa, #f0e6ff 66%, #f7dcec);
+          box-shadow: 5px 5px 0 #9576bd4d;
         }
         #theme-medium.medium-newgame .medium-masthead h1 {
           font:
@@ -920,7 +915,7 @@ export default function NewGameTheme({
         .ng-soujirou-face {
           aspect-ratio: 1;
           border-radius: 7px;
-          background: #fff7e5 url('${SOUJIROU}') center / cover no-repeat;
+          background: #fff7e5 url('${SOUJIROU}') 58% 10% / 160% no-repeat;
         }
         .ng-character-number {
           position: absolute;

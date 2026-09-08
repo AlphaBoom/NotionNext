@@ -22,6 +22,6 @@ The input was the original 386 × 420 character artwork, cropped at x=142, y=149
 
 This is an AI-assisted restored detail, not an unmodified official animation frame. The full character artwork remains unchanged.
 
-Converted to WebP quality 87. The optional theme presents it in a rounded rectangular detail panel, with a solid connector to a locator around the hedgehog in her hands. The full artwork, locator and inset share one aspect-ratio scene so resizing and animation do not separate them. There are no thought-bubble dots or visible caption labels.
+Converted to WebP quality 87. The optional theme presents it in a rounded rectangular detail panel, with a solid connector to a locator around the hedgehog in her hands. The accepted image is framed at 160% with its focus at 58% / 10%, enlarging the hedgehog and cropping excess sleeve, knee and background without regenerating its anatomy. The full artwork, locator and inset share one aspect-ratio scene so resizing and animation do not separate them. There are no thought-bubble dots or visible caption labels.
 
 The exact direct image-to-image prompt and crop input are documented in [soujirou-pose-prompt.txt](soujirou-pose-prompt.txt).

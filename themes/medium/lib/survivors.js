@@ -36,9 +36,8 @@ export function createRun(seed = Date.now(), mode = 'intro') {
     seed: seed >>> 0 || 1,
     mode: intro ? 'intro' : 'endless',
     wave: 1,
-    nextBoss: intro ? 40 : 60,
+    nextBoss: 60,
     bosses: 0,
-    recoveryClock: 0,
     phase: 'ready',
     time: 0,
     kills: 0,
@@ -54,15 +53,15 @@ export function createRun(seed = Date.now(), mode = 'intro') {
     player: {
       x: 0,
       y: 0,
-      hp: intro ? 12 : 6,
-      maxHp: intro ? 12 : 6,
+      hp: 6,
+      maxHp: 6,
       speed: 150,
-      damage: intro ? 3 : 2,
-      rate: intro ? 0.38 : 0.48,
-      quills: intro ? 2 : 1,
+      damage: 2,
+      rate: 0.48,
+      quills: 1,
       pierce: 0,
-      orbit: intro ? 1 : 0,
-      magnet: intro ? 130 : 65,
+      orbit: 0,
+      magnet: 65,
       invincible: 0,
       facing: 1,
       moving: false
@@ -144,7 +143,7 @@ function spawn(run, width, height, boss = false) {
   const pressure = run.mode === 'endless' ? Math.max(0, run.wave - 1) : 0
   const hp = boss
     ? run.mode === 'intro'
-      ? 45
+      ? 110
       : 110 + pressure * 70
     : kind === 'moth'
       ? 2 + Math.floor(run.time / 40)
@@ -160,10 +159,10 @@ function spawn(run, width, height, boss = false) {
     speed:
       run.mode === 'intro'
         ? boss
-          ? 32
+          ? 43
           : kind === 'moth'
-            ? 58
-            : 30 + run.time * 0.12
+            ? 88
+            : 38 + run.time * 0.32
         : Math.min(205, (boss ? 43 : kind === 'moth' ? 88 : 42) + pressure * 8),
     flash: 0,
     orbitHit: 0
@@ -241,22 +240,17 @@ export function stepRun(run, input, elapsed, width = 900, height = 400) {
   if (input.x) p.facing = input.x > 0 ? 1 : -1
   p.invincible = Math.max(0, p.invincible - dt)
 
-  if (run.mode === 'intro') {
-    run.recoveryClock += dt
-    if (run.recoveryClock >= 5) {
-      p.hp = Math.min(p.maxHp, p.hp + 1)
-      run.recoveryClock = 0
-    }
-  }
   run.spawnClock -= dt
   if (run.spawnClock <= 0) {
     const count =
       run.mode === 'intro'
-        ? 1 + Math.floor(run.time / 45)
+        ? 1 + Math.floor(run.time / 22)
         : Math.min(10, 2 + Math.floor(run.wave / 2))
     for (let i = 0; i < count; i++) spawn(run, width, height)
     run.spawnClock =
-      run.mode === 'intro' ? 0.9 : Math.max(0.2, 0.65 - run.wave * 0.035)
+      run.mode === 'intro'
+        ? Math.max(0.22, 0.65 - run.time * 0.004)
+        : Math.max(0.2, 0.65 - run.wave * 0.035)
   }
   if (run.time >= run.nextBoss) {
     run.nextBoss = run.mode === 'intro' ? Infinity : run.nextBoss + 60
@@ -302,7 +296,7 @@ export function stepRun(run, input, elapsed, width = 900, height = 400) {
     }
     if (e.hp > 0 && distance(e, p) < e.radius + 10 && !p.invincible) {
       p.hp = Math.max(0, p.hp - 1)
-      p.invincible = run.mode === 'intro' ? 2 : 0.8
+      p.invincible = run.mode === 'intro' ? 1 : 0.8
       e.x -= ((p.x - e.x) / d) * 35
       e.y -= ((p.y - e.y) / d) * 35
       burst(run, p.x, p.y, '#e6b785')

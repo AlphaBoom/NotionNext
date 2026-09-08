@@ -6,11 +6,11 @@ const Style = () => (
   <style jsx global>{`
     ${themeConsoleStyle('medium', CONFIG)}
 
-    body:has(#theme-medium) { background: #f1f0eb; }
-    .dark body:has(#theme-medium) { background: #171b18; }
+    body:has(#theme-medium) { --medium-page-paper: #faf9f6; background: var(--medium-page-paper); }
+    .dark body:has(#theme-medium) { --medium-page-paper: #1c201e; }
     body:has(#theme-medium) #canvasRibbon { display: none; }
     #theme-medium {
-      --paper: #faf9f6;
+      --paper: var(--medium-page-paper);
       --ink: #292e2b;
       --muted: #727871;
       --line: #e0e3dc;
@@ -19,7 +19,7 @@ const Style = () => (
       position: relative;
       z-index: 1;
       min-height: 100vh;
-      background: linear-gradient(90deg, transparent, var(--paper) 20%, var(--paper) 80%, transparent);
+      background: var(--paper);
       color: var(--ink);
       font-family: 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
       font-size: 15px;
@@ -28,7 +28,6 @@ const Style = () => (
       -webkit-font-smoothing: antialiased;
     }
     .dark #theme-medium {
-      --paper: #1c201e;
       --ink: #e1e5dc;
       --muted: #a0aaa2;
       --line: #39423b;
@@ -87,7 +86,7 @@ const Style = () => (
     #theme-medium .medium-layout { position: relative; padding: 0 32px; }
     #theme-medium #container-inner {
       width: 100%; max-width: 960px; min-height: 65vh; margin: 0 auto;
-      background: var(--paper); box-shadow: 0 0 0 24px var(--paper);
+      background: var(--paper);
       outline: none; padding: 0 0 48px;
     }
     #theme-medium.medium-reading #container-inner { max-width: 900px; }
@@ -475,7 +474,7 @@ const Style = () => (
     #theme-medium .medium-mobile-top { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); left: 24px; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--muted); z-index: 30; font-size: 12px; }
     #theme-medium .medium-desktop-top { display: none; right: 36px; bottom: 32px; margin: 0; color: var(--muted); background: var(--paper); border-color: var(--line); }
 
-    #theme-medium .medium-footer { max-width: 960px; margin: 0 auto; padding: 26px 0 100px; border-top: 1px solid var(--line); color: var(--muted); background: var(--paper); box-shadow: 0 0 0 24px var(--paper); font-size: 12px; }
+    #theme-medium .medium-footer { max-width: 960px; margin: 0 auto; padding: 26px 0 100px; border-top: 1px solid var(--line); color: var(--muted); background: var(--paper); font-size: 12px; }
     #theme-medium .medium-footer-main { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
     #theme-medium .medium-footer-main > div { font-size: 16px; color: var(--muted); }
     #theme-medium .medium-footer-note { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 10px; margin-top: 16px; }
