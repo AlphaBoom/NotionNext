@@ -119,7 +119,13 @@ export function NewGameHero() {
   )
 }
 
-export default function NewGameTheme({ active, opening, onToggle }) {
+export default function NewGameTheme({
+  active,
+  opening,
+  onToggle,
+  onCovered,
+  onOpeningEnd
+}) {
   return (
     <>
       <RewardContextMenu active={active} onToggle={onToggle} />
@@ -149,8 +155,17 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           </div>
         </>
       )}
-      {active && opening && (
-        <div className='ng-unlock-opening' role='status'>
+      {opening && (
+        <div
+          className='ng-unlock-opening'
+          data-stage={opening}
+          role='status'
+          onAnimationEnd={event => {
+            if (event.target !== event.currentTarget) return
+            if (opening === 'cover') onCovered()
+            else onOpeningEnd()
+          }}
+        >
           <div>
             <span>EXTRA STAGE / UNLOCKED</span>
             <Wordmark />
@@ -1000,7 +1015,14 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             #a681c9 0deg 12deg,
             #d59cc8 12deg 24deg
           );
-          animation: ng-unlock-reveal 1800ms both;
+          background-color: #a681c9;
+          clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+        }
+        .ng-unlock-opening[data-stage='cover'] {
+          animation: ng-unlock-cover 270ms both;
+        }
+        .ng-unlock-opening[data-stage='reveal'] {
+          animation: ng-unlock-reveal 1530ms both;
         }
         .ng-unlock-opening > div {
           padding: 30px;
@@ -1023,12 +1045,29 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           font-size: 13px;
           margin-top: 28px;
         }
-        @keyframes ng-unlock-reveal {
-          0% {
+        @keyframes ng-unlock-cover {
+          from {
             clip-path: polygon(0 45%, 100% 45%, 100% 55%, 0 55%);
           }
-          15%,
-          65% {
+          to {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+          }
+        }
+        @keyframes ng-unlock-cover-still {
+          from,
+          to {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+          }
+        }
+        @keyframes ng-unlock-reveal-still {
+          from,
+          to {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+          }
+        }
+        @keyframes ng-unlock-reveal {
+          0%,
+          59% {
             clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
             transform: none;
           }
@@ -1441,7 +1480,12 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         @media (prefers-reduced-motion: reduce) {
           .ng-unlock-opening {
             background: #9770b7;
-            animation: none;
+          }
+          .ng-unlock-opening[data-stage='cover'] {
+            animation: ng-unlock-cover-still 1ms both;
+          }
+          .ng-unlock-opening[data-stage='reveal'] {
+            animation: ng-unlock-reveal-still 180ms both;
           }
           .ng-unlock-opening > div {
             transform: none;

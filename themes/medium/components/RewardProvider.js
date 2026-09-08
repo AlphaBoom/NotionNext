@@ -22,12 +22,18 @@ export default function RewardProvider({ children }) {
   const [reward, setReward] = useState(EMPTY_REWARD)
   const [Appearance, setAppearance] = useState(null)
   const [Hero, setHero] = useState(null)
-  const [opening, setOpening] = useState(false)
+  const [opening, setOpening] = useState(null)
+  const pendingOpening = useRef(null)
   const currentReward = useRef(EMPTY_REWARD)
   const mounted = useRef(false)
   const loading = useRef(null)
   const revision = useRef(0)
   const unlockCommand = useRef(null)
+  const cancelOpening = useCallback(() => {
+    pendingOpening.current?.resolve(false)
+    pendingOpening.current = null
+    if (mounted.current) setOpening(null)
+  }, [])
   const loadAppearance = useCallback(async () => {
     if (!loading.current)
       loading.current = import('./NewGameTheme').catch(error => {
@@ -44,6 +50,7 @@ export default function RewardProvider({ children }) {
   useEffect(() => {
     mounted.current = true
     const restore = async () => {
+      cancelOpening()
       const request = ++revision.current
       // Accessing localStorage itself can throw in privacy-restricted contexts.
       let saved = EMPTY_REWARD
@@ -71,15 +78,11 @@ export default function RewardProvider({ children }) {
     window.addEventListener('storage', onStorage)
     return () => {
       mounted.current = false
+      cancelOpening()
       revision.current++
       window.removeEventListener('storage', onStorage)
     }
-  }, [loadAppearance])
-  useEffect(() => {
-    if (!opening) return
-    const timer = setTimeout(() => setOpening(false), 1800)
-    return () => clearTimeout(timer)
-  }, [opening])
+  }, [loadAppearance, cancelOpening])
   const persist = value => {
     currentReward.current = value
     setReward(value)
@@ -88,6 +91,7 @@ export default function RewardProvider({ children }) {
     } catch {}
   }
   const prepareReveal = next => {
+    cancelOpening()
     const request = ++revision.current
     persist({ ...next, enabled: currentReward.current.enabled })
     // Warm the optional assets while congratulations/countdown are visible.
@@ -99,11 +103,31 @@ export default function RewardProvider({ children }) {
       await module.prepareArtwork()
       if (!mounted.current || request !== revision.current || !isCurrent())
         return false
-      revision.current++
-      persist(next)
-      setOpening(true)
-      return true
+      return new Promise(resolve => {
+        pendingOpening.current = { request, next, isCurrent, resolve }
+        // Keep the current page until the entrance animation fully covers it.
+        setOpening('cover')
+      })
     }
+  }
+  const commitCoveredTheme = () => {
+    const pending = pendingOpening.current
+    if (!pending) return
+    pendingOpening.current = null
+    if (
+      !mounted.current ||
+      pending.request !== revision.current ||
+      !pending.isCurrent()
+    ) {
+      setOpening(null)
+      pending.resolve(false)
+      return
+    }
+    revision.current++
+    persist(pending.next)
+    // The reveal begins fully opaque, in the same commit as the new theme.
+    setOpening('reveal')
+    pending.resolve(true)
   }
   const claimReward = phase => {
     const next = rewardAfterVictory(phase, currentReward.current)
@@ -122,10 +146,14 @@ export default function RewardProvider({ children }) {
     []
   )
   const toggleReward = () => {
-    if (!reward.unlocked) return
-    revision.current++
-    persist({ unlocked: true, enabled: !reward.enabled })
-    setOpening(!reward.enabled)
+    if (!currentReward.current.unlocked) return
+    if (currentReward.current.enabled || pendingOpening.current) {
+      revision.current++
+      cancelOpening()
+      persist({ unlocked: true, enabled: false })
+    } else {
+      void unlockReward('won').catch(() => {})
+    }
   }
   return (
     <RewardContext.Provider
@@ -142,6 +170,8 @@ export default function RewardProvider({ children }) {
         <Appearance
           active={reward.enabled}
           opening={opening}
+          onCovered={commitCoveredTheme}
+          onOpeningEnd={() => setOpening(null)}
           onToggle={toggleReward}
         />
       )}

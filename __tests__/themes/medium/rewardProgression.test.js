@@ -1,5 +1,5 @@
 import React, { StrictMode } from 'react'
-import { act, renderHook } from '@testing-library/react'
+import { act, fireEvent, renderHook, screen } from '@testing-library/react'
 import RewardProvider, {
   useReward
 } from '@/themes/medium/components/RewardProvider'
@@ -8,11 +8,25 @@ import { REWARD_KEY, readReward } from '@/themes/medium/lib/rewardState'
 import { useVictoryReveal } from '@/themes/medium/lib/useVictoryReveal'
 
 jest.mock('@/themes/medium/components/NewGameTheme', () => ({
+  ...jest.requireActual('@/themes/medium/components/NewGameTheme'),
   __esModule: true,
-  default: () => null,
-  NewGameHero: () => null,
   prepareArtwork: jest.fn(() => Promise.resolve())
 }))
+
+jest.mock('@/lib/config', () => ({ siteConfig: () => 'AlphaBoom' }))
+jest.mock('@/themes/medium/components/RewardPlayground', () => () => null)
+jest.mock(
+  '@/themes/medium/components/RewardContextMenu',
+  () =>
+    function Menu({ onToggle }) {
+      return <button onClick={onToggle}>Toggle reward</button>
+    }
+)
+
+const finishAnimation = () =>
+  act(async () => {
+    fireEvent.animationEnd(screen.getByRole('status'))
+  })
 
 const wrapper = ({ children }) => <RewardProvider>{children}</RewardProvider>
 const flush = () => act(async () => {})
@@ -63,9 +77,18 @@ test('first victory saves the unlock, shows 3 / 2 / 1, then opens the theme once
   await advance(900)
   expect(game.result.current.active).toBe(false)
   await advance(100)
+  expect(game.result.current.active).toBe(false)
+  expect(screen.getByRole('status').dataset.stage).toBe('cover')
+  expect(game.closed).not.toHaveBeenCalled()
+  // Wall time alone must never reveal the new background ahead of the cover.
+  await advance(5000)
+  expect(game.result.current.active).toBe(false)
+  await finishAnimation()
+  expect(screen.getByRole('status').dataset.stage).toBe('reveal')
   expect(game.result.current.active).toBe(true)
   expect(game.closed).toHaveBeenCalledTimes(1)
-  await advance(5000)
+  await finishAnimation()
+  expect(screen.queryByRole('status')).toBeNull()
   expect(game.closed).toHaveBeenCalledTimes(1)
 })
 
@@ -135,6 +158,7 @@ test('the countdown pauses while the tab is hidden', async () => {
   })
   await advance(100)
   await advance(2000)
+  await finishAnimation()
   expect(game.closed).toHaveBeenCalledTimes(1)
 })
 
@@ -149,6 +173,7 @@ test('Strict Mode cannot consume the claim twice or skip the celebration', async
   expect(game.result.current.reveal.seconds).toBe(1)
   expect(game.result.current.active).toBe(false)
   await advance(1000)
+  await finishAnimation()
   expect(game.closed).toHaveBeenCalledTimes(1)
 })
 
@@ -161,8 +186,52 @@ test('a failed optional load can be retried without another game', async () => {
   expect(game.result.current.reveal.stage).toBe('error')
   expect(readReward(localStorage).unlocked).toBe(true)
   await act(async () => {
-    await game.result.current.reveal.retry()
+    void game.result.current.reveal.retry()
   })
+  await finishAnimation()
   expect(game.result.current.active).toBe(true)
   expect(game.closed).toHaveBeenCalledTimes(1)
+})
+
+test('child animation events cannot prematurely switch the background', async () => {
+  const game = setup()
+  game.rerender({ phase: 'won' })
+  await advance(3000)
+  fireEvent.animationEnd(screen.getByText('EXTRA STAGE / UNLOCKED'))
+  expect(game.result.current.active).toBe(false)
+  expect(screen.getByRole('status').dataset.stage).toBe('cover')
+  await finishAnimation()
+  expect(game.result.current.active).toBe(true)
+})
+
+test('leaving the game during the cover animation cancels the pending reveal', async () => {
+  const game = setup()
+  game.rerender({ phase: 'won' })
+  await advance(3000)
+  game.rerender({ phase: 'playing' })
+  await finishAnimation()
+  expect(game.result.current.active).toBe(false)
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(game.closed).not.toHaveBeenCalled()
+})
+
+test('manual re-entry uses the same cover-first order and can be cancelled', async () => {
+  localStorage.setItem(
+    REWARD_KEY,
+    JSON.stringify({ unlocked: true, enabled: false })
+  )
+  const game = setup()
+  await flush()
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
+  await flush()
+  expect(game.result.current.active).toBe(false)
+  expect(screen.getByRole('status').dataset.stage).toBe('cover')
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
+  await flush()
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(game.result.current.active).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
+  await flush()
+  await finishAnimation()
+  expect(game.result.current.active).toBe(true)
 })
