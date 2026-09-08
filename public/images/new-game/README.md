@@ -16,8 +16,10 @@ All assets are served locally. They are referenced only by the optional reward m
 
 ## Soujirou expression inset
 
-`soujirou-closeup.webp`: 420 × 420, 20,566 bytes. An AI-assisted close-up edited with the built-in imagegen tool on 2026-09-08. The authoritative pose/style reference was the hand region of `hifumi-soujirou.webp`; the second reference was the previously approved front-facing avatar-based expression inset from commit `16cd8066`. This revision corrects the previous elongated side profile toward a shallow three-quarter view with both eyes visible, a broader ivory face, lower wide oval muzzle, level unreceptive eyelids, compact rounded body and cupped fingers around it. It preserves the grumpy ご機嫌ななめ attitude. This is a fan illustration, not an official animation frame. The original full character artwork remains unchanged.
+`soujirou-closeup.webp`: 420 × 420, 18,694 bytes. An AI-assisted close-up edited with the built-in imagegen tool on 2026-09-08. The authoritative pose/style reference was the hand region of `hifumi-soujirou.webp`; the expression reference was the previously approved avatar-based inset from commit `16cd8066`. Soujirou lies belly-down across the cupped palms, with a low brown back extending left, his broad ivory face and low oval muzzle at right, and two small forepaws resting above the near hand. The curled avatar's upright chest and pink crossed belly-like mark have been removed. His half-closed, unreceptive ご機嫌ななめ expression remains.
+
+The owner approved this prone hedgehog. A final hands-only edit retained the approved animal and refined the two human hands, their finger joints, occlusion and cupped support. This is a fan illustration, not an official animation frame. The original full character artwork remains unchanged.
 
 Converted to WebP quality 87. The optional theme presents it in a rounded rectangular detail panel, with a solid connector to a locator around the hedgehog in her hands. The full artwork, locator and inset share one aspect-ratio scene so resizing and animation do not separate them. There are no thought-bubble dots or visible caption labels.
 
-The exact final image-edit prompt is recorded in [soujirou-pose-prompt.txt](soujirou-pose-prompt.txt).
+Both exact image-edit prompts (prone pose, then human hands only) are recorded in [soujirou-pose-prompt.txt](soujirou-pose-prompt.txt).

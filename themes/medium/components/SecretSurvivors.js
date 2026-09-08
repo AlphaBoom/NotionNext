@@ -51,6 +51,17 @@ export default function SecretSurvivors({
     close.current = onClose
   }, [onClose])
   useEffect(() => {
+    const onEscape = event => {
+      if (event.key !== 'Escape' && event.code !== 'Escape') return
+      event.preventDefault()
+      if (!event.repeat) close.current()
+    }
+    // Escape belongs to the open game, even after focus leaves the arena.
+    // This also works when canvas initialization fails before its listeners exist.
+    window.addEventListener('keydown', onEscape, true)
+    return () => window.removeEventListener('keydown', onEscape, true)
+  }, [])
+  useEffect(() => {
     const element = canvas.current
     const renderer = createRenderer(element)
     if (!renderer) {
@@ -163,11 +174,6 @@ export default function SecretSurvivors({
       draw()
     }
     const onKeyDown = event => {
-      if (event.code === 'Escape') {
-        event.preventDefault()
-        close.current()
-        return
-      }
       if (event.code === 'KeyP' && !event.repeat) {
         event.preventDefault()
         if (run.phase === 'playing') pause()
@@ -312,6 +318,14 @@ export default function SecretSurvivors({
               aria-label='暂停游戏'
             >
               Ⅱ
+            </button>
+            <button
+              type='button'
+              className='survivors-exit'
+              onClick={onClose}
+              aria-label='退出游戏，返回个人信息'
+            >
+              退出 <span aria-hidden='true'>×</span>
             </button>
           </div>
         </div>
@@ -484,13 +498,22 @@ export default function SecretSurvivors({
                   · 击退 {hud.kills} · LV.
                   {hud.level}
                 </p>
-                <button
-                  type='button'
-                  className='survivors-primary'
-                  onClick={() => actions.current?.restart()}
-                >
-                  再出发一次 ↗
-                </button>
+                <div className='survivors-end-actions'>
+                  <button
+                    type='button'
+                    className='survivors-primary'
+                    onClick={() => actions.current?.restart()}
+                  >
+                    再出发一次 ↗
+                  </button>
+                  <button
+                    type='button'
+                    className='survivors-primary survivors-secondary'
+                    onClick={onClose}
+                  >
+                    返回博客
+                  </button>
+                </div>
               </>
             )}
             {hud.phase === 'unavailable' && (
@@ -622,6 +645,29 @@ export default function SecretSurvivors({
           color: #e8ebd8;
           border: 1px solid #72866a88;
           cursor: pointer;
+        }
+        .survivors-hud .survivors-exit {
+          width: auto;
+          min-width: 58px;
+          padding: 0 9px;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+        }
+        .survivors-hud button:not(:disabled):is(:hover, :focus-visible) {
+          background: #435140;
+          outline: 1px solid #d9d8b3;
+          outline-offset: 2px;
+        }
+        .survivors-end-actions {
+          display: flex;
+          justify-content: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .survivors-end-actions .survivors-secondary {
+          justify-content: center;
+          background: transparent;
         }
         .survivors-hud button:disabled {
           opacity: 0.3;

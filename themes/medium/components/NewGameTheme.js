@@ -383,31 +383,58 @@ export default function NewGameTheme({
         }
         #theme-medium.medium-newgame .medium-masthead {
           min-height: 130px;
-          padding: 17px 26px;
+          padding: 17px 12px;
           margin: 24px 0 18px;
-          border: 2px solid #fff;
-          border-radius: 19px 19px 19px 3px;
-          background: #fffaffed;
-          box-shadow: 5px 5px 0 #9576bd4d;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          box-shadow: none;
+        }
+        #theme-medium.medium-newgame .medium-intro-copy {
+          text-shadow:
+            0 1px 9px #fffaff,
+            0 0 20px #fffaff;
         }
         #theme-medium.medium-newgame .medium-masthead h1 {
           font:
             700 28px 'Noto Sans SC',
             sans-serif;
-          color: #bd5278;
+          color: #92385f;
         }
         #theme-medium.medium-newgame .medium-eyebrow {
-          color: #b76b85;
+          color: #795375;
           margin-bottom: 6px;
         }
         #theme-medium.medium-newgame .medium-bio {
           margin-top: 7px;
           font-size: 12px;
+          color: #624977;
         }
         #theme-medium.medium-newgame .medium-portrait {
           flex-basis: 108px;
           width: 108px;
           height: 108px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle,
+            #f8a8d977,
+            #bc9cf044 52%,
+            transparent 72%
+          );
+        }
+        #theme-medium.medium-newgame .medium-portrait-frame {
+          padding: 5px;
+          border: 1px solid #fce4ff;
+          background: linear-gradient(135deg, #edb6eb, #ba9bdf 55%, #f3b7cb);
+          box-shadow:
+            0 0 0 3px #c798de33,
+            0 5px 22px #9c6bbe55;
+        }
+        #theme-medium.medium-newgame
+          .medium-portrait-frame:is(:hover, :focus-visible) {
+          box-shadow:
+            0 0 0 5px #dc95d844,
+            0 5px 30px #b078cf88;
         }
         #theme-medium.medium-newgame .medium-avatar,
         #theme-medium.medium-newgame .medium-avatar-monogram {
