@@ -101,16 +101,9 @@ const Style = () => (
     /* A personal card on the home page; article layouts keep their quiet typography. */
     #theme-medium .medium-masthead {
       position: relative; isolation: isolate; display: flex; align-items: center;
-      justify-content: space-between; gap: 28px; padding: 36px 38px; margin: 32px 0 28px;
-      border: 1px solid var(--line); border-radius: 20px;
-      background: linear-gradient(120deg, var(--paper) 25%, var(--wash));
+      justify-content: space-between; gap: 28px; padding: 36px 0; margin: 20px 0 24px;
+
     }
-    #theme-medium .medium-masthead::before {
-      content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
-      background: radial-gradient(ellipse at 85% 30%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%);
-      opacity: .7; transition: opacity 400ms ease;
-    }
-    #theme-medium .medium-masthead:hover::before { opacity: 1; }
     #theme-medium .medium-intro-copy { min-width: 0; flex: 1 1 220px; }
     #theme-medium .medium-eyebrow { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; letter-spacing: .06em; margin-bottom: 16px; }
     #theme-medium .medium-intro-mark { color: var(--accent); font-size: 23px; line-height: 1; transition: transform 600ms ease; }
@@ -121,27 +114,15 @@ const Style = () => (
     }
     #theme-medium .medium-bio { margin-top: 14px; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
     #theme-medium .medium-about-link { display: inline-block; margin-top: 20px; padding-bottom: 3px; color: var(--accent); font-size: 13px; }
-    #theme-medium .medium-portrait { position: relative; width: 184px; height: 184px; display: grid; place-items: center; }
+    #theme-medium .medium-portrait { position: relative; flex: 0 0 184px; width: 184px; height: 184px; display: grid; place-items: center; }
     #theme-medium .medium-portrait-orbit { position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 50%; transform: rotate(-25deg); transition: transform 700ms ease; }
     #theme-medium .medium-portrait-orbit::before { content: ''; position: absolute; inset: 13px -10px; border: 1px dashed color-mix(in srgb, var(--accent) 25%, transparent); border-radius: 50%; transform: rotate(55deg); }
     #theme-medium .medium-portrait-orbit::after { content: ''; position: absolute; top: 20px; right: 20px; width: 8px; height: 8px; background: var(--accent); border: 2px solid var(--paper); border-radius: 50%; }
     #theme-medium .medium-masthead:hover .medium-portrait-orbit { transform: rotate(0deg); }
-    #theme-medium .medium-portrait-frame { padding: 7px; border: 1px solid var(--line); border-radius: 28px; background: var(--paper); box-shadow: 0 12px 28px #173e2512; transform: rotate(-7deg); transition: transform 400ms ease; }
-    #theme-medium .medium-masthead:hover .medium-portrait-frame { transform: rotate(-2deg); }
-    #theme-medium .medium-avatar { display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 21px; }
+    #theme-medium .medium-portrait-frame { padding: 7px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); box-shadow: 0 0 44px color-mix(in srgb, var(--accent) 14%, transparent); transition: transform 300ms ease, box-shadow 300ms ease; cursor: pointer; }
+    #theme-medium .medium-portrait-frame:is(:hover, :focus-visible) { transform: scale(1.06); box-shadow: 0 0 48px color-mix(in srgb, var(--accent) 24%, transparent); }
+    #theme-medium .medium-avatar { display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 50%; }
     #theme-medium .medium-avatar-monogram { display: grid; place-items: center; width: 112px; height: 112px; font-family: 'Noto Serif SC', serif; font-size: 56px; color: var(--accent); }
-    #theme-medium .medium-star-game { flex: 0 0 184px; text-align: center; padding: 12px 0 22px; position: relative; }
-    #theme-medium .medium-star-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-    #theme-medium .medium-star-lines line { stroke: var(--accent); stroke-width: 1; opacity: 0; transition: opacity 400ms ease; }
-    #theme-medium .medium-star-lines line.is-lit { opacity: .5; }
-    #theme-medium .medium-game-star { position: absolute; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; transform: translate(-50%, -50%); border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 23px; }
-    #theme-medium .medium-game-star span { display: block; transition: transform 250ms ease, color 250ms ease, filter 250ms ease; }
-    #theme-medium .medium-game-star:is(:hover, :focus-visible) span { transform: scale(1.25) rotate(20deg); color: var(--accent); }
-    #theme-medium .medium-game-star.is-lit span { color: var(--accent); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 50%, transparent)); animation: medium-star-pop 350ms ease; }
-    #theme-medium .medium-game-status { color: var(--muted); font-size: 10px; margin-top: 26px; letter-spacing: .04em; }
-    #theme-medium .medium-game-reset { position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); border: 0; padding: 2px 8px; background: transparent; color: var(--accent); font-size: 11px; cursor: pointer; white-space: nowrap; }
-    #theme-medium .medium-star-game.is-complete .medium-portrait-frame { box-shadow: 0 0 28px color-mix(in srgb, var(--accent) 22%, transparent); transform: rotate(0deg); }
-    @keyframes medium-star-pop { 50% { transform: scale(1.5) rotate(40deg); } }
     #theme-medium .medium-topics { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 12px; color: var(--muted); }
     #theme-medium .medium-topics-label { font-size: 14px; font-weight: 500; color: var(--ink); margin-right: 8px; }
     #theme-medium .medium-post { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 30px 0; border-bottom: 1px solid var(--line); align-items: center; }
@@ -266,14 +247,14 @@ const Style = () => (
       #theme-medium .medium-nav-item.is-current > a { box-shadow: none; }
       #theme-medium .medium-submenu { position: static; box-shadow: none; margin-bottom: 10px; }
       #theme-medium .medium-layout { padding: 0 22px; }
-      #theme-medium .medium-masthead { padding: 26px 22px; margin: 24px 0; gap: 16px; }
-      #theme-medium .medium-star-game { margin: 6px auto 0; }
+      #theme-medium .medium-masthead { padding: 20px 0; margin: 20px 0; gap: 16px; }
+      #theme-medium .medium-portrait { margin: 6px auto 0; flex-basis: 136px; width: 136px; height: 136px; }
       #theme-medium .medium-masthead { flex-wrap: wrap; }
-      #theme-medium .medium-portrait-frame { padding: 5px; border-radius: 21px; }
+      #theme-medium .medium-portrait-frame { padding: 5px; border-radius: 50%; }
       #theme-medium .medium-avatar-monogram { width: 72px; height: 72px; font-size: 38px; }
       #theme-medium .medium-eyebrow { font-size: 10px; gap: 5px; }
       #theme-medium .medium-masthead h1 { font-size: 30px; }
-      #theme-medium .medium-avatar { width: 72px; height: 72px; border-radius: 16px; }
+      #theme-medium .medium-avatar { width: 72px; height: 72px; border-radius: 50%; }
       #theme-medium .medium-topics { gap: 12px 18px; }
       #theme-medium .medium-topics-label { width: 100%; }
       #theme-medium .medium-post { gap: 18px; padding: 24px 0; }

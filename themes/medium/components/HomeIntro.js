@@ -2,24 +2,12 @@ import LazyImage from '@/components/LazyImage'
 import SmartLink from '@/components/SmartLink'
 import { siteConfig } from '@/lib/config'
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 
-const STARS = [
-  [18, 26],
-  [148, 12],
-  [176, 116],
-  [94, 180],
-  [4, 120]
-]
+const SecretDungeon = dynamic(() => import('./SecretDungeon'), { ssr: false })
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
-  const [litStars, setLitStars] = useState([])
-  const complete = litStars.length === STARS.length
-
-  function lightStar(index) {
-    setLitStars(current =>
-      current.includes(index) ? current : [...current, index]
-    )
-  }
+  const [gameOpen, setGameOpen] = useState(false)
 
   return (
     <header className='medium-home-intro'>
@@ -37,84 +25,28 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
             关于我 ↗
           </SmartLink>
         </div>
-        <div
-          className={`medium-star-game ${complete ? 'is-complete' : ''}`}
-          role='group'
-          aria-label='点亮星图小游戏'
-        >
-          <div className='medium-portrait'>
-            <span className='medium-portrait-orbit' aria-hidden='true' />
-            <svg
-              className='medium-star-lines'
-              viewBox='0 0 184 184'
-              aria-hidden='true'
-            >
-              {STARS.map(([x, y], index) => {
-                const next = (index + 1) % STARS.length
-                return (
-                  <line
-                    key={index}
-                    x1={x}
-                    y1={y}
-                    x2={STARS[next][0]}
-                    y2={STARS[next][1]}
-                    className={
-                      litStars.includes(index) && litStars.includes(next)
-                        ? 'is-lit'
-                        : ''
-                    }
-                  />
-                )
-              })}
-            </svg>
-            <div className='medium-portrait-frame' aria-hidden='true'>
-              {siteInfo?.icon ? (
-                <LazyImage
-                  src={siteInfo.icon}
-                  width={112}
-                  height={112}
-                  alt=''
-                  className='medium-avatar'
-                />
-              ) : (
-                <span className='medium-avatar-monogram'>
-                  {siteConfig('AUTHOR')?.slice(0, 1)}
-                </span>
-              )}
-            </div>
-            {STARS.map(([x, y], index) => (
-              <button
-                key={index}
-                type='button'
-                className={`medium-game-star ${litStars.includes(index) ? 'is-lit' : ''}`}
-                style={{
-                  left: `${(x / 184) * 100}%`,
-                  top: `${(y / 184) * 100}%`
-                }}
-                onClick={() => lightStar(index)}
-                aria-label={`点亮第 ${index + 1} 颗星星`}
-                aria-pressed={litStars.includes(index)}
-              >
-                <span aria-hidden='true'>✦</span>
-              </button>
-            ))}
-          </div>
-          <p className='medium-game-status' aria-live='polite'>
-            {complete
-              ? '星图已点亮！'
-              : litStars.length
-                ? `已点亮 ${litStars.length} / ${STARS.length}`
-                : '点点星星，连成一片星空'}
-          </p>
-          {complete && (
-            <button
-              type='button'
-              className='medium-game-reset'
-              onClick={() => setLitStars([])}
-            >
-              再玩一次 ↺
-            </button>
-          )}
+        <div className='medium-portrait'>
+          <span className='medium-portrait-orbit' aria-hidden='true' />
+          <button
+            type='button'
+            className='medium-portrait-frame'
+            aria-label={`${siteConfig('AUTHOR')} 的头像，探索隐藏地牢`}
+            onClick={() => setGameOpen(true)}
+          >
+            {siteInfo?.icon ? (
+              <LazyImage
+                src={siteInfo.icon}
+                width={112}
+                height={112}
+                alt={siteConfig('AUTHOR')}
+                className='medium-avatar'
+              />
+            ) : (
+              <span className='medium-avatar-monogram'>
+                {siteConfig('AUTHOR')?.slice(0, 1)}
+              </span>
+            )}
+          </button>
         </div>
       </div>
       <nav className='medium-topics' aria-label='文章分类'>
@@ -128,6 +60,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
           </SmartLink>
         ))}
       </nav>
+      {gameOpen && <SecretDungeon onClose={() => setGameOpen(false)} />}
     </header>
   )
 }
