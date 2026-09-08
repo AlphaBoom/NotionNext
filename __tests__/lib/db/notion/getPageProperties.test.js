@@ -2,7 +2,9 @@
  * @jest-environment node
  */
 
-import { adjustPageProperties } from '@/lib/db/notion/getPageProperties'
+import getPageProperties, { adjustPageProperties } from '@/lib/db/notion/getPageProperties'
+import { getTextContent } from 'notion-utils'
+import BLOG from '@/blog.config'
 
 jest.mock('notion-utils', () => ({
   getDateValue: jest.fn(),
@@ -46,5 +48,53 @@ describe('adjustPageProperties', () => {
     expect(mappedPage.href).toBe('/manual/a-manual')
     expect(plainPage.slug).toBe('a-book')
     expect(plainPage.href).toBe('/a-book')
+  })
+})
+
+describe('optional writingMode property', () => {
+  const schema = {
+    title: { name: 'title', type: 'title' },
+    kind: { name: 'type', type: 'select' },
+    status: { name: 'status', type: 'select' },
+    slug: { name: 'slug', type: 'text' }
+  }
+  const value = {
+    properties: { title: [['测试文章']], kind: [['Post']], status: [['Published']], slug: [['existing-url']] },
+    created_time: 1700000000000,
+    last_edited_time: 1700000000000
+  }
+
+  beforeEach(() => {
+    getTextContent.mockImplementation(parts => parts.map(part => part[0]).join(''))
+  })
+
+  it('adds an optional select without changing existing article properties', async () => {
+    const baseline = await getPageProperties('post-id', value, schema)
+    const newSchema = { ...schema, ai: { name: 'writingMode', type: 'select' } }
+    const unfilled = await getPageProperties('post-id', value, newSchema)
+    expect(unfilled).toEqual(baseline)
+    expect(unfilled.writingMode).toBe('')
+
+    for (const [label, expected] of [['AI 润色', 'ai-polished'], ['AI 生成', 'ai-generated']]) {
+      const result = await getPageProperties('post-id', {
+        ...value, properties: { ...value.properties, ai: [[label]] }
+      }, newSchema)
+      expect(result).toEqual({ ...baseline, writingMode: expected })
+    }
+  })
+
+  it('respects the configured Notion property name', async () => {
+    const previous = BLOG.NOTION_PROPERTY_NAME.writingMode
+    BLOG.NOTION_PROPERTY_NAME.writingMode = '创作方式'
+    try {
+      const post = await getPageProperties('post-id', {
+        ...value, properties: { ...value.properties, ai: [['AI 润色']] }
+      }, { ...schema, ai: { name: '创作方式', type: 'select' } })
+      expect(post.writingMode).toBe('ai-polished')
+      expect(post.slug).toBe('existing-url')
+      expect(post.status).toBe('Published')
+    } finally {
+      BLOG.NOTION_PROPERTY_NAME.writingMode = previous
+    }
   })
 })

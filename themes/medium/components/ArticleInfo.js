@@ -2,6 +2,7 @@ import SmartLink from '@/components/SmartLink'
 import NotionIcon from '@/components/NotionIcon'
 import { siteConfig } from '@/lib/config'
 import { useGlobal } from '@/lib/global'
+import { WritingModeNotice } from './WritingModeBadge'
 
 export default function ArticleInfo({ post }) {
   const { locale } = useGlobal()
@@ -17,6 +18,7 @@ export default function ArticleInfo({ post }) {
         </div>
         {showStats && <span className='medium-article-stats'>{post.wordCount.toLocaleString()} 字 · {post.readTime} {locale.COMMON.MINUTE}</span>}
       </div>
+      <WritingModeNotice writingMode={post?.writingMode} />
     </header>
   )
 }

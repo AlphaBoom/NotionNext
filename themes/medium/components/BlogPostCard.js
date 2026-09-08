@@ -4,6 +4,7 @@ import SmartLink from '@/components/SmartLink'
 import TwikooCommentCount from '@/components/TwikooCommentCount'
 import { siteConfig } from '@/lib/config'
 import CONFIG from '../config'
+import WritingModeBadge from './WritingModeBadge'
 
 const BlogPostCard = ({ post, priority = false }) => {
   const cover = siteConfig('MEDIUM_POST_LIST_COVER', null, CONFIG) && post.pageCoverThumbnail
@@ -15,6 +16,7 @@ const BlogPostCard = ({ post, priority = false }) => {
           {siteConfig('MEDIUM_POST_LIST_CATEGORY', null, CONFIG) && post.category && (
             <SmartLink href={`/category/${encodeURIComponent(post.category)}`}>{post.category}</SmartLink>
           )}
+          <WritingModeBadge writingMode={post.writingMode} />
           <TwikooCommentCount post={post} />
         </div>
         <h2><SmartLink href={post.href}>
