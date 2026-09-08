@@ -158,24 +158,31 @@ const Style = () => (
     .dark #theme-medium .medium-text-cover-tone-2 { --cover-paper: #36303f; --cover-ink: #e3dcec; --cover-accent: #b7a2ca; }
 
     /* Authorship disclosure stays visible before opening or reading an article. */
+    #theme-medium .medium-writing-label { position: relative; display: inline-flex; flex-shrink: 0; align-self: baseline; line-height: 1.6; vertical-align: middle; }
     #theme-medium .medium-writing-badge {
-      display: inline-flex; align-items: center; align-self: flex-start; width: fit-content;
+      position: relative; display: inline-flex; align-items: center; width: fit-content;
       padding: 2px 7px; border: 1px solid #cfddd4; border-radius: 4px;
       background: #edf3ee; color: #456452; font-size: 11px; font-weight: 400;
-      line-height: 1.6; white-space: nowrap; vertical-align: middle;
+      font-family: inherit; line-height: 1.6; white-space: nowrap; cursor: pointer;
+      user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
     }
+    #theme-medium .medium-writing-badge::before { content: ''; position: absolute; inset: -6px -3px; }
     #theme-medium .medium-writing-badge.ai-generated { background: #f0edf5; border-color: #dcd4e7; color: #695777; }
     .dark #theme-medium .medium-writing-badge { background: #26392e; border-color: #435c4c; color: #b8cfbf; }
     .dark #theme-medium .medium-writing-badge.ai-generated { background: #332d3d; border-color: #55475f; color: #cdbfdb; }
-    #theme-medium .medium-writing-notice {
-      display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
-      margin-top: 18px; font-size: 12px; line-height: 1.8; color: var(--muted);
+    #theme-medium .medium-writing-tooltip {
+      position: absolute; z-index: 60; padding: 8px 12px;
+      border: 1px solid var(--line); border-radius: 5px;
+      background: var(--paper); color: var(--ink); box-shadow: 0 4px 16px #00000012;
+      font-family: 'Noto Sans SC', sans-serif; font-size: 12px; font-weight: 400;
+      line-height: 1.7; letter-spacing: normal; text-align: left; white-space: normal;
     }
-    #theme-medium .medium-writing-notice p { margin: 0; overflow-wrap: anywhere; }
 
     /* Article typography; wide blocks get space without stretching every paragraph. */
     #theme-medium .medium-article-header { max-width: 740px; margin: 0 auto; padding: 48px 0 30px; }
     #theme-medium .medium-back-link { display: inline-block; font-size: 12px; color: var(--muted); margin-bottom: 26px; }
+    #theme-medium .medium-article-heading { display: flex; align-items: baseline; gap: 12px; }
+    #theme-medium .medium-article-heading h1 { min-width: 0; }
     #theme-medium .medium-article-header h1 { font-family: 'Noto Serif SC', serif; font-size: clamp(27px, 3vw, 38px); font-weight: 500; line-height: 1.55; letter-spacing: -.025em; overflow-wrap: anywhere; }
     #theme-medium .medium-article-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 22px; padding-bottom: 26px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); }
     #theme-medium .medium-article-dates { display: flex; gap: 14px; min-width: 0; }
@@ -217,7 +224,8 @@ const Style = () => (
     #theme-medium .medium-article-end { max-width: 740px; margin: 52px auto 0; border-top: 1px solid var(--line); padding-top: 24px; }
     #theme-medium .medium-article-around { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 24px 0; margin: 28px 0; }
     #theme-medium .medium-article-around a { display: flex; flex-direction: column; gap: 8px; }
-    #theme-medium .medium-article-around span { font-size: 11px; color: var(--muted); }
+    #theme-medium .medium-article-around a > span { font-size: 11px; color: var(--muted); }
+    #theme-medium .medium-article-around .medium-writing-label { margin-top: 8px; }
     #theme-medium .medium-article-around strong { font-size: 14px; font-weight: 500; line-height: 1.8; }
     #theme-medium .medium-next-article { grid-column: 2; text-align: right; }
 
@@ -311,6 +319,7 @@ const Style = () => (
       #theme-medium *, #theme-medium *::before, #theme-medium *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     }
     @media print {
+      #theme-medium .medium-writing-tooltip { display: none; }
       #theme-medium .medium-nav, #theme-medium .medium-desktop-toc, #theme-medium .medium-mobile-toc, #theme-medium .medium-mobile-top, #theme-medium .medium-desktop-top, #theme-medium .medium-footer, #theme-medium .medium-article-end { display: none; }
       #theme-medium { --paper: white; --ink: black; }
       #theme-medium #container-inner { max-width: none; box-shadow: none; }
