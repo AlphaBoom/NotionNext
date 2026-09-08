@@ -3,11 +3,13 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState
 } from 'react'
 import { installRewardConsole } from '../lib/rewardConsole'
 import RewardColorScheme from './RewardColorScheme'
+import { REWARD_BOOT_ATTRIBUTE } from '../lib/rewardBoot'
 import {
   EMPTY_REWARD,
   readReward,
@@ -17,6 +19,8 @@ import {
 } from '../lib/rewardState'
 
 const RewardContext = createContext({ active: false, unlocked: false })
+const useBrowserLayoutEffect =
+  typeof window === 'undefined' ? useEffect : useLayoutEffect
 export const useReward = () => useContext(RewardContext)
 
 export default function RewardProvider({ children }) {
@@ -24,6 +28,7 @@ export default function RewardProvider({ children }) {
   const [Appearance, setAppearance] = useState(null)
   const [Hero, setHero] = useState(null)
   const [opening, setOpening] = useState(null)
+  const [restoring, setRestoring] = useState(true)
   const pendingOpening = useRef(null)
   const currentReward = useRef(EMPTY_REWARD)
   const mounted = useRef(false)
@@ -48,6 +53,12 @@ export default function RewardProvider({ children }) {
     }
     return module
   }, [])
+  useBrowserLayoutEffect(() => {
+    // Release the first-paint shell only after the theme, hero, styles and
+    // light color scheme have committed together. Never replay the unlock.
+    if (!restoring)
+      document.documentElement.removeAttribute(REWARD_BOOT_ATTRIBUTE)
+  }, [restoring])
   useEffect(() => {
     mounted.current = true
     const restore = async () => {
@@ -62,14 +73,30 @@ export default function RewardProvider({ children }) {
       setReward(current => ({ ...current, unlocked: saved.unlocked }))
       if (!saved.unlocked) {
         setReward(EMPTY_REWARD)
+        setRestoring(false)
         return
       }
       try {
         const module = await loadAppearance()
         if (saved.enabled) await module.prepareArtwork()
-        if (mounted.current && request === revision.current) setReward(saved)
+        if (mounted.current && request === revision.current) {
+          // If the boot watchdog already restored the normal blog, do not
+          // switch its appearance late while the visitor is reading it.
+          const expired =
+            document.documentElement.getAttribute(REWARD_BOOT_ATTRIBUTE) ===
+            'expired'
+          const restored = expired ? { ...saved, enabled: false } : saved
+          currentReward.current = restored
+          setReward(restored)
+          setRestoring(false)
+        }
       } catch {
         /* The normal blog remains usable if the optional chunk fails. */
+        if (mounted.current && request === revision.current) {
+          currentReward.current = { ...saved, enabled: false }
+          setReward(currentReward.current)
+          setRestoring(false)
+        }
       }
     }
     void restore()
