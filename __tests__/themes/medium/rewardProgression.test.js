@@ -14,6 +14,9 @@ jest.mock('@/themes/medium/components/NewGameTheme', () => ({
 }))
 
 jest.mock('@/lib/config', () => ({ siteConfig: () => 'AlphaBoom' }))
+jest.mock('@/lib/global', () => ({
+  GlobalContext: require('react').createContext()
+}))
 jest.mock('@/themes/medium/components/RewardPlayground', () => () => null)
 jest.mock(
   '@/themes/medium/components/RewardContextMenu',
@@ -54,6 +57,7 @@ function setup(customWrapper = wrapper) {
 beforeEach(() => {
   jest.useFakeTimers()
   localStorage.clear()
+  document.documentElement.className = 'light'
   Object.defineProperty(document, 'hidden', {
     configurable: true,
     value: false
@@ -244,4 +248,21 @@ test('manual re-entry uses the same cover-first order and can be cancelled', asy
   await flush()
   await finishAnimation()
   expect(game.result.current.active).toBe(true)
+})
+
+test('entering from dark waits for the cover, switches all widgets to light, and restores dark on exit', async () => {
+  document.documentElement.className = 'dark'
+  localStorage.setItem('darkMode', 'true')
+  const game = setup()
+  game.rerender({ phase: 'won' })
+  await advance(3000)
+  expect(document.documentElement.classList.contains('dark')).toBe(true)
+  await finishAnimation()
+  expect(document.documentElement.classList.contains('dark')).toBe(false)
+  expect(document.documentElement.style.colorScheme).toBe('light')
+  expect(localStorage.getItem('darkMode')).toBe('true')
+  await finishAnimation()
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle reward' }))
+  expect(document.documentElement.classList.contains('dark')).toBe(true)
+  expect(localStorage.getItem('darkMode')).toBe('true')
 })

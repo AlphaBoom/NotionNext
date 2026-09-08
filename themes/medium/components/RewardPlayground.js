@@ -63,7 +63,7 @@ export default function RewardPlayground() {
       if (event.button !== 0 || (!event.clientX && !event.clientY)) return
       if (
         event.target.closest?.(
-          'input, textarea, select, [contenteditable], canvas, .medium-survivors, .ng-context-menu, [data-ng-toy]'
+          'input, textarea, select, [contenteditable], canvas, .medium-survivors, .medium-runner, .ng-context-menu, [data-ng-toy]'
         )
       )
         return

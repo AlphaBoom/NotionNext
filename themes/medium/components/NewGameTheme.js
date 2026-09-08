@@ -89,7 +89,14 @@ export function NewGameHero() {
             viewBox='0 0 386 420'
             aria-hidden='true'
           >
-            <path d='M 162 178 L 132 208 L 58 250' />
+            <path
+              className='ng-detail-link-wide'
+              d='M 162 178 L 132 208 L 58 250'
+            />
+            <path
+              className='ng-detail-link-mobile'
+              d='M 162 178 L 108 220 L -34 290'
+            />
             <rect x='161' y='157' width='47' height='41' rx='3' />
           </svg>
           <figure className='ng-soujirou-closeup'>
@@ -188,11 +195,27 @@ export default function NewGameTheme({
           <div>
             <span>EXTRA STAGE / UNLOCKED</span>
             <Wordmark />
-            <p>隐藏主题已解锁 · 在页面空白处右键切换</p>
+            <p className='ng-unlock-desktop-hint'>
+              隐藏主题已解锁 · 在页面空白处右键切换
+            </p>
+            <p className='ng-unlock-touch-hint'>
+              隐藏主题已解锁 · 点左下角「主题」随时切换
+            </p>
           </div>
         </div>
       )}
       <style jsx global>{`
+        .ng-unlock-touch-hint {
+          display: none;
+        }
+        @media (max-width: 768px), (hover: none), (pointer: coarse) {
+          .ng-unlock-desktop-hint {
+            display: none;
+          }
+          .ng-unlock-touch-hint {
+            display: block;
+          }
+        }
         body:has(#theme-medium.medium-newgame) {
           background: #b9a9e7;
         }
@@ -883,6 +906,9 @@ export default function NewGameTheme({
           filter: drop-shadow(0 1px 1px #553566);
           pointer-events: none;
         }
+        .ng-detail-link-mobile {
+          display: none;
+        }
         .ng-hero-art {
           position: absolute;
           z-index: 1;
@@ -1387,7 +1413,7 @@ export default function NewGameTheme({
         }
         #theme-medium.medium-newgame.medium-reading .medium-footer {
           width: calc(100% - 64px);
-          max-width: 740px;
+          max-width: var(--reading-width);
           margin: 24px auto;
         }
         #theme-medium.medium-newgame.medium-full-width
@@ -1496,51 +1522,88 @@ export default function NewGameTheme({
             padding: 18px 14px;
           }
           .ng-hero {
-            min-height: 455px;
-            border-width: 6px;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            min-height: 0;
+            border-width: 3px;
+            border-radius: 22px 7px 22px 7px;
+            padding: 18px 16px 46px;
           }
           .ng-hero-copy {
-            width: 69%;
-            padding: 18px 13px 52px;
+            display: contents;
+          }
+          .ng-hero-copy > :is(h2, p, .ng-hero-message) {
+            grid-column: 1;
+            min-width: 0;
+            z-index: 2;
+          }
+          .ng-hero-copy > h2 {
+            grid-row: 2;
+            width: min(250px, 86%);
+          }
+          .ng-hero-copy .ng-wordmark {
+            width: 100%;
           }
           .ng-section-label {
+            grid-row: 1;
             font-size: 11px;
-            margin-bottom: 24px;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
           }
           .ng-section-label span {
             display: none;
           }
           .ng-small-jp {
-            font-size: 8px;
+            grid-row: 3;
+            margin: 8px 0 10px;
+            font-size: 9px;
             letter-spacing: 0.06em;
           }
           .ng-hero-message {
-            gap: 5px;
+            grid-row: 4;
+            width: 63%;
+            min-height: clamp(154px, 42vw, 210px);
+            padding-top: 8px;
+            gap: 0;
           }
           .ng-hero-message p {
-            font-size: 20px;
+            font-size: clamp(14px, 3.9vw, 18px);
             letter-spacing: 0;
           }
           .ng-message-index {
-            font-size: 20px;
+            display: none;
           }
           .ng-hero-description {
-            max-width: 165px;
-            font-size: 10px;
+            grid-row: 5;
+            max-width: none;
+            font-size: 11px;
+            margin: 12px 0 0;
           }
           .ng-clear-chip {
-            font-size: 8px;
-            padding: 6px;
-            gap: 5px;
+            display: none;
           }
           .ng-character-panel {
-            width: 43%;
-            right: -5%;
-            top: 110px;
+            grid-area: 3 / 1 / 5 / 2;
+            place-self: end;
+            position: relative;
+            width: 60%;
+            max-width: 230px;
+            aspect-ratio: 386 / 420;
+            margin: -12px -4px 0 0;
+            right: auto;
+            top: auto;
+            bottom: auto;
           }
           .ng-soujirou-closeup {
-            width: 65%;
-            left: -49%;
+            width: 49%;
+            left: -56%;
+            bottom: 4%;
+          }
+          .ng-detail-link-wide {
+            display: none;
+          }
+          .ng-detail-link-mobile {
+            display: block;
           }
           .ng-hero-art {
             inset: 0;
@@ -1549,8 +1612,8 @@ export default function NewGameTheme({
             background-size: contain;
           }
           .ng-character-name {
-            bottom: -20px;
-            right: -8px;
+            bottom: -4px;
+            right: -4px;
             padding: 7px;
             font-size: 12px;
           }
@@ -1570,6 +1633,35 @@ export default function NewGameTheme({
           }
           #theme-medium.medium-newgame .medium-masthead {
             padding-inline: 15px;
+            flex-wrap: nowrap;
+            gap: 10px;
+          }
+          #theme-medium.medium-newgame .medium-intro-copy {
+            flex-basis: 0;
+          }
+          #theme-medium.medium-newgame .medium-masthead h1 {
+            font-size: clamp(20px, 6vw, 28px);
+          }
+          #theme-medium.medium-newgame .medium-portrait {
+            flex-basis: 88px;
+            width: 88px;
+            height: 88px;
+            margin: 0;
+          }
+          #theme-medium.medium-newgame .medium-avatar,
+          #theme-medium.medium-newgame .medium-avatar-monogram {
+            width: 60px;
+            height: 60px;
+          }
+          .ng-floating-pad,
+          .ng-floating-star {
+            display: none;
+          }
+          .ng-wordmark {
+            max-width: 100%;
+          }
+          #theme-medium.medium-newgame .medium-home-intro {
+            padding-top: 16px;
           }
           #theme-medium.medium-newgame .medium-post {
             padding: 20px 17px;

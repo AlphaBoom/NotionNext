@@ -4,9 +4,12 @@ import { siteConfig } from '@/lib/config'
 import { useEffect, useRef, useState } from 'react'
 import { useReward } from './RewardProvider'
 
-const GAME_MEDIA = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
-// A plain dynamic import keeps all game code and styles out of the home bundle.
-const loadGame = () => import('./SecretSurvivors')
+const DESKTOP_GAME = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
+// Each device loads only its own game, after the avatar is pressed.
+const loadGames = {
+  desktop: () => import('./SecretSurvivors'),
+  mobile: () => import('./SecretRunner')
+}
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   const { claimReward, unlocked, active: rewardActive, Hero } = useReward()
@@ -20,25 +23,23 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   const transition = useRef(null)
   const hasSwitched = useRef(false)
   const prepareId = useRef(0)
-  const Game = useRef(null)
+  const Games = useRef({})
 
   useEffect(() => {
-    const media = window.matchMedia(GAME_MEDIA)
-    const closeOnMobile = () => {
-      if (!media.matches) {
-        clearTimeout(transition.current)
-        transition.current = null
-        prepareId.current++
-        setPreparing(false)
-        setLeaving(false)
-        setView('profile')
-      }
+    const media = window.matchMedia(DESKTOP_GAME)
+    const closeOnModeChange = () => {
+      clearTimeout(transition.current)
+      transition.current = null
+      prepareId.current++
+      setPreparing(false)
+      setLeaving(false)
+      setView('profile')
     }
-    media.addEventListener('change', closeOnMobile)
+    media.addEventListener('change', closeOnModeChange)
     return () => {
       prepareId.current++
       clearTimeout(transition.current)
-      media.removeEventListener('change', closeOnMobile)
+      media.removeEventListener('change', closeOnModeChange)
     }
   }, [])
   useEffect(() => {
@@ -47,18 +48,23 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(element)
-    if (hasSwitched.current && window.matchMedia(GAME_MEDIA).matches) {
+    if (hasSwitched.current && window.matchMedia(DESKTOP_GAME).matches) {
       if (view === 'profile') avatar.current?.focus({ preventScroll: true })
     }
-    return () => observer.disconnect()
+    const scroll =
+      view === 'mobile'
+        ? requestAnimationFrame(() =>
+            element.scrollIntoView({ block: 'start', behavior: 'auto' })
+          )
+        : 0
+    return () => {
+      observer.disconnect()
+      cancelAnimationFrame(scroll)
+    }
   }, [view])
 
   function switchView(next) {
-    if (
-      transition.current ||
-      (next === 'game' && !window.matchMedia(GAME_MEDIA).matches)
-    )
-      return
+    if (transition.current) return
     setLeaving(true)
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
@@ -89,25 +95,21 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   )
 
   async function openGame() {
-    if (
-      preparing ||
-      transition.current ||
-      !window.matchMedia(GAME_MEDIA).matches
-    )
-      return
+    if (preparing || transition.current) return
+    const mode = window.matchMedia(DESKTOP_GAME).matches ? 'desktop' : 'mobile'
     setLoadFailed(false)
-    if (Game.current) {
-      switchView('game')
+    if (Games.current[mode]) {
+      switchView(mode)
       return
     }
     const requestId = ++prepareId.current
     setPreparing(true)
     try {
-      const module = await loadGame()
+      const module = await loadGames[mode]()
       if (requestId !== prepareId.current) return
-      Game.current = module.default
+      Games.current[mode] = module.default
       setPreparing(false)
-      switchView('game')
+      switchView(mode)
     } catch {
       if (requestId !== prepareId.current) return
       setPreparing(false)
@@ -115,13 +117,13 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
     }
   }
 
-  const LoadedGame = Game.current
+  const LoadedGame = Games.current[view]
 
   return (
     <header className='medium-home-intro'>
       {rewardActive && Hero && <Hero />}
       <div
-        className={`medium-intro-stage ${view === 'game' ? 'is-playing' : ''} ${leaving && view === 'profile' ? 'is-booting' : ''}`}
+        className={`medium-intro-stage ${view !== 'profile' ? 'is-playing' : ''} ${leaving && view === 'profile' ? 'is-booting' : ''}`}
         style={{ height }}
       >
         <div
@@ -168,15 +170,14 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
                 >
                   {portrait}
                 </button>
-                <div className='medium-portrait-frame medium-mobile-avatar'>
-                  {portrait}
-                </div>
               </div>
             </div>
           ) : (
             <section
               className='medium-inline-game'
-              aria-label='刺猬夜行生存游戏'
+              aria-label={
+                view === 'mobile' ? '刺猬跑道射击游戏' : '刺猬夜行生存游戏'
+              }
             >
               <button
                 type='button'
