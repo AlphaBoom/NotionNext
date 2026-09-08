@@ -1,13 +1,14 @@
 import { memo, useEffect, useId, useRef, useState } from 'react'
 import { HEDGEHOG, HEDGEHOG_COLORS } from '../lib/hedgehogSprite'
 import {
-  createWalk,
-  moveWalk,
+  createRunner,
+  gateLabel,
+  moveRunner,
   PLAYER_LINE,
-  stepWalk,
+  stepRunner,
   swipeLane,
-  WALK_SECONDS
-} from '../lib/hedgehogWalk'
+  RUN_SECONDS
+} from '../lib/hedgehogRunner'
 import { useVictoryReveal } from '../lib/useVictoryReveal'
 
 const Sprite = memo(function Sprite({ id }) {
@@ -33,12 +34,14 @@ const Sprite = memo(function Sprite({ id }) {
 
 const snapshot = run => ({
   ...run,
-  items: run.items.map(item => ({ ...item }))
+  items: run.items.map(item => ({ ...item })),
+  shots: run.shots.map(shot => ({ ...shot })),
+  effects: run.effects.map(effect => ({ ...effect }))
 })
 const clock = seconds =>
   `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`
 
-export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
+export default function SecretRunner({ onClose, onVictory, unlocked = false }) {
   const panel = useRef(null),
     board = useRef(null),
     actions = useRef(null),
@@ -48,13 +51,13 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
   close.current = onClose
   challenge.current = unlocked
   const [hud, setHud] = useState(() =>
-    createWalk(unlocked ? 'endless' : 'intro')
+    createRunner(unlocked ? 'endless' : 'intro')
   )
   const reward = useVictoryReveal(hud.phase, onVictory, () => close.current())
-  const spriteId = `walk-${useId().replace(/:/g, '')}`
+  const spriteId = `runner-${useId().replace(/:/g, '')}`
 
   useEffect(() => {
-    let run = createWalk(challenge.current ? 'endless' : 'intro')
+    let run = createRunner(challenge.current ? 'endless' : 'intro')
     let frame = 0,
       previous = 0,
       lastPaint = 0
@@ -76,7 +79,7 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
       if (run.phase !== 'playing') return
       // A small SVG scene at 30 fps; neither game runs on the homepage itself.
       if (!lastPaint || now - lastPaint >= 1000 / 30) {
-        stepWalk(run, previous ? (now - previous) / 1000 : 1 / 30)
+        stepRunner(run, previous ? (now - previous) / 1000 : 1 / 30)
         previous = lastPaint = now
         sync()
       }
@@ -91,7 +94,7 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
       if (!frame) frame = requestAnimationFrame(tick)
     }
     const move = lane => {
-      moveWalk(run, lane)
+      moveRunner(run, lane)
       sync()
     }
     const onVisibility = () => {
@@ -118,7 +121,7 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
       move,
       restart: () => {
         stop()
-        run = createWalk(challenge.current ? 'endless' : 'intro')
+        run = createRunner(challenge.current ? 'endless' : 'intro')
         start()
       }
     }
@@ -179,7 +182,7 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
     if (!start || start.id !== event.pointerId) return
     if (Math.hypot(event.clientX - start.x, event.clientY - start.y) < 16) {
       actions.current?.move(
-        Math.floor((event.clientX - start.rect.left) / (start.rect.width / 3))
+        Math.floor((event.clientX - start.rect.left) / (start.rect.width / 2))
       )
     }
     gesture.current = null
@@ -189,21 +192,19 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
   return (
     <div
       ref={panel}
-      className='medium-walk'
+      className='medium-runner'
       data-phase={hud.phase}
       data-mode={hud.mode}
     >
-      <div className='walk-heading'>
+      <div className='runner-heading'>
         <h2>
-          棘径 <span>HEDGEHOG WALK</span>
+          棘走 <span>QUILL RUSH</span>
         </h2>
-        <small>
-          {hud.mode === 'intro' ? 'ONE LITTLE WALK' : 'ENDLESS WALK'}
-        </small>
+        <small>{hud.mode === 'intro' ? '60 SECOND RUN' : 'ENDLESS RUSH'}</small>
       </div>
       <div
         ref={board}
-        className='walk-board'
+        className='runner-board'
         onPointerDown={pointerDown}
         onPointerMove={pointerMove}
         onPointerUp={pointerUp}
@@ -212,115 +213,238 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
         }}
       >
         <svg
-          className='walk-scene'
+          className='runner-scene'
           viewBox='0 0 300 360'
           preserveAspectRatio='none'
           role='img'
-          aria-label={`刺猬在${['左', '中', '右'][hud.lane]}边小路，前方有石头和松果`}
+          aria-label={`刺猬在${['左', '右'][hud.lane]}跑道，火力 ${hud.power}，自动射击前方怪物`}
         >
           <defs>
             <Sprite id={spriteId} />
           </defs>
-          <rect width='300' height='360' fill='#172e2a' />
-          {[0, 1, 2].map(lane => (
+          <rect width='300' height='360' fill='#17342f' />
+          {[0, 1].map(lane => (
             <g key={lane}>
               <rect
-                x={lane * 100 + 5}
+                x={lane * 150 + 5}
                 y='0'
-                width='90'
+                width='140'
                 height='360'
-                rx='40'
-                fill={lane === hud.lane ? '#3b5040' : '#293e35'}
+                fill={lane === hud.lane ? '#284b40' : '#203e37'}
               />
               {[0, 1, 2, 3, 4, 5].map(i => (
                 <path
                   key={i}
-                  d={`M ${lane * 100 + 44} ${((i * 72 + hud.time * 35) % 410) - 30} l 6 -5 l 6 5`}
+                  d={`M ${lane * 150 + 68} ${((i * 72 + hud.time * 60) % 410) - 30} l 7 -7 l 7 7`}
                   fill='none'
-                  stroke='#d1d4a92b'
+                  stroke='#cfdfa431'
                   strokeWidth='2'
                 />
               ))}
             </g>
           ))}
-          {[20, 125, 240].map((y, i) => (
-            <g key={y} stroke='#719276' strokeWidth='2' opacity='.55'>
-              <path
-                d={`M 3 ${y} l 6 -7 m -3 3 l -5 -5 M 297 ${y + 30} l -6 -7 m 3 3 l 5 -5`}
-              />
+          <path d='M150 0V360' stroke='#d8e9ad44' strokeDasharray='10 14' />
+          {hud.shots.map(shot => (
+            <g
+              key={shot.id}
+              transform={`translate(${75 + shot.lane * 150} ${shot.y * 360})`}
+            >
+              {(shot.power < 4
+                ? [0]
+                : shot.power < 16
+                  ? [-5, 5]
+                  : [-9, 0, 9]
+              ).map(x => (
+                <path
+                  key={x}
+                  d={`M${x} 9v-15`}
+                  stroke='#ffe6a5'
+                  strokeWidth='3'
+                  strokeLinecap='round'
+                />
+              ))}
             </g>
           ))}
           {hud.items.map(item => (
             <g
               key={item.id}
-              transform={`translate(${50 + item.lane * 100} ${item.y * 360})`}
+              transform={`translate(${75 + item.lane * 150} ${item.y * 360})`}
             >
-              {item.kind === 'rock' ? (
-                <>
-                  <ellipse cy='12' rx='22' ry='5' fill='#10231f88' />
-                  <path
-                    d='M-21 8 -17 -8 -6 -17 13 -12 22 8 12 15 -13 14Z'
-                    fill='#81908b'
-                    stroke='#b1bdb1'
+              {item.kind === 'gate' ? (
+                <g>
+                  <rect
+                    x='-65'
+                    y='-27'
+                    width='130'
+                    height='54'
+                    rx='7'
+                    fill={
+                      item.value < 0
+                        ? '#802f50ee'
+                        : item.operation === 'multiply'
+                          ? '#5d459aee'
+                          : '#236e64ee'
+                    }
+                    stroke={
+                      item.value < 0
+                        ? '#ffa5b9'
+                        : item.operation === 'multiply'
+                          ? '#d3b2ff'
+                          : '#9bf2d5'
+                    }
                     strokeWidth='2'
                   />
                   <path
-                    d='M-17-8 -3-3 13-12 M-3-3 -7 10'
-                    fill='none'
-                    stroke='#a8b5a4'
-                    strokeWidth='2'
+                    d='M-62 34V-34 M62 34V-34'
+                    stroke='#e8ffe4'
+                    strokeWidth='4'
                   />
-                </>
+                  <text
+                    y='9'
+                    textAnchor='middle'
+                    fill='#fff9e2'
+                    fontSize='28'
+                    fontWeight='800'
+                    fontFamily='monospace'
+                  >
+                    {gateLabel(item)}
+                  </text>
+                </g>
               ) : (
-                <>
-                  <ellipse
-                    rx='13'
-                    ry='17'
-                    fill='#e8bf80'
-                    stroke='#835739'
-                    strokeWidth='3'
-                  />
+                <g>
+                  <ellipse cy='27' rx='29' ry='6' fill='#061d2566' />
                   <path
-                    d='M-8-7 0-2 8-7 M-10 0 0 6 10 0 M-8 8 0 13 8 8 M0-15 2-21'
-                    fill='none'
-                    stroke='#9b6944'
+                    d={
+                      item.heavy
+                        ? 'M-28 19 -32-7 -22-10 -26-26 -10-20 0-29 10-20 26-26 22-10 32-7 28 19 17 27 -17 27Z'
+                        : 'M-22 18 -25-9 -14-14 -17-23 -3-16 9-23 13-13 25-7 22 18 12 23 -13 23Z'
+                    }
+                    fill={
+                      item.hit > 0
+                        ? '#fff4d4'
+                        : item.heavy
+                          ? '#874165'
+                          : '#666092'
+                    }
+                    stroke='#e8a5b7'
                     strokeWidth='2'
                   />
-                </>
+                  <path
+                    d='M-13-6 -5-3 M5-3 13-6'
+                    stroke='#fff0be'
+                    strokeWidth='4'
+                  />
+                  <text
+                    y='17'
+                    textAnchor='middle'
+                    fill={item.hit > 0 ? '#392a50' : '#fff9e2'}
+                    fontSize='14'
+                    fontWeight='800'
+                    fontFamily='monospace'
+                  >
+                    {item.hp}
+                  </text>
+                  <rect
+                    x='-26'
+                    y='-39'
+                    width='52'
+                    height='4'
+                    rx='2'
+                    fill='#161d2c'
+                  />
+                  <rect
+                    x='-26'
+                    y='-39'
+                    width={(52 * item.hp) / item.maxHp}
+                    height='4'
+                    rx='2'
+                    fill='#f0a4b8'
+                  />
+                </g>
               )}
             </g>
           ))}
           <g
-            className='walk-player'
+            className='runner-player'
             style={{
-              transform: `translate(${50 + hud.lane * 100}px, ${PLAYER_LINE * 360}px)`
+              transform: `translate(${75 + hud.lane * 150}px, ${PLAYER_LINE * 360}px)`
             }}
-            opacity={hud.invincible > 0 ? 0.65 : 1}
+            opacity={hud.invincible > 0 ? 0.55 : 1}
           >
-            <ellipse cy='23' rx='26' ry='7' fill='#0b201d99' />
+            <ellipse
+              cy='21'
+              rx='30'
+              ry='10'
+              fill='#b8f1b325'
+              stroke='#b4e6bb66'
+            />
             <use
               href={`#${spriteId}`}
-              x='-27'
-              y='-27'
-              width='54'
-              height='54'
+              x='-25'
+              y='-25'
+              width='50'
+              height='50'
               style={{ imageRendering: 'pixelated' }}
             />
+            <rect
+              x='-27'
+              y='27'
+              width='54'
+              height='20'
+              rx='10'
+              fill='#e9d5a4'
+            />
+            <text
+              y='41'
+              textAnchor='middle'
+              fill='#203c31'
+              fontSize='13'
+              fontWeight='800'
+              fontFamily='monospace'
+            >
+              {hud.power}
+            </text>
           </g>
-          <path d='M32 340H268' stroke='#dacb9777' strokeDasharray='4 9' />
+          {hud.effects.map(effect => (
+            <g
+              key={effect.id}
+              transform={`translate(${75 + effect.lane * 150} ${(effect.y - (0.8 - effect.life) * 0.1) * 360})`}
+              opacity={Math.min(1, effect.life * 2.5)}
+            >
+              <circle
+                r={8 + (0.8 - effect.life) * 38}
+                fill='none'
+                stroke={effect.kind === 'loss' ? '#ff99ad' : '#d1edac'}
+                strokeWidth='2'
+                opacity='.5'
+              />
+              <text
+                textAnchor='middle'
+                fill={effect.kind === 'loss' ? '#ffb5c7' : '#fff2b4'}
+                stroke='#17342f'
+                strokeWidth='3'
+                paintOrder='stroke'
+                fontSize={effect.kind === 'kill' ? 14 : 17}
+                fontFamily='monospace'
+                fontWeight='800'
+              >
+                {effect.label}
+              </text>
+            </g>
+          ))}
         </svg>
-        <div className='walk-hud' aria-label='散步状态'>
+        <div className='runner-hud' aria-label='跑道战斗状态'>
           <div>
             <strong aria-label={`生命 ${hud.hp}/3`}>♥ {hud.hp}</strong>
-            <small>松果 {hud.cones}</small>
+            <small>击退 {hud.kills}</small>
           </div>
-          <div className='walk-time'>
+          <div className='runner-time'>
             {clock(hud.time)}
             {hud.mode === 'intro' && <small> / 01:00</small>}
           </div>
           <button
             type='button'
-            aria-label='暂停散步'
+            aria-label='暂停游戏'
             disabled={!playing}
             onClick={() => actions.current?.pause()}
           >
@@ -328,79 +452,87 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           </button>
           <button
             type='button'
-            aria-label='退出散步，返回个人信息'
+            aria-label='退出游戏，返回个人信息'
             onClick={onClose}
           >
             ×
           </button>
         </div>
+        <div className='runner-power' aria-label={`当前火力 ${hud.power}`}>
+          <span>
+            火力 <b>{hud.power}</b>
+          </span>
+          <small>自动射击</small>
+        </div>
         {hud.mode === 'intro' && (
           <progress
-            className='walk-progress'
-            max={WALK_SECONDS}
+            className='runner-progress'
+            max={RUN_SECONDS}
             value={hud.time}
-            aria-label='一分钟散步进度'
+            aria-label='一分钟闯关进度'
           />
         )}
         {!playing && (
-          <div className='walk-overlay'>
+          <div className='runner-overlay'>
             {hud.phase === 'ready' && (
               <>
-                <span className='walk-eyebrow'>A LITTLE DETOUR</span>
+                <span className='runner-eyebrow'>PICK A GATE. POWER UP.</span>
                 <h3>
                   {hud.mode === 'intro'
-                    ? '一起散步一分钟。'
-                    : '这次，能走多远？'}
+                    ? '选扇门，火力翻倍。'
+                    : '这次，冲多远？'}
                 </h3>
                 <p>
-                  点按小路，或左右滑动换道。
+                  点按跑道，或左右滑动换道。
                   <br />
-                  避开石头，收集松果。每 6 颗恢复一格生命。
+                  穿过 +2、×2 门强化飞刺，自动射击怪物。
+                  <br />
+                  躲开没打倒的怪物，别被撞到。
                 </p>
                 <button
-                  className='walk-primary'
+                  className='runner-primary'
                   onClick={() => actions.current?.start()}
                 >
-                  出发 ↗
+                  开跑 ↗
                 </button>
               </>
             )}
             {hud.phase === 'paused' && (
               <>
-                <span className='walk-eyebrow'>TAKE A BREATH</span>
-                <h3>在这里歇一会儿。</h3>
-                <p>准备好了，再继续走。</p>
+                <span className='runner-eyebrow'>TAKE A BREATH</span>
+                <h3>休息一下，再开火。</h3>
+                <p>准备好了，再继续前进。</p>
                 <button
-                  className='walk-primary'
+                  className='runner-primary'
                   onClick={() => actions.current?.start()}
                 >
-                  继续散步 ↗
+                  继续开跑 ↗
                 </button>
               </>
             )}
             {hud.phase === 'lost' && (
               <>
-                <span className='walk-eyebrow'>A GOOD LITTLE WALK</span>
-                <h3>今天就走到这里。</h3>
+                <span className='runner-eyebrow'>RUN COMPLETE</span>
+                <h3>差一点，再来。</h3>
                 <p>
-                  走了 {clock(hud.time)} · 收集 {hud.cones} 颗松果
+                  坚持 {clock(hud.time)} · 击退 {hud.kills} 只怪物
                 </p>
                 <button
-                  className='walk-primary'
+                  className='runner-primary'
                   onClick={() => actions.current?.restart()}
                 >
-                  再走一次 ↗
+                  再跑一次 ↗
                 </button>
               </>
             )}
             {hud.phase === 'won' && (
               <div role='status' aria-live='polite'>
-                <span className='walk-eyebrow'>SECRET FOUND</span>
-                <h3>走到了。还有个惊喜！</h3>
+                <span className='runner-eyebrow'>SECRET FOUND</span>
+                <h3>冲过去了。还有个惊喜！</h3>
                 <p>隐藏主题已解锁。</p>
                 {reward.stage === 'countdown' && (
                   <>
-                    <b className='walk-countdown'>{reward.seconds}</b>
+                    <b className='runner-countdown'>{reward.seconds}</b>
                     <p>即将开启我的另一面</p>
                   </>
                 )}
@@ -408,7 +540,7 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
                 {reward.stage === 'error' && (
                   <>
                     <p>主题暂时没加载好，解锁记录已保留。</p>
-                    <button className='walk-primary' onClick={reward.retry}>
+                    <button className='runner-primary' onClick={reward.retry}>
                       再试一次
                     </button>
                   </>
@@ -416,33 +548,33 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
                 {reward.stage === 'saved' && <p>以后也能在页脚切换主题。</p>}
               </div>
             )}
-            <button className='walk-return' onClick={onClose}>
+            <button className='runner-return' onClick={onClose}>
               返回博客
             </button>
           </div>
         )}
       </div>
-      <div className='walk-controls' aria-label='选择小路'>
-        {['左边', '中间', '右边'].map((label, lane) => (
+      <div className='runner-controls' aria-label='选择跑道'>
+        {['左边', '右边'].map((label, lane) => (
           <button
             key={label}
             type='button'
-            aria-label={`走${label}的小路`}
+            aria-label={`移到${label}跑道`}
             aria-pressed={hud.lane === lane}
             disabled={!playing}
             onClick={() => actions.current?.move(lane)}
           >
-            {['←', '●', '→'][lane]} <span>{label}</span>
+            {['←', '→'][lane]} <span>{label}</span>
           </button>
         ))}
       </div>
-      <p className='walk-hint'>
+      <p className='runner-hint'>
         {hud.mode === 'intro'
-          ? '小路由你选，慢慢来。'
-          : `无尽散步 · ${hud.score} 分 · 速度会逐渐加快。`}
+          ? '左右选门 · 飞刺自动发射'
+          : `无尽挑战 · ${hud.score} 分 · 小心红色减益门。`}
       </p>
       <style jsx>{`
-        .medium-walk {
+        .medium-runner {
           width: 100%;
           max-width: 480px;
           margin: auto;
@@ -453,46 +585,46 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           border-radius: 18px;
           font-family: 'Noto Sans SC', sans-serif;
         }
-        .walk-heading {
+        .runner-heading {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 8px;
           padding: 0 2px 12px;
         }
-        .walk-heading h2 {
+        .runner-heading h2 {
           font-size: 20px;
           font-weight: 700;
         }
-        .walk-heading h2 span {
+        .runner-heading h2 span {
           display: block;
           color: #b7ccad;
           font: 8px monospace;
           letter-spacing: 0.1em;
         }
-        .walk-heading > small {
+        .runner-heading > small {
           font: 8px monospace;
           color: #ceb883;
         }
-        .walk-board {
+        .runner-board {
           position: relative;
           overflow: hidden;
-          height: clamp(280px, 53svh, 430px);
+          height: clamp(340px, 57svh, 470px);
           border: 1px solid #91a18355;
           border-radius: 12px;
           touch-action: pan-y;
           user-select: none;
         }
-        .walk-scene {
+        .runner-scene {
           display: block;
           width: 100%;
           height: 100%;
           pointer-events: none;
         }
-        .walk-player {
+        .runner-player {
           transition: transform 80ms ease-out;
         }
-        .walk-hud {
+        .runner-hud {
           position: absolute;
           inset: 0 0 auto;
           display: flex;
@@ -503,28 +635,28 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           background: #102720ed;
           border-bottom: 1px solid #c8d4a944;
         }
-        .walk-hud > div:first-child {
+        .runner-hud > div:first-child {
           min-width: 58px;
         }
-        .walk-hud strong {
+        .runner-hud strong {
           color: #f5c49f;
           font: 700 14px monospace;
         }
-        .walk-hud small {
+        .runner-hud small {
           display: block;
           font-size: 9px;
           color: #c1d2ad;
         }
-        .walk-time {
+        .runner-time {
           flex: 1;
           white-space: nowrap;
           font: 700 15px monospace;
         }
-        .walk-time small {
+        .runner-time small {
           display: inline;
           font: 9px monospace;
         }
-        .walk-hud button {
+        .runner-hud button {
           flex: 0 0 44px;
           width: 44px;
           height: 44px;
@@ -534,10 +666,32 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           font-size: 22px;
           background: #294237;
         }
-        .walk-hud button:disabled {
+        .runner-hud button:disabled {
           opacity: 0.35;
         }
-        .walk-progress {
+        .runner-power {
+          position: absolute;
+          top: 53px;
+          left: 0;
+          right: 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 4px 12px;
+          background: #102720ed;
+          border-bottom: 1px solid #c8d4a933;
+          font: 11px monospace;
+          color: #c5d7af;
+          pointer-events: none;
+        }
+        .runner-power b {
+          color: #ffe2a0;
+          font-size: 16px;
+        }
+        .runner-power small {
+          font-size: 9px;
+        }
+        .runner-progress {
           position: absolute;
           bottom: 0;
           left: 0;
@@ -548,45 +702,52 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           background: #1d332e;
           color: #e8c283;
         }
-        .walk-progress::-webkit-progress-bar {
+        .runner-progress::-webkit-progress-bar {
           background: #1d332e;
         }
-        .walk-progress::-webkit-progress-value {
+        .runner-progress::-webkit-progress-value {
           background: #e8c283;
         }
-        .walk-progress::-moz-progress-bar {
+        .runner-progress::-moz-progress-bar {
           background: #e8c283;
         }
-        .walk-overlay {
+        .runner-overlay {
           position: absolute;
-          inset: 54px 0 0;
+          inset: 82px 0 0;
           display: flex;
           align-items: center;
-          justify-content: center;
           flex-direction: column;
           padding: 16px;
           text-align: center;
           background: #152d26ed;
           overflow-y: auto;
         }
-        .walk-eyebrow {
+        .runner-overlay > * {
+          flex-shrink: 0;
+        }
+        .runner-overlay::before,
+        .runner-overlay::after {
+          content: '';
+          margin-block: auto;
+        }
+        .runner-eyebrow {
           font: 9px monospace;
           color: #dac493;
           letter-spacing: 0.14em;
         }
-        .walk-overlay h3 {
+        .runner-overlay h3 {
           font-size: clamp(18px, 5vw, 24px);
           font-weight: 700;
           margin: 10px 0;
           color: #f4ecd1;
         }
-        .walk-overlay p {
+        .runner-overlay p {
           margin: 0 0 12px;
           font-size: 11px;
           line-height: 1.9;
           color: #c8d6b9;
         }
-        .walk-primary {
+        .runner-primary {
           min-height: 46px;
           padding: 10px 24px;
           border-radius: 9px;
@@ -595,7 +756,7 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           font-size: 14px;
           font-weight: 700;
         }
-        .walk-return {
+        .runner-return {
           min-height: 44px;
           padding: 10px 22px;
           color: #c8d6b9;
@@ -603,18 +764,18 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           text-decoration: underline;
           text-underline-offset: 4px;
         }
-        .walk-countdown {
+        .runner-countdown {
           display: block;
           font: 700 38px monospace;
           color: #ecd5a2;
         }
-        .walk-controls {
+        .runner-controls {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
           margin-top: 10px;
         }
-        .walk-controls button {
+        .runner-controls button {
           min-height: 48px;
           border: 1px solid #8a9a7666;
           border-radius: 10px;
@@ -623,44 +784,44 @@ export default function SecretWalk({ onClose, onVictory, unlocked = false }) {
           background: #263f34;
           touch-action: manipulation;
         }
-        .walk-controls button[aria-pressed='true'] {
+        .runner-controls button[aria-pressed='true'] {
           background: #d8c99b;
           color: #213b2e;
         }
-        .walk-controls span {
+        .runner-controls span {
           font-size: 11px;
         }
-        .walk-controls button:disabled {
+        .runner-controls button:disabled {
           opacity: 0.4;
         }
-        .walk-hint {
+        .runner-hint {
           margin: 9px 0 0;
           text-align: center;
           font-size: 10px;
           color: #aec29f;
         }
-        :global(#theme-medium) .medium-walk button:focus-visible {
+        :global(#theme-medium) .medium-runner button:focus-visible {
           outline: 2px solid #f5dba1;
           outline-offset: -4px;
           border-radius: 9px;
         }
-        :global(#theme-medium) .walk-primary:hover {
+        :global(#theme-medium) .runner-primary:hover {
           color: #263b2f;
         }
-        :global(#theme-medium) .walk-return:hover {
+        :global(#theme-medium) .runner-return:hover {
           color: #f5dba1;
         }
-        :global(#theme-medium) .walk-controls button:hover,
-        :global(#theme-medium) .walk-hud button:hover {
+        :global(#theme-medium) .runner-controls button:hover,
+        :global(#theme-medium) .runner-hud button:hover {
           color: #e9efd4;
         }
         :global(#theme-medium)
-          .walk-controls
+          .runner-controls
           button[aria-pressed='true']:hover {
           color: #213b2e;
         }
         @media (prefers-reduced-motion: reduce) {
-          .walk-player {
+          .runner-player {
             transition: none;
           }
         }

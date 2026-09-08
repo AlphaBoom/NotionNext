@@ -8,7 +8,7 @@ const DESKTOP_GAME = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 // Each device loads only its own game, after the avatar is pressed.
 const loadGames = {
   desktop: () => import('./SecretSurvivors'),
-  mobile: () => import('./SecretWalk')
+  mobile: () => import('./SecretRunner')
 }
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
@@ -176,7 +176,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
             <section
               className='medium-inline-game'
               aria-label={
-                view === 'mobile' ? '刺猬散步游戏' : '刺猬夜行生存游戏'
+                view === 'mobile' ? '刺猬跑道射击游戏' : '刺猬夜行生存游戏'
               }
             >
               <button

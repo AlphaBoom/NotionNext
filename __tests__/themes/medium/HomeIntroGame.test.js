@@ -13,7 +13,7 @@ jest.mock('@/themes/medium/components/SecretSurvivors', () => {
     )
   }
 })
-jest.mock('@/themes/medium/components/SecretWalk', () => {
+jest.mock('@/themes/medium/components/SecretRunner', () => {
   mockMobileLoad()
   return {
     __esModule: true,

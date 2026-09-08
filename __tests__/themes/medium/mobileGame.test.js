@@ -1,15 +1,15 @@
 import React from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import SecretWalk from '@/themes/medium/components/SecretWalk'
-import { createWalk } from '@/themes/medium/lib/hedgehogWalk'
+import SecretRunner from '@/themes/medium/components/SecretRunner'
+import { createRunner } from '@/themes/medium/lib/hedgehogRunner'
 
-jest.mock('@/themes/medium/lib/hedgehogWalk', () => ({
-  ...jest.requireActual('@/themes/medium/lib/hedgehogWalk'),
-  createWalk: jest.fn()
+jest.mock('@/themes/medium/lib/hedgehogRunner', () => ({
+  ...jest.requireActual('@/themes/medium/lib/hedgehogRunner'),
+  createRunner: jest.fn()
 }))
 const actualCreate = jest.requireActual(
-  '@/themes/medium/lib/hedgehogWalk'
-).createWalk
+  '@/themes/medium/lib/hedgehogRunner'
+).createRunner
 const originals = {
   observer: global.IntersectionObserver,
   pointer: window.PointerEvent
@@ -18,7 +18,7 @@ let frame, visibility
 
 beforeEach(() => {
   jest.useFakeTimers()
-  createWalk.mockImplementation(actualCreate)
+  createRunner.mockImplementation(actualCreate)
   Object.defineProperty(document, 'hidden', {
     configurable: true,
     value: false
@@ -53,17 +53,17 @@ afterEach(() => {
 })
 
 test('lane taps and horizontal swipes move; vertical scrolling and cancelled gestures do not', () => {
-  const { container } = render(<SecretWalk onClose={() => {}} />)
-  fireEvent.click(screen.getByRole('button', { name: '出发 ↗' }))
-  const board = container.querySelector('.walk-board')
+  const { container } = render(<SecretRunner onClose={() => {}} />)
+  fireEvent.click(screen.getByRole('button', { name: '开跑 ↗' }))
+  const board = container.querySelector('.runner-board')
   board.getBoundingClientRect = () => ({ left: 0, width: 300 })
   const lane = () => screen.getByRole('img').getAttribute('aria-label')
-  fireEvent.click(screen.getByRole('button', { name: '走左边的小路' }))
+  fireEvent.click(screen.getByRole('button', { name: '移到左边跑道' }))
   expect(lane()).toContain('左')
   fireEvent.pointerDown(board, { clientX: 100, clientY: 200, button: 0 })
   fireEvent.pointerMove(board, { clientX: 200, clientY: 205 })
   fireEvent.pointerUp(board, { clientX: 200, clientY: 205 })
-  expect(lane()).toContain('中')
+  expect(lane()).toContain('右')
   fireEvent.pointerDown(board, { clientX: 280, clientY: 200, button: 0 })
   fireEvent.pointerUp(board, { clientX: 280, clientY: 200 })
   expect(lane()).toContain('右')
@@ -76,18 +76,18 @@ test('lane taps and horizontal swipes move; vertical scrolling and cancelled ges
 
 test('scrolling away pauses the clock; exit and Escape stay available, with listeners cleaned up', () => {
   const onClose = jest.fn()
-  const { container, unmount } = render(<SecretWalk onClose={onClose} />)
-  fireEvent.click(screen.getByRole('button', { name: '出发 ↗' }))
+  const { container, unmount } = render(<SecretRunner onClose={onClose} />)
+  fireEvent.click(screen.getByRole('button', { name: '开跑 ↗' }))
   act(() => frame(34))
   act(() => visibility([{ intersectionRatio: 0.2 }]))
-  expect(container.querySelector('.medium-walk').dataset.phase).toBe('paused')
+  expect(container.querySelector('.medium-runner').dataset.phase).toBe('paused')
   expect(frame).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: '继续散步 ↗' }))
+  fireEvent.click(screen.getByRole('button', { name: '继续开跑 ↗' }))
   Object.defineProperty(document, 'hidden', { configurable: true, value: true })
   fireEvent(document, new Event('visibilitychange'))
-  expect(container.querySelector('.medium-walk').dataset.phase).toBe('paused')
+  expect(container.querySelector('.medium-runner').dataset.phase).toBe('paused')
   fireEvent.click(
-    screen.getByRole('button', { name: '退出散步，返回个人信息' })
+    screen.getByRole('button', { name: '退出游戏，返回个人信息' })
   )
   fireEvent.keyDown(window, { key: 'Escape' })
   expect(onClose).toHaveBeenCalledTimes(2)
@@ -97,15 +97,15 @@ test('scrolling away pauses the clock; exit and Escape stay available, with list
 })
 
 test('the first mobile win uses the shared celebration and three-second reveal', async () => {
-  createWalk.mockImplementation(mode => ({
+  createRunner.mockImplementation(mode => ({
     ...actualCreate(mode),
     time: 59.99
   }))
   const reveal = jest.fn(() => Promise.resolve(true)),
     onClose = jest.fn(),
     onVictory = jest.fn(() => reveal)
-  render(<SecretWalk onClose={onClose} onVictory={onVictory} />)
-  fireEvent.click(screen.getByRole('button', { name: '出发 ↗' }))
+  render(<SecretRunner onClose={onClose} onVictory={onVictory} />)
+  fireEvent.click(screen.getByRole('button', { name: '开跑 ↗' }))
   await act(async () => frame(34))
   expect(onVictory).toHaveBeenCalledWith('won')
   expect(screen.getByRole('status').textContent).toContain('隐藏主题已解锁')
@@ -119,18 +119,21 @@ test('the first mobile win uses the shared celebration and three-second reveal',
 })
 
 test('an unlocked mobile run continues beyond one minute and does not claim a reward', () => {
-  createWalk.mockImplementation(mode => ({
+  createRunner.mockImplementation(mode => ({
     ...actualCreate(mode),
     time: 59.99,
-    nextWave: 100
+    nextGate: 100,
+    nextEnemy: 100
   }))
   const onVictory = jest.fn()
   const { container } = render(
-    <SecretWalk onClose={() => {}} onVictory={onVictory} unlocked />
+    <SecretRunner onClose={() => {}} onVictory={onVictory} unlocked />
   )
-  fireEvent.click(screen.getByRole('button', { name: '出发 ↗' }))
+  fireEvent.click(screen.getByRole('button', { name: '开跑 ↗' }))
   act(() => frame(34))
-  expect(container.querySelector('.medium-walk').dataset.mode).toBe('endless')
-  expect(container.querySelector('.medium-walk').dataset.phase).toBe('playing')
+  expect(container.querySelector('.medium-runner').dataset.mode).toBe('endless')
+  expect(container.querySelector('.medium-runner').dataset.phase).toBe(
+    'playing'
+  )
   expect(onVictory).not.toHaveBeenCalled()
 })

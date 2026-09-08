@@ -7,6 +7,7 @@ import {
   useState
 } from 'react'
 import { installRewardConsole } from '../lib/rewardConsole'
+import RewardColorScheme from './RewardColorScheme'
 import {
   EMPTY_REWARD,
   readReward,
@@ -165,16 +166,18 @@ export default function RewardProvider({ children }) {
         Hero
       }}
     >
-      {children}
-      {Appearance && reward.unlocked && (
-        <Appearance
-          active={reward.enabled}
-          opening={opening}
-          onCovered={commitCoveredTheme}
-          onOpeningEnd={() => setOpening(null)}
-          onToggle={toggleReward}
-        />
-      )}
+      <RewardColorScheme active={reward.enabled}>
+        {children}
+        {Appearance && reward.unlocked && (
+          <Appearance
+            active={reward.enabled}
+            opening={opening}
+            onCovered={commitCoveredTheme}
+            onOpeningEnd={() => setOpening(null)}
+            onToggle={toggleReward}
+          />
+        )}
+      </RewardColorScheme>
     </RewardContext.Provider>
   )
 }

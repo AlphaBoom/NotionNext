@@ -5,7 +5,7 @@ import SmartLink from '@/components/SmartLink'
 
 const DESKTOP = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 const NATIVE_TARGETS =
-  'a, img, picture, video, audio, canvas, input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="dialog"], .notion-code, .medium-walk'
+  'a, img, picture, video, audio, canvas, input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="dialog"], .notion-code, .medium-runner'
 
 // Mounted only after the cosmetic reward has been unlocked.
 export default function RewardContextMenu({ active, onToggle }) {
