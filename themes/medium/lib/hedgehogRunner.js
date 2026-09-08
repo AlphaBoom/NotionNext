@@ -1,4 +1,4 @@
-export const RUN_SECONDS = 60
+export const RUN_SECONDS = 30
 export const PLAYER_LINE = 0.82
 export const MAX_POWER = 9999
 

@@ -96,15 +96,20 @@ test('scrolling away pauses the clock; exit and Escape stay available, with list
   expect(onClose).toHaveBeenCalledTimes(2)
 })
 
-test('the first mobile win uses the shared celebration and three-second reveal', async () => {
+test('the mobile intro shows 30 seconds and then uses the three-second reveal', async () => {
   createRunner.mockImplementation(mode => ({
     ...actualCreate(mode),
-    time: 59.99
+    time: 29.99
   }))
   const reveal = jest.fn(() => Promise.resolve(true)),
     onClose = jest.fn(),
     onVictory = jest.fn(() => reveal)
   render(<SecretRunner onClose={onClose} onVictory={onVictory} />)
+  expect(screen.getByText('30 SECOND RUN')).toBeTruthy()
+  expect(screen.getByText('/ 00:30')).toBeTruthy()
+  expect(screen.getByRole('progressbar', { name: '30 秒闯关进度' }).max).toBe(
+    30
+  )
   fireEvent.click(screen.getByRole('button', { name: '开跑 ↗' }))
   await act(async () => frame(34))
   expect(onVictory).toHaveBeenCalledWith('won')

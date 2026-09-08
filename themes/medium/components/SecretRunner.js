@@ -200,7 +200,9 @@ export default function SecretRunner({ onClose, onVictory, unlocked = false }) {
         <h2>
           棘走 <span>QUILL RUSH</span>
         </h2>
-        <small>{hud.mode === 'intro' ? '60 SECOND RUN' : 'ENDLESS RUSH'}</small>
+        <small>
+          {hud.mode === 'intro' ? `${RUN_SECONDS} SECOND RUN` : 'ENDLESS RUSH'}
+        </small>
       </div>
       <div
         ref={board}
@@ -440,7 +442,7 @@ export default function SecretRunner({ onClose, onVictory, unlocked = false }) {
           </div>
           <div className='runner-time'>
             {clock(hud.time)}
-            {hud.mode === 'intro' && <small> / 01:00</small>}
+            {hud.mode === 'intro' && <small> / {clock(RUN_SECONDS)}</small>}
           </div>
           <button
             type='button'
@@ -469,7 +471,7 @@ export default function SecretRunner({ onClose, onVictory, unlocked = false }) {
             className='runner-progress'
             max={RUN_SECONDS}
             value={hud.time}
-            aria-label='一分钟闯关进度'
+            aria-label={`${RUN_SECONDS} 秒闯关进度`}
           />
         )}
         {!playing && (
