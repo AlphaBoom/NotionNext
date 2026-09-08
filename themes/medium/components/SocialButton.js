@@ -1,6 +1,4 @@
 import { siteConfig } from '@/lib/config'
-import { useRef } from 'react'
-import { handleEmailClick } from '@/lib/plugins/mailEncrypt'
 
 /**
  * 社交联系方式按钮组
@@ -15,12 +13,9 @@ const SocialButton = () => {
   const CONTACT_LINKEDIN = siteConfig('CONTACT_LINKEDIN')
   const CONTACT_WEIBO = siteConfig('CONTACT_WEIBO')
   const CONTACT_INSTAGRAM = siteConfig('CONTACT_INSTAGRAM')
-  const CONTACT_EMAIL = siteConfig('CONTACT_EMAIL')
   const ENABLE_RSS = siteConfig('ENABLE_RSS')
   const CONTACT_BILIBILI = siteConfig('CONTACT_BILIBILI')
   const CONTACT_YOUTUBE = siteConfig('CONTACT_YOUTUBE')
-
-  const emailIcon = useRef(null)
 
   return (
     <div className='space-x-3 text-xl text-gray-600 dark:text-gray-400 flex-wrap flex justify-center '>
@@ -85,15 +80,6 @@ const SocialButton = () => {
           title={'instagram'}
           href={CONTACT_INSTAGRAM}>
           <i className='fab fa-instagram transform hover:scale-125 duration-150 hover:text-green-600' />
-        </a>
-      )}
-      {CONTACT_EMAIL && (
-        <a
-          onClick={e => handleEmailClick(e, emailIcon, CONTACT_EMAIL)}
-          title='email'
-          className='cursor-pointer'
-          ref={emailIcon}>
-          <i className='fas fa-envelope transform hover:scale-125 duration-150 hover:text-green-600' />
         </a>
       )}
       {ENABLE_RSS && (

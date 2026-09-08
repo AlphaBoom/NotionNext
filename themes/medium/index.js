@@ -176,7 +176,9 @@ const LayoutSlug = props => {
             {/* 上一篇下一篇文章 */}
             {post?.type === 'Post' && <ArticleAround prev={prev} next={next} />}
             {/* 评论区 */}
-            <Comment frontMatter={post} />
+            {post.type === 'Post' && post.status === 'Published' && (
+              <Comment frontMatter={post} />
+            )}
           </section>
 
         </div>
