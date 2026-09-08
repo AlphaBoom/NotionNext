@@ -11,6 +11,7 @@ const Style = () => (
     body:has(#theme-medium) #canvasRibbon { display: none; }
     #theme-medium {
       --paper: var(--medium-page-paper);
+      --reading-width: 860px;
       --ink: #292e2b;
       --muted: #727871;
       --line: #e0e3dc;
@@ -89,10 +90,10 @@ const Style = () => (
       background: var(--paper);
       outline: none; padding: 0 0 48px;
     }
-    #theme-medium.medium-reading #container-inner { max-width: 900px; }
+    #theme-medium.medium-reading #container-inner { max-width: 1020px; }
     #theme-medium.medium-full-width #container-inner { max-width: 1440px; }
     #theme-medium .medium-desktop-toc {
-      display: none; position: absolute; left: calc(50% + 488px); top: 78px;
+      display: none; position: absolute; left: calc(50% + 548px); top: 78px;
       bottom: 48px; width: 206px;
     }
     #theme-medium .medium-desktop-toc > .medium-catalog { position: sticky; top: 36px; }
@@ -104,6 +105,7 @@ const Style = () => (
     }
     #theme-medium .medium-intro-content {
       display: flow-root;
+      scroll-margin-top: 16px;
     }
     #theme-medium .medium-intro-content.is-entering {
       animation: medium-intro-enter 320ms ease both;
@@ -291,11 +293,8 @@ const Style = () => (
     #theme-medium .medium-portrait-frame { position: relative; z-index: 1; padding: 7px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); box-shadow: 0 0 44px color-mix(in srgb, var(--accent) 14%, transparent); transition: transform 300ms ease, box-shadow 300ms ease; cursor: pointer; }
     /* Returning from the game restores keyboard focus; keep the avatar circular. */
     #theme-medium .medium-portrait-frame:is(:hover, :focus-visible) { border-radius: 50%; transform: scale(1.06); box-shadow: 0 0 48px color-mix(in srgb, var(--accent) 24%, transparent); }
-    #theme-medium .medium-mobile-avatar { display: none; }
-    @media (max-width: 768px), (hover: none), (pointer: coarse) {
-      #theme-medium .medium-portrait-trigger { display: none; }
-      #theme-medium .medium-mobile-avatar { display: block; cursor: default; }
-      #theme-medium .medium-mobile-avatar:hover { transform: none; }
+    @media (hover: none) {
+      #theme-medium .medium-portrait-frame:hover { transform: none; }
     }
     #theme-medium .medium-avatar { pointer-events: none; display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 50%; }
     #theme-medium .medium-avatar-monogram { display: grid; place-items: center; width: 112px; height: 112px; font-family: 'Noto Serif SC', serif; font-size: 56px; color: var(--accent); }
@@ -370,7 +369,7 @@ const Style = () => (
     }
 
     /* Article typography; wide blocks get space without stretching every paragraph. */
-    #theme-medium .medium-article-header { max-width: 740px; margin: 0 auto; padding: 48px 0 30px; }
+    #theme-medium .medium-article-header { max-width: var(--reading-width); margin: 0 auto; padding: 48px 0 30px; }
     #theme-medium .medium-back-link { display: inline-block; font-size: 12px; color: var(--muted); margin-bottom: 26px; }
     #theme-medium .medium-article-heading { display: flex; align-items: baseline; gap: 12px; }
     #theme-medium .medium-article-heading h1 { min-width: 0; }
@@ -380,7 +379,7 @@ const Style = () => (
     #theme-medium .medium-article-stats { white-space: nowrap; font-variant-numeric: tabular-nums; }
     #theme-medium #article-wrapper { width: 100%; min-width: 0; }
     #theme-medium .medium-ai-summary {
-      max-width: 740px; margin: 0 auto 28px; overflow: hidden;
+      max-width: var(--reading-width); margin: 0 auto 28px; overflow: hidden;
       background: var(--wash); border: 1px solid var(--line); border-radius: 12px;
     }
     #theme-medium .medium-ai-summary-toggle {
@@ -398,7 +397,7 @@ const Style = () => (
       margin: 0; color: var(--ink); font-size: 14px; line-height: 1.9;
       white-space: pre-line; overflow-wrap: anywhere;
     }
-    #theme-medium #notion-article { width: 100%; max-width: 740px; min-width: 0; margin-inline: auto; overflow-x: visible; }
+    #theme-medium #notion-article { width: 100%; max-width: var(--reading-width); min-width: 0; margin-inline: auto; overflow-x: visible; }
     #theme-medium #article-wrapper .notion { font-size: 18px; font-weight: 400; line-height: 1.85; color: var(--ink); }
     #theme-medium #article-wrapper .notion-page-content-inner { width: 100%; min-width: 0; }
     #theme-medium #article-wrapper :is(.notion-page, .notion-page-content-inner) > :not(.notion-viewport) { max-width: 100%; min-width: 0; margin-left: auto !important; margin-right: auto !important; }
@@ -431,7 +430,7 @@ const Style = () => (
     #theme-medium #article-wrapper .notion-asset-caption { font-size: 12px; line-height: 1.7; color: var(--muted); margin-top: 10px; }
     #theme-medium #article-wrapper .notion-bookmark { border: 1px solid var(--line); border-radius: 4px; }
     #theme-medium.medium-full-width #article-wrapper :is(.notion-page, .notion-page-content-inner) > :not(.notion-viewport) { max-width: 100%; }
-    #theme-medium .medium-article-end { max-width: 740px; margin: 52px auto 0; border-top: 1px solid var(--line); padding-top: 24px; }
+    #theme-medium .medium-article-end { max-width: var(--reading-width); margin: 52px auto 0; border-top: 1px solid var(--line); padding-top: 24px; }
     #theme-medium .medium-article-around { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 24px 0; margin: 28px 0; }
     #theme-medium .medium-article-around a { display: flex; flex-direction: column; gap: 8px; }
     #theme-medium .medium-article-around a > span { font-size: 11px; color: var(--muted); }
@@ -480,7 +479,7 @@ const Style = () => (
     #theme-medium .medium-footer-main > div { font-size: 16px; color: var(--muted); }
     #theme-medium .medium-footer-note { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 10px; margin-top: 16px; }
 
-    @media (min-width: 1440px) {
+    @media (min-width: 1560px) {
       #theme-medium .medium-desktop-toc { display: block; }
       #theme-medium .medium-mobile-toc, #theme-medium .medium-mobile-top { display: none; }
       #theme-medium .medium-desktop-top { display: flex; }

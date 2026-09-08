@@ -5,7 +5,7 @@ import SmartLink from '@/components/SmartLink'
 
 const DESKTOP = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 const NATIVE_TARGETS =
-  'a, img, picture, video, audio, canvas, input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="dialog"], .notion-code'
+  'a, img, picture, video, audio, canvas, input, textarea, select, button, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="dialog"], .notion-code, .medium-walk'
 
 // Mounted only after the cosmetic reward has been unlocked.
 export default function RewardContextMenu({ active, onToggle }) {
@@ -361,8 +361,9 @@ export default function RewardContextMenu({ active, onToggle }) {
         }
         .ng-touch-switch {
           display: inline-block;
+          min-height: 44px;
           margin-top: 14px;
-          padding: 6px 0;
+          padding: 12px 8px;
           color: inherit;
           font-size: 11px;
           text-decoration: underline;
