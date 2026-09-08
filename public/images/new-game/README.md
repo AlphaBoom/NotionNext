@@ -16,10 +16,12 @@ All assets are served locally. They are referenced only by the optional reward m
 
 ## Soujirou expression inset
 
-`soujirou-closeup.webp`: 420 × 420, 20,176 bytes. An AI-assisted close-up edited with the built-in imagegen tool on 2026-09-08. The authoritative pose/style reference was the hand region of `hifumi-soujirou.webp`; the expression reference was the previously approved avatar-based inset from commit `16cd8066`. Soujirou lies belly-down in the supporting hands, with a low brown back extending left, his broad ivory face and low oval muzzle at right, and two small forepaws resting above the near hand. The curled avatar's upright chest and pink crossed belly-like mark have been removed. His half-closed, unreceptive ご機嫌ななめ expression remains.
+`soujirou-closeup.webp`: 420 × 420, 20,576 bytes. Created with the built-in imagegen tool on 2026-09-08 using direct image-to-image restoration of a crop from `hifumi-soujirou.webp`, as requested by the owner.
 
-The owner approved this prone hedgehog. The previous hands-only pass still invented an extended horizontal finger and exposed too much of both palms. This revision first inspected an 8× nearest-neighbor crop of the original hand region (x=125, y=127, width=117, height=124 in the 386 × 420 full image). The near wrist enters diagonally from lower left; its back/outer side is visible and its grouped fingers curve up-right over the near flank. The far palm and wrist are mostly hidden, leaving only a few fingertips at the right of the face. The final hands-only edit follows that geometry and removes the invented full-width horizontal hand band, while retaining the approved hedgehog. This is a fan illustration, not an official animation frame. The original full character artwork remains unchanged.
+The input was the original 386 × 420 character artwork, cropped at x=142, y=149, width=80, height=80 and enlarged to 1024 × 1024 using nearest-neighbor sampling. That crop was the **only** generation input and the edit target. Previous generated close-ups and the avatar were not supplied as references. The source's sleeve, knee, surrounding hair and clothing remain in the inset to preserve the original hand positions and occlusion. The prompt asks to restore the pixelated linework while retaining the exact source composition, rather than reconstructing a new holding pose from a written anatomy description.
+
+This is an AI-assisted restored detail, not an unmodified official animation frame. The full character artwork remains unchanged.
 
 Converted to WebP quality 87. The optional theme presents it in a rounded rectangular detail panel, with a solid connector to a locator around the hedgehog in her hands. The full artwork, locator and inset share one aspect-ratio scene so resizing and animation do not separate them. There are no thought-bubble dots or visible caption labels.
 
-The exact final hand-reconstruction prompt and input roles are recorded in [soujirou-pose-prompt.txt](soujirou-pose-prompt.txt).
+The exact direct image-to-image prompt and crop input are documented in [soujirou-pose-prompt.txt](soujirou-pose-prompt.txt).

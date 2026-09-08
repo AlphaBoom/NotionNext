@@ -1,17 +1,10 @@
-# Final hand reconstruction from the original illustration
+# Direct image-to-image restoration of the original crop
 
 Use case: precise-object-edit.
-Asset: magnified detail of Soujirou lying in Hifumi's hands, for the existing anime blog.
-Image 1: edit target. Its HEDGEHOG is approved; its HUMAN HANDS ARE WRONG.
-Image 2: enlarged crop of the ORIGINAL illustration, authoritative reference for the hands' pose and occlusion. Analyze and follow it closely.
-Image 3: original full illustration, additional context of both forearms and knees.
-
-Change only the human hands in image 1 to reproduce the support pose in image 2. Preserve image 1's hedgehog identity, face, unreceptive half-closed eyes, wide low muzzle, ears, brown prone back, small ivory forepaws, colors, size and location. Preserve warm ivory background and clean cel linework. New fingers may occlude a little of the lower quill edge as the original does, but do not redesign the animal.
-
-The essential correction is geometry, NOT extra nail details:
-1. NEAR HAND (at screen left): wrist rises DIAGONALLY from lower left. We see the BACK / OUTER SIDE of this hand, not a wide upward-facing palm. Its thumb cups the left flank of the brown body. Its four fingers stay grouped and curve diagonally UP AND RIGHT over the near flank, making a short compact fan with naturally staggered rounded tips. Visible finger grooves run roughly lower-left to upper-right, like image 2. The fingertips reach the lower flank just LEFT of the animal's cheek; they do NOT stretch across under the entire muzzle to the opposite side. Support is partly hidden beneath the body. The near hand is compact and gently bent, not a horizontal tray.
-2. FAR HAND (screen right): almost all of its palm and wrist are OCCLUDED by the animal and support below. Only a few small upward-curved fingers are visible at the far right of the head, as in image 2. Do not spread a huge second palm into the lower-right corner. Do not make a symmetric U-shaped bowl.
-3. DELETE the impossible long horizontal digit / peach band that currently crosses nearly the full image width below the animal's face. This was the main mistake. Delete the large lower-right fan of hand/palm. Replace these with the compact diagonal back-of-hand pose from image 2, with the animal's weight supported underneath out of view.
-4. Exactly TWO connected adult anime hands, proportionate slender fingers and coherent wrists. Natural occlusion; fewer visible digits are preferable to invented fingers. No duplicated thumbs, merged palms, long sausage fingers, or disembodied hands.
-
-Framing: same square composition and hedgehog placement as image 1, original held pose. Hands occupy a compact lower-left / side area, not an oversized horizontal band. No added knee, person, text, caption, frame or watermark. Keep the approved grumpy prone HEDGEHOG unchanged. Only correct hands against image 2.
+Image 1 is the EDIT TARGET and the ONLY visual source: an 80 × 80 crop from the original Hifumi holding Soujirou artwork, enlarged to 1024 × 1024 with nearest-neighbor sampling.
+Task: faithful image-to-image restoration of this exact crop into a clean, sharp 2D anime detail. Remove pixel blocks and compression blur while keeping the original drawing's composition and geometry.
+Treat the input as a drawing to carefully trace and restore, NOT an inspiration for a new pose. Follow its original edges: the exact two hands, visible finger shapes and spacing, thumb positions, wrists, cuffs, hedgehog shape, face angle, and overlap with the dark knee in the foreground. Preserve which contours are visible and which are hidden. Do not rearrange, lengthen, spread, rotate or re-pose the hands. Do not reveal any palm or finger that is hidden in the source. Preserve the dark knee covering the lower right, white sleeve at the lower left, blouse and hair around the edges; these are essential to the original occlusion.
+Keep Soujirou's original brown quills, ivory face, small low nose and half-lidded unreceptive grumpy expression from this source. Preserve the original body's proportions, camera angle, scale and location. No separate avatar influence.
+Use restrained clean anime cel linework and the source palette. Interpret only enough missing pixels to produce smooth edges, keeping the original forms rather than adding anatomical details or elaborate nails.
+Same square framing. No new background scene, no new objects, no portrait redesign, no text, labels, bubbles, border or watermark. Transparent gaps may be filled with a flat warm ivory matching the blog inset. All source clothing remains.
+Priority: exact source geometry and hand occlusion over decorative improvement. Output only the restored version of this input crop.
