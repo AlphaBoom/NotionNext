@@ -6,9 +6,13 @@ export default function RouteTransition({ children }) {
   const { locale } = useGlobal()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [searching, setSearching] = useState(false)
 
   useEffect(() => {
-    const start = () => setLoading(true)
+    const start = url => {
+      setSearching(url.split('?')[0].startsWith('/search'))
+      setLoading(true)
+    }
     const done = () => setLoading(false)
     router.events.on('routeChangeStart', start)
     router.events.on('routeChangeComplete', done)
@@ -24,10 +28,16 @@ export default function RouteTransition({ children }) {
     <>
       {loading && (
         <div className='medium-route-progress' role='status'>
-          <span className='sr-only'>{locale.COMMON.LOADING_ARTICLE}</span>
+          <span className='sr-only'>
+            {searching ? '正在加载搜索结果…' : locale.COMMON.LOADING_ARTICLE}
+          </span>
         </div>
       )}
-      <div key={router.asPath.split('#')[0]} className='medium-route-content' aria-busy={loading}>
+      <div
+        key={router.asPath.split('#')[0]}
+        className='medium-route-content'
+        aria-busy={loading}
+      >
         {children}
       </div>
     </>

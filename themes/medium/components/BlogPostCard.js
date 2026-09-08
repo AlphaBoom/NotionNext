@@ -6,8 +6,11 @@ import { siteConfig } from '@/lib/config'
 import CONFIG from '../config'
 import WritingModeBadge from './WritingModeBadge'
 import TextPostCover from './TextPostCover'
+import SearchHighlight from './SearchHighlight'
 
-const BlogPostCard = ({ post, priority = false }) => {
+const BlogPostCard = ({ post, priority = false, searchKeyword }) => {
+  const summary =
+    searchKeyword && post.searchExcerpt ? post.searchExcerpt : post.summary
   const showCover = siteConfig('MEDIUM_POST_LIST_COVER', null, CONFIG)
   const cover = post.pageCoverThumbnail
   const showTextCover =
@@ -36,10 +39,14 @@ const BlogPostCard = ({ post, priority = false }) => {
             {siteConfig('POST_TITLE_ICON') && (
               <NotionIcon icon={post.pageIcon} />
             )}
-            {post.title}
+            <SearchHighlight text={post.title} keyword={searchKeyword} />
           </SmartLink>
         </h2>
-        {post.summary && <p className='medium-post-summary'>{post.summary}</p>}
+        {summary && (
+          <p className='medium-post-summary'>
+            <SearchHighlight text={summary} keyword={searchKeyword} />
+          </p>
+        )}
         {siteConfig('MEDIUM_POST_LIST_TAG', null, CONFIG) && (
           <div className='medium-post-tags'>
             {post.tagItems?.slice(0, 2).map(tag => (
@@ -65,7 +72,7 @@ const BlogPostCard = ({ post, priority = false }) => {
               src={cover}
               width={360}
               height={240}
-              alt={post.title}
+              alt=<SearchHighlight text={post.title} keyword={searchKeyword} />
               priority={priority}
             />
           ) : (
