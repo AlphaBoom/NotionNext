@@ -98,21 +98,176 @@ const Style = () => (
     }
     #theme-medium .medium-desktop-toc > .medium-catalog { position: sticky; top: 36px; }
 
-    #theme-medium .medium-intro-stage { position: relative; overflow: clip; transition: height 380ms cubic-bezier(.2,.7,.2,1); }
-    #theme-medium .medium-intro-content { display: flow-root; }
-    #theme-medium .medium-intro-content.is-entering { animation: medium-intro-enter 320ms ease both; }
-    #theme-medium .medium-intro-content.is-leaving { animation: medium-intro-leave 160ms ease both; pointer-events: none; }
-    #theme-medium .medium-intro-stage.is-playing .medium-intro-content.is-entering { animation: medium-game-opening 520ms cubic-bezier(.2,.7,.2,1) both; }
-    #theme-medium .medium-masthead.is-preparing .medium-portrait-orbit { animation: medium-orbit-loading 1.2s linear infinite; }
-    #theme-medium .medium-masthead.is-preparing .medium-portrait-frame { box-shadow: 0 0 52px color-mix(in srgb, var(--accent) 26%, transparent); transform: scale(1.04); }
-    #theme-medium .medium-game-load-error { font-size: 11px; color: var(--muted); margin-top: 12px; }
-    @keyframes medium-orbit-loading { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes medium-game-opening { from { opacity: 0; transform: translateY(18px) scale(.985); filter: blur(3px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
-    #theme-medium .medium-inline-game { padding-top: 24px; }
-    #theme-medium .medium-game-return { border: 0; background: transparent; color: var(--muted); padding: 4px 0; font-size: 11px; cursor: pointer; }
-    #theme-medium .medium-game-loading { min-height: 280px; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
-    @keyframes medium-intro-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes medium-intro-leave { to { opacity: 0; transform: translateY(-8px); } }
+    #theme-medium .medium-intro-stage {
+      position: relative;
+      overflow: clip;
+      transition: height 440ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #theme-medium .medium-intro-content {
+      display: flow-root;
+    }
+    #theme-medium .medium-intro-content.is-entering {
+      animation: medium-intro-enter 320ms ease both;
+    }
+    #theme-medium .medium-intro-content.is-leaving {
+      animation: medium-intro-leave 160ms ease both;
+      pointer-events: none;
+    }
+    #theme-medium
+      .medium-intro-stage.is-playing
+      .medium-intro-content.is-entering {
+      animation: medium-game-opening 460ms steps(1, end) both;
+    }
+    #theme-medium .medium-masthead.is-preparing .medium-portrait-orbit {
+      animation: medium-orbit-loading 1.2s linear infinite;
+    }
+    #theme-medium .medium-masthead.is-preparing .medium-portrait-frame {
+      box-shadow: 0 0 52px color-mix(in srgb, var(--accent) 26%, transparent);
+      transform: scale(1.04);
+    }
+    #theme-medium .medium-game-load-error {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+    @keyframes medium-orbit-loading {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    /* A single aperture cut and scan sweep, without repeated flashes. */
+    #theme-medium .medium-intro-stage.is-booting .medium-intro-content {
+      animation: medium-game-cut 180ms steps(1, end) both;
+    }
+    #theme-medium .medium-intro-stage.is-booting::after {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      background: linear-gradient(
+        transparent 48%,
+        var(--accent) 49%,
+        var(--accent) 50%,
+        transparent 51%
+      );
+      animation: medium-signal-cut 180ms ease-out both;
+    }
+    #theme-medium .medium-intro-stage.is-playing .medium-inline-game::after {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      z-index: 2;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 32px;
+      background: linear-gradient(transparent, #b6d5b025, #b6d5b070);
+      animation: medium-scan-sweep 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes medium-game-cut {
+      0% {
+        clip-path: inset(0);
+      }
+      35% {
+        transform: translateX(-7px);
+        clip-path: polygon(
+          0 0,
+          100% 0,
+          100% 35%,
+          12% 35%,
+          12% 38%,
+          100% 38%,
+          100% 100%,
+          0 100%
+        );
+      }
+      70% {
+        transform: translateX(4px);
+        clip-path: inset(45% 0 43% 0);
+      }
+      100% {
+        transform: none;
+        clip-path: inset(50% 0);
+      }
+    }
+    @keyframes medium-signal-cut {
+      from {
+        transform: scaleX(0.1);
+      }
+      to {
+        transform: scaleX(1.4);
+      }
+    }
+    @keyframes medium-game-opening {
+      0% {
+        clip-path: inset(49% 0);
+        transform: translateX(-4px);
+      }
+      18% {
+        clip-path: inset(24% 0);
+        transform: translateX(3px);
+      }
+      35% {
+        clip-path: inset(4% 0);
+        transform: none;
+      }
+      55%,
+      100% {
+        clip-path: inset(0);
+        transform: none;
+      }
+    }
+    @keyframes medium-scan-sweep {
+      0% {
+        transform: translateY(0);
+        opacity: 0.8;
+      }
+      90% {
+        opacity: 0.5;
+      }
+      100% {
+        transform: translateY(570px);
+        opacity: 0;
+      }
+    }
+    #theme-medium .medium-inline-game {
+      padding-top: 24px;
+    }
+    #theme-medium .medium-game-return {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 4px 0;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    #theme-medium .medium-game-loading {
+      min-height: 280px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    @keyframes medium-intro-enter {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    @keyframes medium-intro-leave {
+      to {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+    }
     /* A personal card on the home page; article layouts keep their quiet typography. */
     #theme-medium .medium-masthead {
       position: relative; isolation: isolate; display: flex; align-items: center;

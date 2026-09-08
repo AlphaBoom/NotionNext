@@ -2,18 +2,10 @@ import LazyImage from '@/components/LazyImage'
 import SmartLink from '@/components/SmartLink'
 import { siteConfig } from '@/lib/config'
 import { useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
 
 const GAME_MEDIA = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
-const loadDungeon = () => import('./SecretDungeon')
-const SecretDungeon = dynamic(loadDungeon, {
-  ssr: false,
-  loading: () => (
-    <div className='medium-game-loading' role='status'>
-      正在翻开书页…
-    </div>
-  )
-})
+// A plain dynamic import keeps all game code and styles out of the home bundle.
+const loadGame = () => import('./SecretSurvivors')
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   const [view, setView] = useState('profile')
@@ -23,11 +15,10 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   const [height, setHeight] = useState()
   const content = useRef(null)
   const avatar = useRef(null)
-  const returnButton = useRef(null)
   const transition = useRef(null)
   const hasSwitched = useRef(false)
   const prepareId = useRef(0)
-  const dungeonReady = useRef(false)
+  const Game = useRef(null)
 
   useEffect(() => {
     const media = window.matchMedia(GAME_MEDIA)
@@ -55,8 +46,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
     const observer = new ResizeObserver(measure)
     observer.observe(element)
     if (hasSwitched.current && window.matchMedia(GAME_MEDIA).matches) {
-      const target = view === 'profile' ? avatar.current : returnButton.current
-      target?.focus({ preventScroll: true })
+      if (view === 'profile') avatar.current?.focus({ preventScroll: true })
     }
     return () => observer.disconnect()
   }, [view])
@@ -78,7 +68,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
         setLeaving(false)
         transition.current = null
       },
-      reducedMotion ? 0 : 160
+      reducedMotion ? 0 : 180
     )
   }
 
@@ -96,16 +86,6 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
     </span>
   )
 
-  function preloadGame() {
-    if (window.matchMedia(GAME_MEDIA).matches) {
-      void loadDungeon()
-        .then(() => {
-          dungeonReady.current = true
-        })
-        .catch(() => {})
-    }
-  }
-
   async function openGame() {
     if (
       preparing ||
@@ -114,16 +94,16 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
     )
       return
     setLoadFailed(false)
-    if (dungeonReady.current) {
+    if (Game.current) {
       switchView('game')
       return
     }
     const requestId = ++prepareId.current
     setPreparing(true)
     try {
-      await loadDungeon()
+      const module = await loadGame()
       if (requestId !== prepareId.current) return
-      dungeonReady.current = true
+      Game.current = module.default
       setPreparing(false)
       switchView('game')
     } catch {
@@ -133,10 +113,12 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
     }
   }
 
+  const LoadedGame = Game.current
+
   return (
     <header className='medium-home-intro'>
       <div
-        className={`medium-intro-stage ${view === 'game' ? 'is-playing' : ''}`}
+        className={`medium-intro-stage ${view === 'game' ? 'is-playing' : ''} ${leaving && view === 'profile' ? 'is-booting' : ''}`}
         style={{ height }}
       >
         <div
@@ -177,9 +159,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
                   ref={avatar}
                   type='button'
                   className='medium-portrait-frame medium-portrait-trigger'
-                  aria-label={`${siteConfig('AUTHOR')} 的头像，探索隐藏地牢`}
-                  onPointerEnter={preloadGame}
-                  onFocus={preloadGame}
+                  aria-label={`${siteConfig('AUTHOR')} 的头像，开启刺猬夜行`}
                   aria-busy={preparing}
                   onClick={openGame}
                 >
@@ -191,16 +171,20 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
               </div>
             </div>
           ) : (
-            <section className='medium-inline-game' aria-label='纸间迷宫'>
+            <section
+              className='medium-inline-game'
+              aria-label='刺猬夜行生存游戏'
+            >
               <button
-                ref={returnButton}
                 type='button'
                 className='medium-game-return'
                 onClick={() => switchView('profile')}
               >
                 ← 返回个人信息
               </button>
-              <SecretDungeon onClose={() => switchView('profile')} />
+              {LoadedGame && (
+                <LoadedGame onClose={() => switchView('profile')} />
+              )}
             </section>
           )}
         </div>
