@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { installRewardConsole } from '@/themes/medium/lib/rewardConsole'
 import {
   EMPTY_REWARD,
   readReward,
@@ -55,5 +56,40 @@ describe('NEW GAME! completion reward', () => {
     }
     assert.deepEqual(readReward(blocked), EMPTY_REWARD)
     assert.doesNotThrow(() => writeReward(blocked, rewardAfterVictory('won')))
+  })
+})
+
+describe('reward console shortcut', () => {
+  test('all command names use the shared unlock callback and restore globals on cleanup', async () => {
+    const original = () => 'existing'
+    const target = { NewGame: original }
+    let wins = 0
+    const remove = installRewardConsole(target, async () => {
+      wins++
+      return true
+    })
+    assert.equal(wins, 0)
+    for (const name of ['NewGame', 'New Game！', 'New Game!'])
+      assert.match(await target[name](), /主题已开启/)
+    assert.equal(wins, 3)
+    remove()
+    assert.equal(target.NewGame, original)
+    assert.equal('New Game！' in target, false)
+    assert.equal('New Game!' in target, false)
+  })
+  test('protected or subsequently replaced global properties are preserved', () => {
+    const target = {}
+    Object.defineProperty(target, 'NewGame', {
+      value: 'protected',
+      configurable: false
+    })
+    const remove = installRewardConsole(target, async () => true)
+    Object.defineProperty(target, 'New Game!', {
+      value: 'replacement',
+      configurable: true
+    })
+    remove()
+    assert.equal(target.NewGame, 'protected')
+    assert.equal(target['New Game!'], 'replacement')
   })
 })

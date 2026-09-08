@@ -6,6 +6,7 @@ import {
   useRef,
   useState
 } from 'react'
+import { installRewardConsole } from '../lib/rewardConsole'
 import {
   EMPTY_REWARD,
   readReward,
@@ -25,6 +26,7 @@ export default function RewardProvider({ children }) {
   const mounted = useRef(false)
   const loading = useRef(null)
   const revision = useRef(0)
+  const unlockCommand = useRef(null)
   const loadAppearance = useCallback(async () => {
     if (!loading.current)
       loading.current = import('./NewGameTheme').catch(error => {
@@ -93,6 +95,13 @@ export default function RewardProvider({ children }) {
     setOpening(true)
     return true
   }
+  useEffect(() => {
+    unlockCommand.current = () => unlockReward('won')
+  })
+  useEffect(
+    () => installRewardConsole(window, () => unlockCommand.current()),
+    []
+  )
   const toggleReward = () => {
     if (!reward.unlocked) return
     revision.current++
