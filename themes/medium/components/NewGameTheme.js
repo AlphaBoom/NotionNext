@@ -95,7 +95,6 @@ export function NewGameHero() {
               role='img'
               aria-label='手中宗次郎的侧脸放大：ご機嫌ななめ，一脸不领情'
             />
-            <figcaption>宗次郎 · 表情特写</figcaption>
           </figure>
         </div>
         <p className='ng-character-name'>
@@ -881,20 +880,6 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           border-radius: 7px;
           background: #fff7e5 url('${SOUJIROU}') center / cover no-repeat;
         }
-        .ng-soujirou-closeup figcaption {
-          position: absolute;
-          bottom: -10px;
-          left: 7px;
-          padding: 3px 8px;
-          border: 2px solid #fff;
-          border-radius: 7px;
-          background: #fff0b3;
-          color: #684a64;
-          font:
-            700 11px/1.5 'Noto Sans SC',
-            sans-serif;
-          white-space: nowrap;
-        }
         .ng-character-number {
           position: absolute;
           z-index: 4;
@@ -1413,10 +1398,6 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           .ng-soujirou-closeup {
             width: 65%;
             left: -49%;
-          }
-          .ng-soujirou-closeup figcaption {
-            padding-inline: 4px;
-            font-size: 8px;
           }
           .ng-hero-art {
             inset: 0;
