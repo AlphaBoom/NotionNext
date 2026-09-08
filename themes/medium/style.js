@@ -123,14 +123,90 @@ const Style = () => (
     #theme-medium .medium-post-cover { width: 180px; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 4px; background: var(--wash); }
     #theme-medium .medium-post-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
+    /* Text-first covers use existing metadata; a Notion image always takes priority. */
+    #theme-medium .medium-text-cover {
+      --cover-paper: #e9eee2; --cover-ink: #334d3f; --cover-accent: #78936c;
+      position: relative; isolation: isolate; display: flex; flex-direction: column;
+      width: 100%; height: 100%; padding: 12px 14px; gap: 6px;
+      overflow: hidden; background: var(--cover-paper); color: var(--cover-ink);
+      border: 1px solid color-mix(in srgb, var(--cover-accent) 28%, transparent);
+      border-radius: inherit; text-align: left;
+    }
+    #theme-medium .medium-text-cover-tone-1 { --cover-paper: #f1e8dc; --cover-ink: #60452f; --cover-accent: #b08c5f; }
+    #theme-medium .medium-text-cover-tone-2 { --cover-paper: #ece8f2; --cover-ink: #514460; --cover-accent: #9b88b0; }
+    #theme-medium .medium-text-cover::after {
+      content: ''; position: absolute; z-index: -1; width: 90px; height: 90px;
+      right: -48px; bottom: -46px; border: 14px solid var(--cover-accent);
+      border-radius: 50%; opacity: .16;
+    }
+    #theme-medium .medium-text-cover-category {
+      display: block; max-width: 100%; align-self: flex-start; padding-left: 6px;
+      border-left: 2px solid var(--cover-accent); font-size: 9px; line-height: 1.2;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #theme-medium .medium-text-cover-title {
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      overflow: hidden; overflow-wrap: anywhere; margin: auto 0;
+      font-size: 16px; font-weight: 700; line-height: 1.35; letter-spacing: -.03em;
+    }
+    #theme-medium .medium-text-cover-summary {
+      display: block; flex-shrink: 0; overflow: hidden; white-space: nowrap;
+      text-overflow: ellipsis; font-size: 8px; line-height: 1.4; opacity: .8;
+    }
+    .dark #theme-medium .medium-text-cover { --cover-paper: #29392f; --cover-ink: #dce7d5; --cover-accent: #9bb38d; }
+    .dark #theme-medium .medium-text-cover-tone-1 { --cover-paper: #3c3329; --cover-ink: #eaddca; --cover-accent: #c4a679; }
+    .dark #theme-medium .medium-text-cover-tone-2 { --cover-paper: #36303f; --cover-ink: #e3dcec; --cover-accent: #b7a2ca; }
+
+    /* Authorship disclosure stays visible before opening or reading an article. */
+    #theme-medium .medium-writing-label { position: relative; display: inline-flex; flex-shrink: 0; align-self: baseline; line-height: 1.6; vertical-align: middle; }
+    #theme-medium .medium-writing-badge {
+      position: relative; display: inline-flex; align-items: center; width: fit-content;
+      padding: 2px 7px; border: 1px solid #cfddd4; border-radius: 4px;
+      background: #edf3ee; color: #456452; font-size: 11px; font-weight: 400;
+      font-family: inherit; line-height: 1.6; white-space: nowrap; cursor: pointer;
+      user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+    }
+    #theme-medium .medium-writing-badge::before { content: ''; position: absolute; inset: -6px -3px; }
+    #theme-medium .medium-writing-badge.ai-generated { background: #f0edf5; border-color: #dcd4e7; color: #695777; }
+    .dark #theme-medium .medium-writing-badge { background: #26392e; border-color: #435c4c; color: #b8cfbf; }
+    .dark #theme-medium .medium-writing-badge.ai-generated { background: #332d3d; border-color: #55475f; color: #cdbfdb; }
+    #theme-medium .medium-writing-tooltip {
+      position: absolute; z-index: 60; padding: 8px 12px;
+      border: 1px solid var(--line); border-radius: 5px;
+      background: var(--paper); color: var(--ink); box-shadow: 0 4px 16px #00000012;
+      font-family: 'Noto Sans SC', sans-serif; font-size: 12px; font-weight: 400;
+      line-height: 1.7; letter-spacing: normal; text-align: left; white-space: normal;
+    }
+
     /* Article typography; wide blocks get space without stretching every paragraph. */
     #theme-medium .medium-article-header { max-width: 740px; margin: 0 auto; padding: 48px 0 30px; }
     #theme-medium .medium-back-link { display: inline-block; font-size: 12px; color: var(--muted); margin-bottom: 26px; }
+    #theme-medium .medium-article-heading { display: flex; align-items: baseline; gap: 12px; }
+    #theme-medium .medium-article-heading h1 { min-width: 0; }
     #theme-medium .medium-article-header h1 { font-family: 'Noto Serif SC', serif; font-size: clamp(27px, 3vw, 38px); font-weight: 500; line-height: 1.55; letter-spacing: -.025em; overflow-wrap: anywhere; }
     #theme-medium .medium-article-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 22px; padding-bottom: 26px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); }
     #theme-medium .medium-article-dates { display: flex; gap: 14px; min-width: 0; }
     #theme-medium .medium-article-stats { white-space: nowrap; font-variant-numeric: tabular-nums; }
     #theme-medium #article-wrapper { width: 100%; min-width: 0; }
+    #theme-medium .medium-ai-summary {
+      max-width: 740px; margin: 0 auto 28px; overflow: hidden;
+      background: var(--wash); border: 1px solid var(--line); border-radius: 12px;
+    }
+    #theme-medium .medium-ai-summary-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      width: 100%; padding: 13px 18px; border: 0; background: transparent;
+      color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+    }
+    #theme-medium .medium-ai-summary-toggle:focus-visible { outline-offset: -4px; border-radius: 12px; }
+    #theme-medium .medium-ai-summary-title { font-size: 13px; font-weight: 500; color: var(--accent); }
+    #theme-medium .medium-ai-summary-action { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+    #theme-medium .medium-ai-summary-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+    #theme-medium .medium-ai-summary-content { padding: 0 18px 17px; }
+    #theme-medium .medium-ai-summary-content[hidden] { display: none; }
+    #theme-medium .medium-ai-summary-content p {
+      margin: 0; color: var(--ink); font-size: 14px; line-height: 1.9;
+      white-space: pre-line; overflow-wrap: anywhere;
+    }
     #theme-medium #notion-article { width: 100%; max-width: 740px; min-width: 0; margin-inline: auto; overflow-x: visible; }
     #theme-medium #article-wrapper .notion { font-size: 18px; font-weight: 400; line-height: 1.85; color: var(--ink); }
     #theme-medium #article-wrapper .notion-page-content-inner { width: 100%; min-width: 0; }
@@ -167,7 +243,8 @@ const Style = () => (
     #theme-medium .medium-article-end { max-width: 740px; margin: 52px auto 0; border-top: 1px solid var(--line); padding-top: 24px; }
     #theme-medium .medium-article-around { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 30px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 24px 0; margin: 28px 0; }
     #theme-medium .medium-article-around a { display: flex; flex-direction: column; gap: 8px; }
-    #theme-medium .medium-article-around span { font-size: 11px; color: var(--muted); }
+    #theme-medium .medium-article-around a > span { font-size: 11px; color: var(--muted); }
+    #theme-medium .medium-article-around .medium-writing-label { margin-top: 8px; }
     #theme-medium .medium-article-around strong { font-size: 14px; font-weight: 500; line-height: 1.8; }
     #theme-medium .medium-next-article { grid-column: 2; text-align: right; }
 
@@ -241,6 +318,10 @@ const Style = () => (
       #theme-medium .medium-post-with-cover { grid-template-columns: minmax(0, 1fr) 96px; }
       #theme-medium .medium-post h2 { font-size: 19px; }
       #theme-medium .medium-post-cover { width: 96px; aspect-ratio: 1; align-self: start; margin-top: 28px; }
+      #theme-medium .medium-text-cover { padding: 9px; gap: 5px; }
+      #theme-medium .medium-text-cover-category { font-size: 7px; padding-left: 4px; }
+      #theme-medium .medium-text-cover-title { font-size: 11px; line-height: 1.45; }
+      #theme-medium .medium-text-cover-summary { display: none; }
       #theme-medium .medium-post-summary { font-size: 13px; }
       #theme-medium .medium-post-meta { font-size: 10px; gap: 10px; }
       #theme-medium .medium-article-header { padding-top: 30px; padding-bottom: 16px; }
@@ -257,6 +338,7 @@ const Style = () => (
       #theme-medium *, #theme-medium *::before, #theme-medium *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
     }
     @media print {
+      #theme-medium .medium-writing-tooltip { display: none; }
       #theme-medium .medium-nav, #theme-medium .medium-desktop-toc, #theme-medium .medium-mobile-toc, #theme-medium .medium-mobile-top, #theme-medium .medium-desktop-top, #theme-medium .medium-footer, #theme-medium .medium-article-end { display: none; }
       #theme-medium { --paper: white; --ink: black; }
       #theme-medium #container-inner { max-width: none; box-shadow: none; }

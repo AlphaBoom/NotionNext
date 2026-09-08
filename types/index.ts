@@ -28,6 +28,7 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 
 // Notion 相关类型
 export interface NotionPage {
+  writingMode?: '' | 'ai-polished' | 'ai-generated'
   id: string
   title: string
   slug: string

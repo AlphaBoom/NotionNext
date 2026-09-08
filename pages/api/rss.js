@@ -2,6 +2,7 @@ import BLOG from '@/blog.config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { generateRss, shouldGenerateRssForLocale } from '@/lib/utils/rss'
 import { Feed } from 'feed'
+import { getWritingModeSummary } from '@/lib/utils/writingMode.mjs'
 
 /**
  * In-memory RSS cache to avoid regenerating on every request.
@@ -80,7 +81,7 @@ async function generateRssContent() {
     feed.addItem({
       title: post.title,
       link: `${LINK}/${post.slug}`,
-      description: post.summary || '',
+      description: getWritingModeSummary(post),
       date: new Date(post?.publishDay || post?.publishDate || Date.now())
     })
   }
