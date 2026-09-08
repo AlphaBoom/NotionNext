@@ -545,7 +545,9 @@ export default function SecretRunner({ onClose, onVictory, unlocked = false }) {
                     </button>
                   </>
                 )}
-                {reward.stage === 'saved' && <p>以后也能在页脚切换主题。</p>}
+                {reward.stage === 'saved' && (
+                  <p>以后也能点左下角「主题」切换。</p>
+                )}
               </div>
             )}
             <button className='runner-return' onClick={onClose}>

@@ -11,14 +11,14 @@ const NATIVE_TARGETS =
 export default function RewardContextMenu({ active, onToggle }) {
   const [position, setPosition] = useState(null)
   const [notice, setNotice] = useState('')
-  const [footer, setFooter] = useState(null)
+  const [portalRoot, setPortalRoot] = useState(null)
   const menu = useRef(null)
   const previousFocus = useRef(null)
   const router = useRouter()
 
   useEffect(() => {
     setPosition(null)
-    setFooter(document.querySelector('#theme-medium .medium-footer'))
+    setPortalRoot(document.querySelector('#theme-medium'))
   }, [router.asPath])
 
   useEffect(() => {
@@ -261,12 +261,20 @@ export default function RewardContextMenu({ active, onToggle }) {
           </p>
         </div>
       )}
-      {footer &&
+      {portalRoot &&
         createPortal(
-          <button type='button' className='ng-touch-switch' onClick={toggle}>
-            {label}
+          <button
+            type='button'
+            className='ng-touch-switch'
+            onClick={onToggle}
+            aria-label={label}
+            aria-pressed={active}
+            title={label}
+          >
+            <span aria-hidden='true'>✦</span>
+            主题
           </button>,
-          footer
+          portalRoot
         )}
       <style jsx global>{`
         .ng-context-menu {
@@ -359,18 +367,44 @@ export default function RewardContextMenu({ active, onToggle }) {
           color: #985588;
           font-size: 11px;
         }
-        .ng-touch-switch {
-          display: inline-block;
-          min-height: 44px;
-          margin-top: 14px;
-          padding: 12px 8px;
-          color: inherit;
-          font-size: 11px;
-          text-decoration: underline;
-          text-underline-offset: 4px;
+        #theme-medium .ng-touch-switch {
+          position: fixed;
+          z-index: 35;
+          left: calc(78px + env(safe-area-inset-left));
+          bottom: calc(24px + env(safe-area-inset-bottom));
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 5px;
+          width: 76px;
+          height: 44px;
+          padding: 0 10px;
+          border: 1px solid var(--line);
+          border-radius: 22px;
+          background: var(--paper);
+          color: var(--ink);
+          font-size: 12px;
+          box-shadow: 0 3px 12px #00000012;
+          touch-action: manipulation;
+        }
+        #theme-medium .ng-touch-switch span {
+          color: var(--accent);
+          font-size: 16px;
+        }
+        #theme-medium .ng-touch-switch[aria-pressed='true'] {
+          border-color: #d6afd8;
+          background: #fff0fa;
+          color: #824377;
+        }
+        #theme-medium .ng-touch-switch:focus-visible {
+          border-radius: 22px;
+          outline-color: var(--accent);
+        }
+        #theme-medium:has(.medium-intro-stage.is-playing) .ng-touch-switch {
+          display: none;
         }
         @media ${DESKTOP} {
-          .ng-touch-switch {
+          #theme-medium .ng-touch-switch {
             display: none;
           }
         }
@@ -391,7 +425,7 @@ export default function RewardContextMenu({ active, onToggle }) {
         }
         @media print {
           .ng-context-menu,
-          .ng-touch-switch {
+          #theme-medium .ng-touch-switch {
             display: none;
           }
         }
