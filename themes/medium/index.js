@@ -11,6 +11,7 @@ import { useRouter } from 'next/router'
 import { createContext, useContext, useEffect, useState } from 'react'
 import ArticleAround from './components/ArticleAround'
 import ArticleInfo from './components/ArticleInfo'
+import AiSummary from './components/AiSummary'
 import { ArticleLock } from './components/ArticleLock'
 import BlogArchiveItem from './components/BlogArchiveItem'
 import BlogPostBar from './components/BlogPostBar'
@@ -155,6 +156,7 @@ const LayoutSlug = props => {
 
           {/* Notion文章主体 */}
           <article id='article-wrapper' aria-label={post.title}>
+            <AiSummary summary={post.aiSummary} />
             {post && <NotionPage post={post} />}
           </article>
 

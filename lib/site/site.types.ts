@@ -30,6 +30,7 @@ export interface TagItem {
 }
 
 export interface BasePage {
+  aiSummary?: string
   writingMode?: WritingMode
   id?: string
   title: string

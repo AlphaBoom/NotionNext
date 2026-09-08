@@ -97,4 +97,35 @@ describe('optional writingMode property', () => {
       BLOG.NOTION_PROPERTY_NAME.writingMode = previous
     }
   })
+
+  it('reads an optional multiline AI summary without changing the list summary or writing mode', async () => {
+    const existing = { ...value, properties: { ...value.properties, summary: [['原有列表摘要']] } }
+    const originalSchema = { ...schema, summary: { name: 'summary', type: 'text' } }
+    const baseline = await getPageProperties('post-id', existing, originalSchema)
+    const newSchema = { ...originalSchema, aiSummary: { name: 'aiSummary', type: 'text' } }
+    expect(baseline.aiSummary).toBe('')
+    expect(await getPageProperties('post-id', existing, newSchema)).toEqual(baseline)
+    const result = await getPageProperties('post-id', {
+      ...existing, properties: { ...existing.properties, aiSummary: [[' 第一段\n\n'], ['第二段 ', [['b']]]] }
+    }, newSchema)
+    expect(result).toEqual({ ...baseline, aiSummary: '第一段\n\n第二段' })
+    const blank = await getPageProperties('post-id', {
+      ...existing, properties: { ...existing.properties, aiSummary: [[' \n ']] }
+    }, newSchema)
+    expect(blank).toEqual(baseline)
+  })
+
+  it('supports a custom Notion column name for AI summaries', async () => {
+    const previous = BLOG.NOTION_PROPERTY_NAME.aiSummary
+    BLOG.NOTION_PROPERTY_NAME.aiSummary = 'AI 摘要'
+    try {
+      const post = await getPageProperties('post-id', {
+        ...value, properties: { ...value.properties, abstract: [[' 手动选择的摘要 ']] }
+      }, { ...schema, abstract: { name: 'AI 摘要', type: 'text' } })
+      expect(post.aiSummary).toBe('手动选择的摘要')
+      expect(post.writingMode).toBe('')
+    } finally {
+      BLOG.NOTION_PROPERTY_NAME.aiSummary = previous
+    }
+  })
 })

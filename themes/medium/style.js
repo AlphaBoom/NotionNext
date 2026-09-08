@@ -188,6 +188,25 @@ const Style = () => (
     #theme-medium .medium-article-dates { display: flex; gap: 14px; min-width: 0; }
     #theme-medium .medium-article-stats { white-space: nowrap; font-variant-numeric: tabular-nums; }
     #theme-medium #article-wrapper { width: 100%; min-width: 0; }
+    #theme-medium .medium-ai-summary {
+      max-width: 740px; margin: 0 auto 28px; overflow: hidden;
+      background: var(--wash); border: 1px solid var(--line); border-radius: 12px;
+    }
+    #theme-medium .medium-ai-summary-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      width: 100%; padding: 13px 18px; border: 0; background: transparent;
+      color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+    }
+    #theme-medium .medium-ai-summary-toggle:focus-visible { outline-offset: -4px; border-radius: 12px; }
+    #theme-medium .medium-ai-summary-title { font-size: 13px; font-weight: 500; color: var(--accent); }
+    #theme-medium .medium-ai-summary-action { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+    #theme-medium .medium-ai-summary-toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+    #theme-medium .medium-ai-summary-content { padding: 0 18px 17px; }
+    #theme-medium .medium-ai-summary-content[hidden] { display: none; }
+    #theme-medium .medium-ai-summary-content p {
+      margin: 0; color: var(--ink); font-size: 14px; line-height: 1.9;
+      white-space: pre-line; overflow-wrap: anywhere;
+    }
     #theme-medium #notion-article { width: 100%; max-width: 740px; min-width: 0; margin-inline: auto; overflow-x: visible; }
     #theme-medium #article-wrapper .notion { font-size: 18px; font-weight: 400; line-height: 1.85; color: var(--ink); }
     #theme-medium #article-wrapper .notion-page-content-inner { width: 100%; min-width: 0; }

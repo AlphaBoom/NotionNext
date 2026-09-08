@@ -30,6 +30,7 @@ module.exports = {
     status_invisible:
       process.env.NEXT_PUBLIC_NOTION_PROPERTY_STATUS_INVISIBLE || 'Invisible', // 当status状态值与此相同时为隐藏发布，可以为中文 ， 除此之外其他页面状态不会显示在博客上
     summary: process.env.NEXT_PUBLIC_NOTION_PROPERTY_SUMMARY || 'summary',
+    aiSummary: process.env.NEXT_PUBLIC_NOTION_PROPERTY_AI_SUMMARY || 'aiSummary', // 可选文本：手动填写 AI 摘要，留空不展示
     writingMode: process.env.NEXT_PUBLIC_NOTION_PROPERTY_WRITING_MODE || 'writingMode', // 可选单选：AI 润色 / AI 生成；留空表示本人撰写
     slug: process.env.NEXT_PUBLIC_NOTION_PROPERTY_SLUG || 'slug',
     category: process.env.NEXT_PUBLIC_NOTION_PROPERTY_CATEGORY || 'category',
