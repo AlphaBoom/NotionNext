@@ -2,12 +2,14 @@ import LazyImage from '@/components/LazyImage'
 import SmartLink from '@/components/SmartLink'
 import { siteConfig } from '@/lib/config'
 import { useEffect, useRef, useState } from 'react'
+import { useReward } from './RewardProvider'
 
 const GAME_MEDIA = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 // A plain dynamic import keeps all game code and styles out of the home bundle.
 const loadGame = () => import('./SecretSurvivors')
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
+  const { unlockReward, active: rewardActive, Hero } = useReward()
   const [view, setView] = useState('profile')
   const [leaving, setLeaving] = useState(false)
   const [preparing, setPreparing] = useState(false)
@@ -117,6 +119,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
 
   return (
     <header className='medium-home-intro'>
+      {rewardActive && Hero && <Hero />}
       <div
         className={`medium-intro-stage ${view === 'game' ? 'is-playing' : ''} ${leaving && view === 'profile' ? 'is-booting' : ''}`}
         style={{ height }}
@@ -183,7 +186,12 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
                 ← 返回个人信息
               </button>
               {LoadedGame && (
-                <LoadedGame onClose={() => switchView('profile')} />
+                <LoadedGame
+                  onClose={() => switchView('profile')}
+                  onVictory={async phase => {
+                    if (await unlockReward(phase)) switchView('profile')
+                  }}
+                />
               )}
             </section>
           )}

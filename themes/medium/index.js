@@ -29,6 +29,7 @@ import TagItemMini from './components/TagItemMini'
 import TocDrawer from './components/TocDrawer'
 import TopNavBar from './components/TopNavBar'
 import HomeIntro from './components/HomeIntro'
+import RewardProvider, { useReward } from './components/RewardProvider'
 import CONFIG from './config'
 import { Style } from './style'
 
@@ -42,7 +43,12 @@ export const useMediumGlobal = () => useContext(ThemeGlobalMedium)
  * @returns {JSX.Element}
  * @constructor
  */
-const LayoutBase = props => {
+const LayoutBase = props => (
+  <RewardProvider><MediumLayout {...props} /></RewardProvider>
+)
+
+const MediumLayout = props => {
+  const { active: rewardActive } = useReward()
   const { children, post, lock } = props
   const { fullWidth } = useGlobal()
   const router = useRouter()
@@ -56,7 +62,7 @@ const LayoutBase = props => {
   return (
     <ThemeGlobalMedium.Provider value={{ tocVisible, changeTocVisible }}>
       <Style />
-      <div id='theme-medium' className={`medium-site ${post ? 'medium-reading' : ''} ${fullWidth ? 'medium-full-width' : ''}`}>
+      <div id='theme-medium' data-reward-theme={rewardActive ? 'new-game' : undefined} className={`medium-site ${rewardActive ? 'medium-newgame' : ''} ${post ? 'medium-reading' : ''} ${fullWidth ? 'medium-full-width' : ''}`}>
         <a className='medium-skip-link' href='#container-inner'>跳至内容</a>
         <TopNavBar {...props} />
         <div id='wrapper' className='medium-layout'>

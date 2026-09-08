@@ -37,15 +37,18 @@ function snapshot(run) {
   }
 }
 
-export default function SecretSurvivors({ onClose }) {
+export default function SecretSurvivors({ onClose, onVictory }) {
   const panel = useRef(null),
     canvas = useRef(null),
     actions = useRef(null)
   const close = useRef(onClose)
+  const victory = useRef(onVictory)
+  const [rewardError, setRewardError] = useState(false)
   const [hud, setHud] = useState(() => snapshot(createRun()))
   useEffect(() => {
     close.current = onClose
-  }, [onClose])
+    victory.current = onVictory
+  }, [onClose, onVictory])
   useEffect(() => {
     const element = canvas.current
     const renderer = createRenderer(element)
@@ -233,6 +236,19 @@ export default function SecretSurvivors({ onClose }) {
         ?.querySelector('.survivors-overlay button')
         ?.focus({ preventScroll: true })
   }, [hud.phase])
+  useEffect(() => {
+    if (hud.phase !== 'won') {
+      setRewardError(false)
+      return
+    }
+    let cancelled = false
+    Promise.resolve(victory.current?.('won')).catch(() => {
+      if (!cancelled) setRewardError(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [hud.phase])
   const time = `${String(Math.floor(hud.time / 60)).padStart(2, '0')}:${String(hud.time % 60).padStart(2, '0')}`
   return (
     <div ref={panel} className='medium-survivors' data-phase={hud.phase}>
@@ -367,7 +383,35 @@ export default function SecretSurvivors({ onClose }) {
                 </button>
               </>
             )}
-            {(hud.phase === 'lost' || hud.phase === 'won') && (
+            {hud.phase === 'won' && (
+              <>
+                <p className='survivors-overlay-kicker'>
+                  SECRET CHAPTER UNLOCKED
+                </p>
+                <h3>通关了。故事才刚刚开始！</h3>
+                <p>这个头像，原来来自《NEW GAME!》。</p>
+                <p role='status'>
+                  {rewardError
+                    ? '主题暂时没能打开，奖励不会让你白等。'
+                    : '正在打开另一个世界…'}
+                </p>
+                {rewardError && (
+                  <button
+                    type='button'
+                    className='survivors-primary'
+                    onClick={() => {
+                      setRewardError(false)
+                      Promise.resolve(victory.current?.('won')).catch(() =>
+                        setRewardError(true)
+                      )
+                    }}
+                  >
+                    重试领取主题 ↗
+                  </button>
+                )}
+              </>
+            )}
+            {hud.phase === 'lost' && (
               <>
                 <p className='survivors-overlay-kicker'>
                   {hud.phase === 'won'

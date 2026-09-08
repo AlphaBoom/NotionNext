@@ -1,0 +1,121 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
+import {
+  EMPTY_REWARD,
+  readReward,
+  REWARD_KEY,
+  rewardAfterVictory,
+  writeReward
+} from '../lib/rewardState'
+
+const RewardContext = createContext({ active: false, unlocked: false })
+export const useReward = () => useContext(RewardContext)
+
+export default function RewardProvider({ children }) {
+  const [reward, setReward] = useState(EMPTY_REWARD)
+  const [Appearance, setAppearance] = useState(null)
+  const [Hero, setHero] = useState(null)
+  const [opening, setOpening] = useState(false)
+  const mounted = useRef(false)
+  const loading = useRef(null)
+  const revision = useRef(0)
+  const loadAppearance = useCallback(async () => {
+    if (!loading.current)
+      loading.current = import('./NewGameTheme').catch(error => {
+        loading.current = null
+        throw error
+      })
+    const module = await loading.current
+    if (mounted.current) {
+      setAppearance(() => module.default)
+      setHero(() => module.NewGameHero)
+    }
+    return module
+  }, [])
+  useEffect(() => {
+    mounted.current = true
+    const restore = async () => {
+      const request = ++revision.current
+      // Accessing localStorage itself can throw in privacy-restricted contexts.
+      let saved = EMPTY_REWARD
+      try {
+        saved = readReward(window.localStorage)
+      } catch {}
+      if (!saved.unlocked) {
+        setReward(EMPTY_REWARD)
+        return
+      }
+      try {
+        const module = await loadAppearance()
+        if (saved.enabled) await module.prepareArtwork()
+        if (mounted.current && request === revision.current) setReward(saved)
+      } catch {
+        /* The normal blog remains usable if the optional chunk fails. */
+      }
+    }
+    void restore()
+    const onStorage = event => {
+      if (event.key === REWARD_KEY || event.key === null) void restore()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => {
+      mounted.current = false
+      revision.current++
+      window.removeEventListener('storage', onStorage)
+    }
+  }, [loadAppearance])
+  useEffect(() => {
+    if (!opening) return
+    const timer = setTimeout(() => setOpening(false), 1800)
+    return () => clearTimeout(timer)
+  }, [opening])
+  const persist = value => {
+    setReward(value)
+    try {
+      writeReward(window.localStorage, value)
+    } catch {}
+  }
+  const unlockReward = async phase => {
+    const next = rewardAfterVictory(phase)
+    if (!next) return false
+    const request = ++revision.current
+    persist({ unlocked: true, enabled: false })
+    const module = await loadAppearance()
+    await module.prepareArtwork()
+    if (!mounted.current || request !== revision.current) return false
+    persist(next)
+    setOpening(true)
+    return true
+  }
+  const toggleReward = () => {
+    if (!reward.unlocked) return
+    revision.current++
+    persist({ unlocked: true, enabled: !reward.enabled })
+    setOpening(!reward.enabled)
+  }
+  return (
+    <RewardContext.Provider
+      value={{
+        active: reward.enabled,
+        unlocked: reward.unlocked,
+        unlockReward,
+        Hero
+      }}
+    >
+      {children}
+      {Appearance && reward.unlocked && (
+        <Appearance
+          active={reward.enabled}
+          opening={opening}
+          onToggle={toggleReward}
+        />
+      )}
+    </RewardContext.Provider>
+  )
+}
