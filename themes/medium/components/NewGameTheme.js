@@ -6,7 +6,7 @@ const ART = '/images/new-game/hifumi-soujirou.webp'
 const ICON = '/images/new-game/hifumi-icon.webp'
 const LOGO = '/images/new-game/logo-official.png'
 const SOUJIROU = '/images/new-game/soujirou-closeup.webp'
-const HIFUMI_PROFILE = 'https://newgame-anime.com/assets/character/c4.png'
+const OFFICIAL_CHARACTERS = 'https://newgame-anime.com/character/'
 
 export function prepareArtwork() {
   return Promise.all(
@@ -79,7 +79,7 @@ export function NewGameHero() {
         <div className='ng-character-scene'>
           <a
             className='ng-hero-art'
-            href={HIFUMI_PROFILE}
+            href={OFFICIAL_CHARACTERS}
             target='_blank'
             rel='noopener noreferrer'
             aria-label='ひふみ立绘：官网角色介绍（新标签页）'
@@ -102,7 +102,7 @@ export function NewGameHero() {
         </div>
         <a
           className='ng-character-name'
-          href={HIFUMI_PROFILE}
+          href={OFFICIAL_CHARACTERS}
           target='_blank'
           rel='noopener noreferrer'
           aria-label='ひふみ：官网角色介绍（新标签页）'
@@ -147,7 +147,7 @@ export default function NewGameTheme({
           >
             <a
               className='ng-card-art'
-              href={HIFUMI_PROFILE}
+              href={OFFICIAL_CHARACTERS}
               target='_blank'
               rel='noopener noreferrer'
               aria-label='ひふみ头像：官网角色介绍（新标签页）'
@@ -156,7 +156,7 @@ export default function NewGameTheme({
             <strong>
               <a
                 className='ng-character-link'
-                href={HIFUMI_PROFILE}
+                href={OFFICIAL_CHARACTERS}
                 target='_blank'
                 rel='noopener noreferrer'
               >
@@ -874,6 +874,7 @@ export default function NewGameTheme({
           right: 0;
           width: 100%;
           aspect-ratio: 386 / 420;
+          transition: scale 220ms ease;
         }
         .ng-detail-connector {
           position: absolute;
@@ -895,6 +896,7 @@ export default function NewGameTheme({
           width: 100%;
           height: 100%;
           background: url('${ART}') center bottom / contain no-repeat;
+          transition: filter 220ms ease;
         }
         .ng-character-name {
           position: absolute;
@@ -909,6 +911,8 @@ export default function NewGameTheme({
           transform: rotate(-4deg);
           font-size: 15px;
           letter-spacing: 0.08em;
+          text-underline-offset: 0.25em;
+          transition: background-color 180ms ease;
         }
         .ng-character-name span {
           display: block;
@@ -1009,6 +1013,9 @@ export default function NewGameTheme({
           height: 124px;
           margin: 0 auto 16px;
           background: url('${ICON}') center / contain no-repeat;
+          transition:
+            transform 220ms ease,
+            filter 220ms ease;
         }
         .ng-character-card > span {
           display: block;
@@ -1032,6 +1039,28 @@ export default function NewGameTheme({
         }
         .ng-character-link:hover {
           text-decoration: underline;
+        }
+        .ng-hero-art,
+        .ng-card-art,
+        .ng-character-name,
+        .ng-character-link {
+          cursor: pointer;
+        }
+        @media (hover: hover) and (pointer: fine) {
+          .ng-character-scene:has(.ng-hero-art:hover) {
+            scale: 1.025;
+          }
+          .ng-hero-art:hover,
+          .ng-card-art:hover {
+            filter: brightness(1.08) drop-shadow(0 0 8px #fff0b399);
+          }
+          .ng-card-art:hover {
+            transform: scale(1.05);
+          }
+          .ng-character-name:hover {
+            background-color: #fff3b9;
+            text-decoration: underline;
+          }
         }
         .ng-hero-art:focus-visible,
         .ng-character-name:focus-visible,
@@ -1567,6 +1596,12 @@ export default function NewGameTheme({
           }
         }
         @media (prefers-reduced-motion: reduce) {
+          .ng-character-scene:has(.ng-hero-art:hover) {
+            scale: 1;
+          }
+          .ng-card-art:hover {
+            transform: none;
+          }
           .ng-unlock-opening {
             background: #9770b7;
           }
