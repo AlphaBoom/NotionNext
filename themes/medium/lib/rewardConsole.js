@@ -3,7 +3,7 @@ export function installRewardConsole(target, unlock) {
   const command = async () => {
     const enabled = await unlock()
     return enabled
-      ? 'NEW GAME! 主题已开启；使用页面底部的“恢复原主题”退出。'
+      ? 'NEW GAME! 主题已开启；在页面空白处右键，可恢复原主题或再次开启。'
       : '主题切换已取消，请重试。'
   }
   const installed = []

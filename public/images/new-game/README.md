@@ -1,10 +1,15 @@
-# NEW GAME! completion reward artwork
+# NEW GAME! reward theme assets
 
-- Asset: `public/images/new-game/hifumi-soujirou.webp` (1440 × 960, 87,456 bytes).
-- Created with the built-in imagegen tool; converted to WebP for this blog.
-- Original AI fan illustration, not official promotional artwork. Character references: [NEW GAME! official anime site](https://newgame-anime.com/).
-- Only requested after the reward is activated. The normal home page does not reference the illustration in its rendered styles or markup.
+The visual direction follows the anime official site: coral-pink / cyan geometric backgrounds, white frames and dashed rules, condensed uppercase labels, circular character portraits and the original wordmark. The blog layout and CSS are original implementations.
 
-Generation prompt:
+Sources inspected on 2026-09-08:
 
-> Use case: illustration-story. Asset type: artwork for a personal fan blog's secret NEW GAME! anime theme, unlocked after a hedgehog survival game. Create a polished Japanese anime fan illustration of Hifumi Takimoto from NEW GAME!, the shy young adult character artist, with long reddish-brown hair, red hairband and large warm golden-brown eyes, wearing her modest pale pink office blouse with a small dark neck ribbon. She is gently cradling Soujirou, her little cream-faced brown hedgehog, in both hands, smiling shyly toward him. Waist-up portrait, fully clothed, wholesome celebratory atmosphere, expressive 2D cel shading and delicate clean lineart. Wide landscape composition, character and hedgehog in the right half, left half with generous pale lavender negative space for HTML titles. Backdrop an airy lilac/pink game artist's studio with a softly simplified desk, drawing tablet and small bright mint/pink geometric confetti; crisp character, low detail background. Palette lavender, rose pink, mint, creamy white. Artwork only, absolutely no text, letters, logos, signatures, watermarks or UI. Main character and hedgehog remain wholly visible and readable when right side is cropped into a portrait card. 1536x1024 landscape.
+- Official site: https://newgame-anime.com/
+- Character page: https://newgame-anime.com/character/
+- `hifumi-official.webp`: https://newgame-anime.com/assets/character/c4.png (900 × 800 character sheet, converted to WebP at quality 88; the hero clips the standing character with CSS).
+- `hifumi-icon.webp`: https://newgame-anime.com/assets/character/th-c4.png (192 × 192, converted to WebP at quality 88).
+- `logo-official.png`: https://newgame-anime.com/images/s2/common_logo.png (300 × 62, unchanged).
+
+Characters and marks: © 得能正太郎・芳文社／NEW GAME!製作委員会・NEW GAME!!製作委員会. These are third-party artwork, not covered by the repository's MIT license. This is an unofficial personal blog theme; the UI links to the official source and shows attribution. The earlier AI fan illustration has been removed.
+
+All assets are served locally. They are referenced only by the optional reward module, which loads after a win, the explicit console shortcut, or restoration of an existing unlock. Ordinary first visits do not download them.

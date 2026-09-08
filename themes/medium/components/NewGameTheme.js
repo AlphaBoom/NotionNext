@@ -1,74 +1,101 @@
 import { siteConfig } from '@/lib/config'
+import RewardContextMenu from './RewardContextMenu'
 
-const ART = '/images/new-game/hifumi-soujirou.webp'
+const ART = '/images/new-game/hifumi-official.webp'
+const ICON = '/images/new-game/hifumi-icon.webp'
+const LOGO = '/images/new-game/logo-official.png'
 
 export function prepareArtwork() {
-  return new Promise(resolve => {
-    const art = new Image()
-    const finish = () => {
-      clearTimeout(timer)
-      art.onload = art.onerror = null
-      resolve()
-    }
-    const timer = setTimeout(finish, 4000)
-    art.onload = art.onerror = finish
-    art.src = ART
-    if (art.complete) finish()
-  })
+  return Promise.all(
+    [ART, LOGO].map(
+      src =>
+        new Promise(resolve => {
+          const art = new Image()
+          const finish = () => {
+            clearTimeout(timer)
+            art.onload = art.onerror = null
+            resolve()
+          }
+          const timer = setTimeout(finish, 4000)
+          art.onload = art.onerror = finish
+          art.src = src
+          if (art.complete) finish()
+        })
+    )
+  )
 }
 
 function Wordmark() {
-  return (
-    <span className='ng-wordmark' aria-label='NEW GAME!'>
-      {'NEW'.split('').map((letter, i) => (
-        <span aria-hidden='true' key={i}>
-          {letter}
-        </span>
-      ))}
-      <span className='ng-word-space' aria-hidden='true'>
-        {' '}
-      </span>
-      {'GAME!'.split('').map((letter, i) => (
-        <span aria-hidden='true' key={i + 3}>
-          {letter}
-        </span>
-      ))}
-    </span>
-  )
+  return <span className='ng-wordmark' role='img' aria-label='NEW GAME!!' />
 }
 
 export function NewGameHero() {
   return (
     <section className='ng-hero' aria-label='NEW GAME! 隐藏主题已解锁'>
-      <div
-        className='ng-hero-art'
-        role='img'
-        aria-label='同人插画：ひふみ温柔地抱着刺猬宗次郎'
-      />
+      <div className='ng-hero-geometry' aria-hidden='true'>
+        <svg className='ng-floating-pad' viewBox='0 0 120 80' fill='none'>
+          <path
+            d='M29 18h62c13 0 23 38 18 48-5 11-20-2-27-11H38c-7 9-22 22-27 11C6 56 16 18 29 18Z'
+            fill='#a48bd5'
+            stroke='white'
+            strokeWidth='4'
+          />
+          <path d='M34 30v20m-10-10h20' stroke='white' strokeWidth='7' />
+          <circle cx='86' cy='33' r='5' fill='#fff4a2' />
+          <circle cx='97' cy='45' r='5' fill='#f78eac' />
+          <path d='M54 20v-7c0-10 17-3 17-12' stroke='white' strokeWidth='3' />
+        </svg>
+        <span className='ng-floating-star'>✦</span>
+      </div>
       <div className='ng-hero-copy'>
-        <span className='ng-unlock-stamp'>★ SECRET CHAPTER / CLEAR!</span>
-        <p className='ng-small-jp'>いつもの毎日に、ニューゲーム！</p>
+        <p className='ng-section-label'>
+          EXTRA STAGE <span>01 / CLEAR</span>
+        </p>
         <h2>
           <Wordmark />
         </h2>
-        <p className='ng-hero-line'>原来，是这个世界的小刺猬啊。</p>
+        <p className='ng-small-jp'>小さな出会い、新しい毎日。</p>
+        <div className='ng-hero-message'>
+          <span className='ng-message-index'>＋</span>
+          <p>
+            原来，是这个世界
+            <br />
+            的小刺猬啊。
+          </p>
+        </div>
         <p className='ng-hero-description'>
-          你找到了 {siteConfig('AUTHOR')} 的隐藏频道。
+          你发现了 {siteConfig('AUTHOR')} 的另一面。
           <br />
-          从安静的文字，跳进喜欢的世界。
+          从宗次郎开始，进入《NEW GAME!》的日常。
         </p>
         <span className='ng-clear-chip'>
-          90秒夜行达成 <b>＋</b> 隐藏主题 GET!
+          HIDDEN THEME <b>UNLOCKED!</b>
         </span>
       </div>
-      <span className='ng-hero-sticker' aria-hidden='true'>
-        おつかれさま！<b>✦</b>
-      </span>
-      <div className='ng-marquee' aria-hidden='true'>
-        <span>
-          NEW GAME! ✦ HEDGEHOG CLUB ✦ CREATE / PLAY / REPEAT ✦ NEW GAME! ✦
-          HEDGEHOG CLUB ✦
+      <div className='ng-character-panel'>
+        <div
+          className='ng-hero-art'
+          role='img'
+          aria-label='《NEW GAME!》官方角色立绘：泷本日富美'
+        />
+        <p className='ng-character-name'>
+          <span>TAKIMOTO HIFUMI</span>滝本ひふみ
+        </p>
+        <span className='ng-character-number' aria-hidden='true'>
+          04
         </span>
+      </div>
+      <div className='ng-hero-footer'>
+        <span>
+          NEW GAME! <b>×</b> {siteConfig('AUTHOR')}
+        </span>
+        <a
+          href='https://newgame-anime.com/character/'
+          target='_blank'
+          rel='noreferrer'
+        >
+          角色素材来自动画官网 ↗
+        </a>
       </div>
     </section>
   )
@@ -77,167 +104,112 @@ export function NewGameHero() {
 export default function NewGameTheme({ active, opening, onToggle }) {
   return (
     <>
-      <div className={`ng-theme-switch ${active ? 'is-active' : ''}`}>
-        <span aria-hidden='true'>✦</span>
-        <span>{active ? 'NEW GAME! MODE' : 'NEW GAME! 已解锁'}</span>
-        <button type='button' onClick={onToggle}>
-          {active ? '恢复原主题' : '再次开启'}
-        </button>
-      </div>
+      <RewardContextMenu active={active} onToggle={onToggle} />
       {active && (
         <>
           <aside
             className='ng-character-card'
             aria-label='NEW GAME! 主题角色卡'
           >
-            <div className='ng-card-art' />
-            <span>PLAYER 02</span>
-            <strong>ひふみ & 宗次郎</strong>
-            <small>今天也要创造一点快乐！</small>
+            <div className='ng-card-art' role='img' aria-label='泷本日富美' />
+            <span>CHARACTER / 04</span>
+            <strong>滝本ひふみ</strong>
+            <small>ひふみ と 宗次郎</small>
             <a
               href='https://newgame-anime.com/'
               target='_blank'
               rel='noreferrer'
             >
-              NEW GAME! 动画官网 ↗
+              NEW GAME!!
+              <br />
+              OFFICIAL SITE ↗
             </a>
-            <small className='ng-art-credit'>AI 同人插画 · 非官方主题</small>
           </aside>
           <div className='ng-edge-mark' aria-hidden='true'>
-            NEW GAME! / ANOTHER SIDE OF THE BLOG
+            NEW GAME!! ＋ ANOTHER SIDE ＋ {siteConfig('AUTHOR')}
+          </div>
+          <div className='ng-theme-credit'>
+            非官方博客主题 ·{' '}
+            <a
+              href='https://newgame-anime.com/'
+              target='_blank'
+              rel='noreferrer'
+            >
+              NEW GAME! 动画官网
+            </a>
+            <br />
+            角色与标识 © 得能正太郎・芳文社／NEW GAME!製作委員会・NEW
+            GAME!!製作委員会
           </div>
         </>
       )}
       {active && opening && (
-        <div className='ng-unlock-opening' aria-hidden='true'>
+        <div className='ng-unlock-opening' role='status'>
           <div>
-            <span>ACHIEVEMENT UNLOCKED</span>
+            <span>EXTRA STAGE / UNLOCKED</span>
             <Wordmark />
-            <p>欢迎来到，另一个我喜欢的世界。</p>
+            <p>隐藏主题已解锁 · 在页面空白处右键切换</p>
           </div>
         </div>
       )}
       <style jsx global>{`
-        .ng-theme-switch {
-          position: fixed;
-          z-index: 70;
-          bottom: max(18px, env(safe-area-inset-bottom));
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          white-space: nowrap;
-          padding: 8px 9px 8px 17px;
-          border: 1px solid #b3a4dc;
-          border-radius: 99px;
-          background: #fffaff;
-          color: #67528a;
-          box-shadow: 0 5px 22px #60438926;
-          font:
-            11px 'Noto Sans SC',
-            sans-serif;
-        }
-        .ng-theme-switch > span:first-child {
-          color: #ed6da6;
-          font-size: 20px;
-        }
-        .ng-theme-switch.is-active {
-          border: 2px solid #8970c6;
-          box-shadow: 3px 4px 0 #cab7ee;
-        }
-        .ng-theme-switch button {
-          border-radius: 99px;
-          background: #7760b3;
-          color: white;
-          padding: 7px 14px;
-          font-size: 11px;
-          cursor: pointer;
-        }
-        .ng-theme-switch button:hover {
-          background: #d44e93;
-        }
-        .ng-theme-switch button:focus-visible {
-          outline: 2px solid #cf4087;
-          outline-offset: 4px;
-        }
         body:has(#theme-medium.medium-newgame) {
-          background: #f0eafa;
+          background: #f68096;
         }
         #theme-medium.medium-newgame {
-          --paper: #fffaff;
-          --ink: #433853;
-          --muted: #796988;
-          --line: #dfd0ed;
-          --accent: #9860c1;
-          --wash: #f4ebfa;
-          background:
-            radial-gradient(circle, #bda6d444 1.3px, transparent 1.5px) 0 0 /
-              18px 18px,
-            linear-gradient(130deg, #ede7ff 0%, #fff0f6 48%, #dcf4ee 100%);
-        }
-        #theme-medium.medium-newgame::before {
-          content: '';
-          position: fixed;
-          z-index: -1;
-          inset: 0;
-          pointer-events: none;
-          background: linear-gradient(
-            135deg,
-            transparent 20%,
-            #fff6 20%,
-            #fff6 24%,
-            transparent 24%,
-            transparent 74%,
-            #f7bed544 74%,
-            #f7bed544 81%,
-            transparent 81%
+          --paper: #fff;
+          --ink: #454553;
+          --muted: #767684;
+          --line: #e7dde2;
+          --accent: #cc4f78;
+          --wash: #fff0f5;
+          background-color: #f68096;
+          background-image: conic-gradient(
+            from 45deg,
+            #ffffff12 0 25%,
+            #ef638133 0 50%,
+            #ffffff26 0 75%,
+            #e8597612 0
           );
+          background-size: 64px 64px;
         }
         #theme-medium.medium-newgame .medium-nav {
-          background: #fffafff2;
-          border-top: 5px solid transparent;
-          border-image: linear-gradient(
-              90deg,
-              #a48ade 25%,
-              #f193bb 25%,
-              #f193bb 50%,
-              #88d6c3 50%,
-              #88d6c3 75%,
-              #eed282 75%
-            )
-            1;
-          box-shadow: 0 4px 0 #b69acf33;
+          background: #f47b92ed;
+          border: 0;
+          box-shadow: none;
         }
         #theme-medium.medium-newgame .medium-nav-inner {
-          min-height: 80px;
-          border: 0;
+          min-height: 86px;
+          border-bottom: 3px dashed #ffffffb3;
         }
         #theme-medium.medium-newgame .logo {
+          padding: 0;
           border: 0;
-          padding: 5px 13px;
-          border-radius: 4px 15px 4px 15px;
-          background: #9477c4;
-          color: #fff;
-          font-family: 'Noto Sans SC', sans-serif;
-          font-weight: 700;
-          box-shadow: 4px 4px 0 #ead48e;
-          transform: rotate(-2deg);
+          border-radius: 0;
+          background: none;
+          color: white;
+          font:
+            700 24px 'Noto Sans SC',
+            sans-serif;
+          box-shadow: none;
+          transform: none;
         }
         #theme-medium.medium-newgame .medium-nav-item > :is(a, button) {
-          padding: 8px 12px;
-          border-radius: 99px;
+          color: white;
+          font-weight: 700;
+          border-radius: 0;
+          letter-spacing: 0.07em;
         }
         #theme-medium.medium-newgame .medium-nav-item.is-current > a {
-          background: #ede2fa;
-          box-shadow: none;
-          color: #7b4ca1;
+          box-shadow: inset 0 -3px 0 #fff59e;
+          color: #fff8ad;
         }
         #theme-medium.medium-newgame .medium-theme-toggle {
           display: none;
         }
-        #theme-medium.medium-newgame #medium-navigation > ul {
-          gap: 8px;
+        #theme-medium.medium-newgame .medium-search-button,
+        #theme-medium.medium-newgame .medium-menu-toggle {
+          color: white;
         }
         #theme-medium.medium-newgame #container-inner {
           background: transparent;
@@ -248,32 +220,33 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           padding-top: 28px;
         }
         #theme-medium.medium-newgame .medium-masthead {
-          padding: 18px 22px;
-          margin: 22px 0;
-          min-height: 128px;
-          border: 2px solid #dbc9ed;
-          border-radius: 20px 7px 20px 7px;
-          background: #fffaffed;
-          box-shadow: 5px 5px 0 #d9c7ef;
+          min-height: 130px;
+          padding: 17px 26px;
+          margin: 24px 0 18px;
+          border: 0;
+          border-left: 6px solid #82cbd5;
+          border-radius: 0;
+          background: #fff;
+          box-shadow: none;
         }
         #theme-medium.medium-newgame .medium-masthead h1 {
           font:
-            700 30px 'Noto Sans SC',
+            700 28px 'Noto Sans SC',
             sans-serif;
-          color: #7758a0;
+          color: #bd5278;
         }
         #theme-medium.medium-newgame .medium-eyebrow {
-          margin-bottom: 5px;
-          color: #a97abc;
+          color: #b76b85;
+          margin-bottom: 6px;
         }
         #theme-medium.medium-newgame .medium-bio {
-          margin-top: 6px;
+          margin-top: 7px;
           font-size: 12px;
         }
         #theme-medium.medium-newgame .medium-portrait {
-          flex-basis: 110px;
-          width: 110px;
-          height: 110px;
+          flex-basis: 108px;
+          width: 108px;
+          height: 108px;
         }
         #theme-medium.medium-newgame .medium-avatar,
         #theme-medium.medium-newgame .medium-avatar-monogram {
@@ -281,102 +254,95 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           height: 70px;
         }
         #theme-medium.medium-newgame .medium-portrait-orbit {
-          border-color: #ed92b7;
+          border-color: #ed86ab;
         }
         #theme-medium.medium-newgame .medium-topics {
           border: 0;
-          border-radius: 12px;
-          background: #8e72be;
-          padding: 13px 20px;
-          color: #f9f4ff;
-          margin-bottom: 24px;
-          box-shadow: 4px 4px 0 #decbed;
-        }
-        #theme-medium.medium-newgame .medium-topics-label {
+          border-top: 3px dashed #fff9;
+          border-bottom: 3px dashed #fff9;
+          padding: 15px 4px;
+          margin-bottom: 25px;
           color: #fff;
         }
+        #theme-medium.medium-newgame .medium-topics-label {
+          color: #fff6ae;
+        }
         #theme-medium.medium-newgame .medium-topics a:hover {
-          color: #ffe3a2;
+          color: #fff6ae;
         }
         #theme-medium.medium-newgame .medium-post {
           position: relative;
-          background: #fffafff2;
-          padding: 26px;
-          margin-bottom: 20px;
-          border: 2px solid #dbcbed;
-          border-radius: 18px 6px 18px 6px;
-          box-shadow: 5px 5px 0 #d8c6ed;
-          transition:
-            box-shadow 150ms,
-            border-color 150ms;
+          padding: 28px;
+          margin-bottom: 18px;
+          border: 0;
+          border-top: 5px solid #8bd0da;
+          border-radius: 0;
+          background: #fff;
+          box-shadow: none;
+          transition: transform 160ms;
         }
         #theme-medium.medium-newgame .medium-post:nth-child(3n + 2) {
-          box-shadow: 5px 5px 0 #f0cadd;
-          border-color: #f0cadd;
+          border-top-color: #eea0be;
         }
         #theme-medium.medium-newgame .medium-post:nth-child(3n) {
-          box-shadow: 5px 5px 0 #bfe3d9;
-          border-color: #bfe3d9;
+          border-top-color: #c0b1de;
         }
         #theme-medium.medium-newgame .medium-post:hover {
-          border-color: #ae88d1;
-          box-shadow: 7px 7px 0 #c9b0e4;
+          transform: translateY(-2px);
         }
         #theme-medium.medium-newgame .medium-post h2 {
-          color: #62467f;
+          color: #545264;
           font-weight: 700;
+        }
+        #theme-medium.medium-newgame .medium-post-meta {
+          color: #bb5579;
         }
         #theme-medium.medium-newgame .medium-post-cover {
-          border-radius: 12px;
-          border: 2px solid #e7d7ef;
-          transform: rotate(2deg);
+          border-radius: 0;
+          border: 4px solid #f5edf3;
+          transform: none;
         }
         #theme-medium.medium-newgame .medium-post-tags a {
-          padding: 2px 9px;
-          background: #f4eafa;
-          border-radius: 99px;
-          color: #9672af;
+          padding: 2px 6px;
+          background: #f6f1f7;
+          border-radius: 0;
+          color: #936087;
         }
         #theme-medium.medium-newgame .medium-article-header {
-          padding: 30px;
-          margin-top: 30px;
-          margin-bottom: 24px;
-          border: 2px solid #d5bdeb;
-          border-radius: 20px 6px 20px 6px;
-          background:
-            radial-gradient(
-              circle at 95% 20%,
-              #f2d5eb 0 35px,
-              transparent 36px
-            ),
-            #fffaff;
-          box-shadow: 6px 6px 0 #d9c9ee;
+          padding: 32px;
+          margin: 30px 0 24px;
+          border: 8px solid white;
+          border-radius: 0;
+          background: #fff5f8;
+          box-shadow: none;
         }
         #theme-medium.medium-newgame .medium-article-header::before {
-          content: 'NEW GAME! / READING QUEST';
+          content: 'STORY / NEW GAME!!';
           display: block;
-          color: #af7ac7;
-          font: 10px monospace;
+          font:
+            700 13px 'Arial Narrow',
+            monospace;
           letter-spacing: 0.15em;
-          margin-bottom: 15px;
+          margin-bottom: 18px;
+          color: #c2587e;
+          padding-bottom: 12px;
+          border-bottom: 3px dashed #edb2c6;
         }
         #theme-medium.medium-newgame .medium-article-header h1 {
+          color: #555062;
           font-family: 'Noto Sans SC', sans-serif;
           font-weight: 700;
-          color: #684985;
         }
         #theme-medium.medium-newgame .medium-article-meta {
-          margin-bottom: 0;
-          padding-bottom: 0;
           border: 0;
+          padding-bottom: 0;
+          margin-bottom: 0;
         }
         #theme-medium.medium-newgame #notion-article {
-          background: #fffaff;
-          border-radius: 16px;
-          padding: 24px 28px;
-          box-shadow:
-            0 0 0 1px #e3d2ef,
-            5px 5px 0 #decfef;
+          background: #fff;
+          padding: 26px 30px;
+          border-radius: 0;
+          box-shadow: none;
         }
         #theme-medium.medium-newgame #article-wrapper .notion {
           color: var(--ink);
@@ -384,46 +350,52 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         #theme-medium.medium-newgame
           #article-wrapper
           :is(.notion-h1, .notion-h2, .notion-h3) {
-          color: #8960ac;
+          color: #b64e77;
         }
         #theme-medium.medium-newgame #article-wrapper .notion-quote {
-          background: #f4eafa;
-          border-left: 4px solid #ca90c1;
-          border-radius: 0 10px 10px 0;
-          padding: 10px 16px;
+          padding: 12px 16px;
+          background: #f0f9fb;
+          border-left: 4px solid #85cbd5;
+          border-radius: 0;
         }
         #theme-medium.medium-newgame .medium-catalog {
           padding: 18px;
-          background: #fffaffeb;
-          border: 1px solid #dfcaec;
-          border-radius: 14px;
-          box-shadow: 4px 4px 0 #d8c7eb;
+          background: #fff;
+          border: 5px solid #fff;
+          border-top-color: #91d1da;
+          border-radius: 0;
+          box-shadow: none;
         }
         #theme-medium.medium-newgame .medium-article-end {
-          background: #fffaff;
-          border-radius: 18px;
-          padding: 22px;
-          margin-top: 28px;
+          padding: 25px;
+          background: #fff;
+          border-radius: 0;
         }
         #theme-medium.medium-newgame .medium-footer {
-          background: #fffaff;
-          border: 2px solid #dbcaed;
-          border-radius: 18px 18px 0 0;
-          box-shadow: 0 -4px 0 #ead1e5;
-          padding-inline: 25px;
+          padding: 26px;
+          border: 0;
+          border-top: 4px dashed #fff;
+          border-radius: 0;
+          background: #fffdfde8;
+          box-shadow: none;
         }
         #theme-medium.medium-newgame .medium-footer::before {
-          content: '✦ NEW GAME! — CREATE / PLAY / REPEAT ✦';
+          content: 'NEW GAME!! ＋ THANK YOU FOR READING';
           display: block;
-          padding-bottom: 16px;
-          color: #ac83c7;
-          font: 11px monospace;
-          letter-spacing: 0.12em;
+          padding-bottom: 18px;
+          font:
+            700 12px 'Arial Narrow',
+            monospace;
+          letter-spacing: 0.1em;
+          color: #bd5a7c;
         }
         #theme-medium.medium-newgame .medium-submenu {
-          background: #fffaff;
-          border: 2px solid #e3cdef;
-          box-shadow: 4px 4px 0 #d9c5ed;
+          background: #fff;
+          border: 1px solid #ecc9d7;
+          box-shadow: 0 5px 18px #bc506322;
+        }
+        #theme-medium.medium-newgame .medium-submenu a {
+          color: #80566b;
         }
         #theme-medium.medium-newgame [class*='dark:text-gray-'] {
           color: var(--ink);
@@ -432,228 +404,285 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           background-color: var(--paper);
         }
         #theme-medium.medium-newgame .medium-game-return {
-          color: #8660a8;
+          color: #b34c74;
         }
         .ng-hero {
           position: relative;
           isolation: isolate;
           overflow: hidden;
-          min-height: 400px;
-          border: 3px solid #fff;
-          border-radius: 24px 7px 24px 7px;
-          background: #ece0f6;
-          box-shadow:
-            7px 7px 0 #baa1d9,
-            0 0 0 1px #d0b6e7;
+          min-height: 486px;
+          border: 9px solid #fff;
+          background: #84cbd6;
         }
-        .ng-hero-art {
+        .ng-hero-geometry {
           position: absolute;
-          z-index: -1;
           inset: 0;
-          background:
-            linear-gradient(90deg, #f5effce8, #f5effc70 43%, transparent 66%),
-            url('${ART}') center 47% / cover no-repeat;
+          z-index: -1;
+          background: conic-gradient(
+              from 45deg,
+              #ffffff12 0 25%,
+              #60b6c526 0 50%,
+              #ffffff24 0 75%,
+              transparent 0
+            )
+            0 0 / 56px 56px;
         }
         .ng-hero-copy {
           position: relative;
-          width: 65%;
-          padding: 35px 34px 58px;
+          z-index: 2;
+          width: 60%;
+          padding: 26px 30px 62px;
         }
-        .ng-unlock-stamp {
-          display: inline-block;
-          padding: 5px 12px;
-          background: #e279ac;
-          border: 2px solid #fff;
-          outline: 1px solid #e279ac;
-          color: #fff;
-          transform: rotate(-3deg);
-          font: 10px monospace;
+        .ng-section-label {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding-bottom: 12px;
+          margin-bottom: 29px;
+          border-bottom: 3px dashed #fffc;
+          color: white;
+          font:
+            700 16px 'Arial Narrow',
+            monospace;
           letter-spacing: 0.08em;
-          box-shadow: 3px 3px 0 #d9badf;
         }
-        .ng-small-jp {
-          color: #9d77b9;
-          font-size: 11px;
-          letter-spacing: 0.14em;
-          margin: 24px 0 5px;
+        .ng-section-label span {
+          font-size: 9px;
+          letter-spacing: 0.06em;
         }
         .ng-wordmark {
           display: block;
-          white-space: nowrap;
-          font-family: 'Arial Rounded MT Bold', 'Noto Sans SC', sans-serif;
-          font-size: clamp(38px, 5vw, 68px);
-          font-weight: 900;
-          line-height: 1.25;
-          letter-spacing: -0.055em;
-          filter: drop-shadow(3px 4px 0 #ffffff) drop-shadow(1px 2px 0 #9572bc);
+          width: 330px;
+          max-width: 100%;
+          aspect-ratio: 300 / 62;
+          background: url('${LOGO}') left center / contain no-repeat;
         }
-        .ng-wordmark > span:nth-child(4n + 1) {
-          color: #9261bd;
+        .ng-small-jp {
+          color: #fff;
+          font-size: 11px;
+          letter-spacing: 0.25em;
+          margin: 17px 0 24px;
         }
-        .ng-wordmark > span:nth-child(4n + 2) {
-          color: #e17ba7;
-        }
-        .ng-wordmark > span:nth-child(4n + 3) {
-          color: #58afaa;
-        }
-        .ng-wordmark > span:nth-child(4n) {
-          color: #d9ae56;
-        }
-        .ng-wordmark .ng-word-space {
-          display: inline-block;
-          width: 0.16em;
-        }
-        .ng-hero-line {
-          font-size: 19px;
+        .ng-hero-message {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          color: white;
           font-weight: 700;
-          color: #674d82;
-          margin-top: 16px;
+        }
+        .ng-hero-message p {
+          font-size: 29px;
+          letter-spacing: 0.07em;
+          line-height: 1.6;
+        }
+        .ng-message-index {
+          color: #fff5a0;
+          font-size: 28px;
+          line-height: 1.5;
         }
         .ng-hero-description {
+          color: #285e6c;
           font-size: 12px;
           line-height: 1.9;
-          color: #897093;
-          margin-top: 9px;
+          margin: 18px 0;
         }
         .ng-clear-chip {
-          display: inline-block;
-          margin-top: 23px;
-          padding: 7px 13px;
-          border-radius: 6px;
-          border: 1px dashed #b598d0;
-          background: #fffaffc9;
-          font-size: 10px;
-          color: #9473ad;
+          display: inline-flex;
+          gap: 10px;
+          padding: 7px 11px;
+          font: 10px monospace;
+          background: #fff;
+          color: #4f8691;
+          letter-spacing: 0.04em;
         }
         .ng-clear-chip b {
-          color: #d983a7;
-          margin: 0 5px;
+          color: #c8557a;
         }
-        .ng-hero-sticker {
+        .ng-character-panel {
           position: absolute;
-          right: 17px;
-          top: 18px;
-          transform: rotate(8deg);
-          background: #fff7c8;
-          color: #9e7aaa;
-          padding: 8px 13px;
-          border: 2px solid white;
-          border-radius: 50% 50% 6px 50%;
-          font-size: 11px;
-          box-shadow: 3px 3px 0 #b89ccb;
+          z-index: 1;
+          top: 0;
+          right: 0;
+          bottom: 28px;
+          width: 43%;
+          background: #fff;
         }
-        .ng-hero-sticker b {
-          display: block;
-          font-size: 25px;
-          text-align: right;
-          color: #da8cb5;
+        .ng-character-panel::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: -45px;
+          width: 46px;
+          background: #fff;
+          clip-path: polygon(100% 0, 100% 100%, 0 100%);
         }
-        .ng-marquee {
+        .ng-hero-art {
+          position: absolute;
+          z-index: 1;
+          width: 174px;
+          height: 440px;
+          bottom: 0;
+          left: 5px;
+          background: url('${ART}') left center / auto 440px no-repeat;
+        }
+        .ng-character-name {
+          position: absolute;
+          z-index: 2;
+          right: 19px;
+          top: 35px;
+          color: #d6658c;
+          writing-mode: vertical-rl;
+          font-size: 21px;
+          letter-spacing: 0.18em;
+        }
+        .ng-character-name span {
+          margin-left: 7px;
+          font: 10px monospace;
+          letter-spacing: 0.18em;
+        }
+        .ng-character-number {
+          position: absolute;
+          right: 12px;
+          bottom: 14px;
+          color: #f6e0eb;
+          font:
+            700 74px 'Arial Narrow',
+            sans-serif;
+          line-height: 1;
+        }
+        .ng-hero-footer {
           position: absolute;
           bottom: 0;
           left: 0;
-          width: 100%;
-          overflow: hidden;
-          background: #9476bebd;
-          border-top: 2px solid #fff9;
-          color: #fff;
-          height: 26px;
-          font: 9px/26px monospace;
-          letter-spacing: 0.15em;
-          white-space: nowrap;
-          text-align: center;
+          right: 0;
+          z-index: 3;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 8px;
+          min-height: 29px;
+          padding: 7px 13px;
+          color: #b45d7c;
+          background: white;
+          font: 9px monospace;
+          letter-spacing: 0.04em;
+        }
+        .ng-hero-footer b {
+          color: #83c1cf;
+          margin-inline: 5px;
+        }
+        .ng-hero-footer a {
+          color: #8c7886;
+          font:
+            8px 'Noto Sans SC',
+            sans-serif;
         }
         .ng-character-card {
           display: none;
           position: fixed;
-          left: max(18px, calc(50% - 710px));
-          top: 230px;
-          width: 155px;
-          padding: 9px 9px 13px;
-          border: 2px solid white;
-          border-radius: 13px 4px 13px 4px;
-          background: #fef8ff;
-          transform: rotate(-3deg);
-          box-shadow: 5px 5px 0 #bfa8d9;
-          color: #8766a1;
           z-index: 20;
+          top: 210px;
+          left: max(16px, calc(50% - 710px));
+          width: 150px;
+          text-align: center;
+          color: white;
         }
         .ng-card-art {
-          height: 153px;
-          border-radius: 8px;
-          margin-bottom: 12px;
-          background: url('${ART}') 85% 40% / auto 180px no-repeat;
+          width: 124px;
+          height: 124px;
+          margin: 0 auto 16px;
+          background: url('${ICON}') center / contain no-repeat;
         }
         .ng-character-card > span {
           display: block;
-          font: 8px monospace;
-          color: #b18cc2;
-          letter-spacing: 0.1em;
+          padding-top: 14px;
+          border-top: 3px dashed #fff9;
+          font: 9px monospace;
+          letter-spacing: 0.08em;
         }
         .ng-character-card strong {
           display: block;
-          font-size: 13px;
-          margin: 3px 0;
+          margin: 7px 0;
+          font-size: 20px;
+          letter-spacing: 0.07em;
         }
-        .ng-character-card small,
+        .ng-character-card small {
+          font-size: 11px;
+        }
         .ng-character-card a {
           display: block;
-          font-size: 9px;
-          line-height: 1.8;
-        }
-        .ng-character-card a {
-          color: #ad79b6;
-          margin-top: 8px;
-        }
-        .ng-character-card .ng-art-credit {
-          color: #a696ae;
-          font-size: 8px;
-          margin-top: 8px;
+          margin-top: 19px;
+          padding: 10px;
+          background: #fff;
+          color: #d26485;
+          font:
+            700 12px/1.6 'Arial Narrow',
+            monospace;
         }
         .ng-edge-mark {
           position: fixed;
-          right: 15px;
-          top: 45%;
+          right: 20px;
+          top: 37%;
           z-index: 10;
           pointer-events: none;
           writing-mode: vertical-rl;
-          font: 9px monospace;
-          letter-spacing: 0.18em;
-          color: #b096c7;
+          color: #fff;
+          font: 12px monospace;
+          letter-spacing: 0.2em;
+        }
+        .ng-theme-credit {
+          padding: 18px 20px 28px;
+          color: #864253;
+          background: #f9c0cd;
+          text-align: center;
+          font-size: 9px;
+          line-height: 1.8;
+        }
+        .ng-theme-credit a {
+          text-decoration: underline;
+          text-underline-offset: 3px;
         }
         .ng-unlock-opening {
           position: fixed;
-          inset: 0;
           z-index: 65;
+          inset: 0;
           display: grid;
           place-items: center;
-          text-align: center;
           pointer-events: none;
-          background: repeating-conic-gradient(
-            from 25deg at 50% 50%,
-            #eee1ff 0deg 12deg,
-            #fbe8f3 12deg 24deg
-          );
+          text-align: center;
+          background:
+            conic-gradient(
+                from 45deg,
+                #fff2 0 25%,
+                #e9658633 0 50%,
+                #fff3 0 75%,
+                transparent 0
+              )
+              0 0 / 100px 100px,
+            #f47b95;
           animation: ng-unlock-reveal 1800ms both;
         }
         .ng-unlock-opening > div {
-          padding: 25px;
-          transform: rotate(-5deg);
+          padding: 30px;
+          transform: rotate(-4deg);
+          color: white;
         }
         .ng-unlock-opening > div > span:first-child {
           display: block;
-          font: 12px monospace;
-          letter-spacing: 0.2em;
-          color: #b679a9;
-          margin-bottom: 18px;
+          padding-bottom: 18px;
+          margin-bottom: 24px;
+          border-bottom: 4px dashed white;
+          font: 700 13px monospace;
+          letter-spacing: 0.16em;
         }
         .ng-unlock-opening .ng-wordmark {
-          font-size: clamp(55px, 10vw, 132px);
+          width: min(600px, 76vw);
+          margin: auto;
         }
         .ng-unlock-opening p {
-          color: #9673af;
-          margin-top: 20px;
-          font-size: 15px;
+          font-size: 13px;
+          margin-top: 28px;
         }
         @keyframes ng-unlock-reveal {
           0% {
@@ -669,6 +698,202 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             transform: translateX(8%);
           }
         }
+        /* The unlocked world moves behind opaque content, without a JS loop. */
+        #theme-medium.medium-newgame::before {
+          content: '';
+          position: fixed;
+          z-index: -1;
+          inset: -80px;
+          pointer-events: none;
+          background:
+            linear-gradient(
+              135deg,
+              transparent 22%,
+              #fff2 22% 27%,
+              transparent 27% 73%,
+              #ffedb42b 73% 80%,
+              transparent 80%
+            ),
+            conic-gradient(
+                from 45deg,
+                #fff1 0 25%,
+                transparent 0 50%,
+                #fff2 0 75%,
+                transparent 0
+              )
+              0 0 / 112px 112px;
+          animation: ng-world-drift 24s ease-in-out infinite alternate;
+        }
+        #theme-medium.medium-newgame::after {
+          content: 'NEW GAME!!';
+          position: fixed;
+          z-index: -1;
+          top: 51vh;
+          left: -3vw;
+          white-space: nowrap;
+          pointer-events: none;
+          color: transparent;
+          -webkit-text-stroke: 2px #ffffff80;
+          font:
+            900 17vw/1 'Arial Narrow',
+            sans-serif;
+          letter-spacing: -0.04em;
+          transform: rotate(-13deg);
+          animation: ng-world-title 18s ease-in-out infinite alternate;
+        }
+        .ng-floating-pad {
+          position: absolute;
+          width: 126px;
+          right: 40%;
+          bottom: 45px;
+          opacity: 0.75;
+          transform: rotate(17deg);
+          animation: ng-pad-drift 7s ease-in-out infinite alternate;
+        }
+        .ng-floating-star {
+          position: absolute;
+          left: 45%;
+          top: 103px;
+          color: #fff5a8;
+          font-size: 42px;
+          text-shadow:
+            -290px 235px 0 #fff8,
+            28px 206px 0 #ffe594;
+          animation: ng-star-turn 12s ease-in-out infinite alternate;
+        }
+        .ng-hero-art {
+          transform-origin: 50% 100%;
+          animation: ng-character-float 6s ease-in-out infinite alternate;
+        }
+        .ng-hero-copy {
+          animation: ng-copy-enter 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .ng-character-panel {
+          animation: ng-character-enter 750ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .ng-character-card::before {
+          content: '';
+          position: absolute;
+          width: 165px;
+          height: 165px;
+          top: -20px;
+          left: -8px;
+          border: 3px dashed #ffffffb3;
+          border-radius: 50%;
+          pointer-events: none;
+          animation: ng-ring-spin 40s linear infinite;
+        }
+        .ng-edge-mark {
+          font-size: 17px;
+          font-weight: 700;
+          letter-spacing: 0.24em;
+        }
+        #theme-medium.medium-newgame .medium-post {
+          cursor: pointer;
+          animation: ng-card-enter 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        #theme-medium.medium-newgame .medium-post:nth-child(3n + 2) {
+          animation-delay: 70ms;
+        }
+        #theme-medium.medium-newgame .medium-post:nth-child(3n) {
+          animation-delay: 140ms;
+        }
+        #theme-medium.medium-newgame .medium-post:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 7px 0 #cc537a66;
+        }
+        #theme-medium.medium-newgame .medium-post-title-link::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+        }
+        #theme-medium.medium-newgame
+          .medium-post
+          :is(.medium-post-meta a, .medium-post-tags a, .medium-post-cover) {
+          position: relative;
+          z-index: 2;
+        }
+        #theme-medium.medium-newgame
+          .medium-post:has(.medium-post-title-link:focus-visible) {
+          outline: 3px solid #fff7ae;
+          outline-offset: 4px;
+        }
+        #theme-medium.medium-newgame #container-inner {
+          padding-bottom: 12px;
+        }
+        #theme-medium.medium-newgame .medium-footer {
+          padding: 18px 24px;
+        }
+        #theme-medium.medium-newgame .medium-footer::before {
+          padding-bottom: 10px;
+          font-size: 10px;
+        }
+        #theme-medium.medium-newgame .medium-footer-note {
+          margin-top: 8px;
+        }
+        .ng-theme-credit {
+          padding: 10px 20px 14px;
+          font-size: 8px;
+        }
+        @keyframes ng-world-drift {
+          to {
+            transform: translate(48px, 32px);
+          }
+        }
+        @keyframes ng-world-title {
+          to {
+            transform: translateY(-25px) rotate(-9deg);
+          }
+        }
+        @keyframes ng-pad-drift {
+          to {
+            transform: translate(12px, -16px) rotate(-8deg);
+          }
+        }
+        @keyframes ng-star-turn {
+          to {
+            transform: rotate(30deg) scale(0.8);
+          }
+        }
+        @keyframes ng-character-float {
+          to {
+            transform: translateY(-5px) rotate(0.7deg);
+          }
+        }
+        @keyframes ng-ring-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        @keyframes ng-copy-enter {
+          from {
+            opacity: 0;
+            transform: translateX(-25px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
+        }
+        @keyframes ng-character-enter {
+          from {
+            transform: translateX(70px);
+          }
+          to {
+            transform: none;
+          }
+        }
+        @keyframes ng-card-enter {
+          from {
+            opacity: 0;
+            translate: 0 20px;
+          }
+          to {
+            opacity: 1;
+            translate: 0 0;
+          }
+        }
         body:has(#theme-medium.medium-full-width) .ng-character-card {
           display: none;
         }
@@ -678,85 +903,133 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           }
         }
         @media (max-width: 950px) {
-          .ng-hero {
-            min-height: 365px;
-          }
-          .ng-hero-copy {
-            width: 70%;
-            padding: 28px 24px 46px;
-          }
-          .ng-hero-line {
-            font-size: 16px;
-          }
           .ng-edge-mark {
             display: none;
           }
-        }
-        @media (max-width: 600px) {
-          .ng-hero {
-            min-height: 430px;
+          .ng-hero-copy {
+            padding-inline: 22px;
           }
-          .ng-hero-art {
-            background-position:
-              center,
-              70% 0;
-            background-image:
-              linear-gradient(0deg, #f5effc 3%, #f5effcdd 43%, transparent 76%),
-              url('${ART}');
+          .ng-hero-message p {
+            font-size: 25px;
+          }
+          .ng-character-name {
+            right: 10px;
+            font-size: 18px;
+          }
+        }
+        @media (max-width: 767px) {
+          #theme-medium.medium-newgame .medium-nav-inner {
+            min-height: 68px;
+          }
+          #theme-medium.medium-newgame #medium-navigation {
+            background: #fff;
+          }
+          #theme-medium.medium-newgame
+            #medium-navigation
+            .medium-nav-item
+            > :is(a, button) {
+            color: #a74e71;
+          }
+          .ng-hero {
+            min-height: 455px;
+            border-width: 6px;
           }
           .ng-hero-copy {
-            padding: 180px 20px 44px;
-            width: 100%;
+            width: 69%;
+            padding: 18px 13px 52px;
           }
-          .ng-unlock-stamp {
-            font-size: 8px;
+          .ng-section-label {
+            font-size: 11px;
+            margin-bottom: 24px;
+          }
+          .ng-section-label span {
+            display: none;
           }
           .ng-small-jp {
-            margin-top: 14px;
+            font-size: 8px;
+            letter-spacing: 0.06em;
           }
-          .ng-wordmark {
-            font-size: 44px;
+          .ng-hero-message {
+            gap: 5px;
           }
-          .ng-hero-line {
-            font-size: 15px;
+          .ng-hero-message p {
+            font-size: 20px;
+            letter-spacing: 0;
+          }
+          .ng-message-index {
+            font-size: 20px;
           }
           .ng-hero-description {
-            font-size: 11px;
+            max-width: 165px;
+            font-size: 10px;
           }
           .ng-clear-chip {
-            margin-top: 12px;
+            font-size: 8px;
+            padding: 6px;
+            gap: 5px;
+          }
+          .ng-character-panel {
+            width: 30%;
+          }
+          .ng-hero-art {
+            left: -37px;
+            width: 125px;
+            height: 322px;
+            background-size: auto 322px;
+          }
+          .ng-character-name {
+            top: 16px;
+            right: 5px;
+            font-size: 15px;
+          }
+          .ng-character-name span {
+            display: none;
+          }
+          .ng-character-number {
+            display: none;
+          }
+          .ng-hero-footer {
+            font-size: 7px;
+            padding-inline: 7px;
+          }
+          .ng-hero-footer a {
+            font-size: 7px;
+          }
+          #theme-medium.medium-newgame .medium-masthead {
+            padding-inline: 15px;
           }
           #theme-medium.medium-newgame .medium-post {
-            padding: 17px;
+            padding: 20px 17px;
           }
           #theme-medium.medium-newgame .medium-article-header {
-            padding: 22px;
+            padding: 19px;
           }
           #theme-medium.medium-newgame #notion-article {
-            padding: 18px 14px;
-          }
-          .ng-theme-switch {
-            gap: 8px;
-            font-size: 9px;
-            padding-left: 12px;
+            padding: 20px 14px;
           }
         }
         @media (prefers-reduced-motion: reduce) {
           .ng-unlock-opening {
-            display: none;
+            background: #f47b95;
+            animation: none;
+          }
+          .ng-unlock-opening > div {
+            transform: none;
           }
           #theme-medium.medium-newgame *,
-          .ng-theme-switch {
+          #theme-medium.medium-newgame::before,
+          #theme-medium.medium-newgame::after,
+          .ng-character-card::before {
             animation: none !important;
             transition: none !important;
           }
         }
         @media print {
-          .ng-theme-switch,
           .ng-character-card,
           .ng-edge-mark,
           .ng-unlock-opening,
-          .ng-hero {
+          .ng-hero,
+          .ng-theme-credit {
             display: none !important;
           }
         }
