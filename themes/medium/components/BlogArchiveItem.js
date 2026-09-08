@@ -8,23 +8,29 @@ import WritingModeBadge from './WritingModeBadge'
  */
 export default function BlogArchiveItem({ archiveTitle, archivePosts }) {
   return (
-    <div key={archiveTitle}>
-      <div id={archiveTitle} className='pt-16 pb-4 text-3xl dark:text-gray-300'>
+    <div key={archiveTitle} className='medium-archive-group'>
+      <div
+        id={archiveTitle}
+        className='medium-archive-month pt-16 pb-4 text-3xl dark:text-gray-300'
+      >
         {archiveTitle}
       </div>
-      <ul>
+      <ul className='medium-archive-list'>
         {archivePosts[archiveTitle]?.map(post => {
           return (
             <li
               key={post.id}
-              className='border-l-2 p-1 text-xs md:text-base items-center  hover:scale-x-105 hover:border-gray-500 dark:hover:border-gray-300 dark:border-gray-400 transform duration-500'>
-              <div id={post?.publishDay}>
-                <span className='text-gray-400'>{post.date?.start_date}</span>{' '}
-                &nbsp;
+              className='medium-archive-row border-l-2 p-1 text-xs md:text-base items-center  hover:scale-x-105 hover:border-gray-500 dark:hover:border-gray-300 dark:border-gray-400 transform duration-500'
+            >
+              <div id={post?.publishDay} className='medium-archive-entry'>
+                <span className='medium-archive-date text-gray-400'>
+                  {post.date?.start_date}
+                </span>{' '}
                 <SmartLink
                   passHref
                   href={post?.href}
-                  className='dark:text-gray-400  dark:hover:text-gray-300 overflow-x-hidden hover:underline cursor-pointer text-gray-600'>
+                  className='medium-archive-link dark:text-gray-400  dark:hover:text-gray-300 overflow-x-hidden hover:underline cursor-pointer text-gray-600'
+                >
                   {post.title}
                 </SmartLink>{' '}
                 <WritingModeBadge writingMode={post.writingMode} />

@@ -1,0 +1,10 @@
+# Direct image-to-image restoration of the original crop
+
+Use case: precise-object-edit.
+Image 1 is the EDIT TARGET and the ONLY visual source: an 80 × 80 crop from the original Hifumi holding Soujirou artwork, enlarged to 1024 × 1024 with nearest-neighbor sampling.
+Task: faithful image-to-image restoration of this exact crop into a clean, sharp 2D anime detail. Remove pixel blocks and compression blur while keeping the original drawing's composition and geometry.
+Treat the input as a drawing to carefully trace and restore, NOT an inspiration for a new pose. Follow its original edges: the exact two hands, visible finger shapes and spacing, thumb positions, wrists, cuffs, hedgehog shape, face angle, and overlap with the dark knee in the foreground. Preserve which contours are visible and which are hidden. Do not rearrange, lengthen, spread, rotate or re-pose the hands. Do not reveal any palm or finger that is hidden in the source. Preserve the dark knee covering the lower right, white sleeve at the lower left, blouse and hair around the edges; these are essential to the original occlusion.
+Keep Soujirou's original brown quills, ivory face, small low nose and half-lidded unreceptive grumpy expression from this source. Preserve the original body's proportions, camera angle, scale and location. No separate avatar influence.
+Use restrained clean anime cel linework and the source palette. Interpret only enough missing pixels to produce smooth edges, keeping the original forms rather than adding anatomical details or elaborate nails.
+Same square framing. No new background scene, no new objects, no portrait redesign, no text, labels, bubbles, border or watermark. Transparent gaps may be filled with a flat warm ivory matching the blog inset. All source clothing remains.
+Priority: exact source geometry and hand occlusion over decorative improvement. Output only the restored version of this input crop.
