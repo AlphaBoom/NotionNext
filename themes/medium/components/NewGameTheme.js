@@ -61,15 +61,15 @@ export function NewGameHero() {
         <div className='ng-hero-message'>
           <span className='ng-message-index'>＋</span>
           <p>
-            原来，是这个世界
+            好吧，被你发现了。
             <br />
-            的小刺猬啊。
+            这是我的另一面。
           </p>
         </div>
         <p className='ng-hero-description'>
-          小刺猬带你来的，是我的另一个世界。
+          头像里的小刺猬，就是我。
           <br />
-          收藏喜欢的日常，也认真玩好每一局。
+          游戏、动画，还有我的日常，都在这里。
         </p>
         <span className='ng-clear-chip'>
           HIDDEN THEME <b>UNLOCKED!</b>
