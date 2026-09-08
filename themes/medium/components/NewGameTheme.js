@@ -1,7 +1,8 @@
 import { siteConfig } from '@/lib/config'
 import RewardContextMenu from './RewardContextMenu'
+import RewardPlayground from './RewardPlayground'
 
-const ART = '/images/new-game/hifumi-official.webp'
+const ART = '/images/new-game/hifumi-soujirou.webp'
 const ICON = '/images/new-game/hifumi-icon.webp'
 const LOGO = '/images/new-game/logo-official.png'
 
@@ -76,10 +77,10 @@ export function NewGameHero() {
         <div
           className='ng-hero-art'
           role='img'
-          aria-label='《NEW GAME!》官方角色立绘：泷本日富美'
+          aria-label='泷本日富美双手捧着刺猬宗次郎'
         />
         <p className='ng-character-name'>
-          <span>TAKIMOTO HIFUMI</span>滝本ひふみ
+          <span>HIFUMI & SOUJIROU</span>ひふみ と 宗次郎
         </p>
         <span className='ng-character-number' aria-hidden='true'>
           ✦
@@ -94,13 +95,7 @@ export function NewGameHero() {
         <span>
           NEW GAME! <b>×</b> {siteConfig('AUTHOR')}
         </span>
-        <a
-          href='https://newgame-anime.com/character/'
-          target='_blank'
-          rel='noreferrer'
-        >
-          角色素材来自动画官网 ↗
-        </a>
+        <span>ひふみ と 宗次郎</span>
       </div>
     </section>
   )
@@ -112,6 +107,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
       <RewardContextMenu active={active} onToggle={onToggle} />
       {active && (
         <>
+          <RewardPlayground />
           <aside
             className='ng-character-card'
             aria-label='NEW GAME! 主题角色卡'
@@ -132,19 +128,6 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           </aside>
           <div className='ng-edge-mark' aria-hidden='true'>
             NEW GAME!! ＋ ANOTHER SIDE ＋ {siteConfig('AUTHOR')}
-          </div>
-          <div className='ng-theme-credit'>
-            非官方博客主题 ·{' '}
-            <a
-              href='https://newgame-anime.com/'
-              target='_blank'
-              rel='noreferrer'
-            >
-              NEW GAME! 动画官网
-            </a>
-            <br />
-            角色与标识 © 得能正太郎・芳文社／NEW GAME!製作委員会・NEW
-            GAME!!製作委員会
           </div>
         </>
       )}
@@ -316,10 +299,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           color: #936087;
         }
         #theme-medium.medium-newgame .medium-article-header {
-          padding: 32px;
-          margin: 30px 0 24px;
+          padding: 29px 27px;
+          margin: 30px auto 24px;
           border: 3px solid #fff;
-          border-radius: 20px 5px 20px 5px;
+          border-radius: 20px;
           background: #fff4fb;
           box-shadow: 6px 6px 0 #9979bc55;
         }
@@ -369,20 +352,24 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           padding: 18px;
           background: #fff;
           border: 5px solid #fff;
-          border-top-color: #91d1da;
-          border-radius: 0;
+          border-top-color: #c9a9de;
+          border-radius: 16px;
           box-shadow: none;
         }
         #theme-medium.medium-newgame .medium-article-end {
-          padding: 25px;
-          background: #fff;
-          border-radius: 0;
+          padding: 25px 30px;
+          margin-top: 28px;
+          background: #fffaff;
+          border: 1px solid #e9d9ee;
+          border-radius: 20px;
+          box-shadow: 6px 6px 0 #a18ac64d;
         }
         #theme-medium.medium-newgame .medium-footer {
           padding: 26px;
           border: 0;
-          border-top: 4px dashed #fff;
-          border-radius: 0;
+          border: 2px solid #fff;
+          border-radius: 20px;
+          margin-block: 24px;
           background: #fffdfde8;
           box-shadow: none;
         }
@@ -514,48 +501,40 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-character-panel {
           position: absolute;
           z-index: 1;
-          top: 30px;
-          right: 6%;
-          bottom: 67px;
-          width: 27%;
-          background: #fff;
-          border: 7px solid #fff;
-          border-radius: 6px;
-          box-shadow: 9px 12px 0 #58427c4d;
-          transform: rotate(4deg);
+          top: 18px;
+          right: 2%;
+          bottom: 38px;
+          width: 39%;
+          background: none;
+          border: 0;
+          border-radius: 0;
+          box-shadow: none;
+          transform: none;
         }
         .ng-character-panel::before {
-          content: '';
-          position: absolute;
-          top: -20px;
-          left: 25%;
-          width: 90px;
-          height: 32px;
-          z-index: 3;
-          background: #ffe9a9b3;
-          transform: rotate(-9deg);
+          content: none;
         }
         .ng-hero-art {
           position: absolute;
           z-index: 1;
-          width: 135px;
-          height: 390px;
-          bottom: 0;
-          left: 12px;
-          background: url('${ART}') left center / auto 390px no-repeat;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          background: url('${ART}') center bottom / contain no-repeat;
         }
         .ng-character-name {
           position: absolute;
           z-index: 2;
-          right: -21px;
-          bottom: -25px;
+          right: 4px;
+          bottom: 4px;
+          padding: 9px 16px;
           color: #9162a7;
           background: #fff0fa;
           border: 3px solid #fff;
-          padding: 9px 18px;
-          transform: rotate(-7deg);
-          font-size: 17px;
-          letter-spacing: 0.14em;
+          border-radius: 12px;
+          transform: rotate(-4deg);
+          font-size: 15px;
+          letter-spacing: 0.08em;
         }
         .ng-character-name span {
           display: block;
@@ -566,10 +545,10 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-character-number {
           position: absolute;
           z-index: 4;
-          left: -28px;
-          top: -26px;
+          right: 5%;
+          top: 8px;
           color: #fff0a6;
-          font: 700 65px/1 sans-serif;
+          font: 700 45px/1 sans-serif;
           text-shadow: 3px 3px #9d6eac;
         }
         .ng-hero-footer {
@@ -602,14 +581,14 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         .ng-hero-sticker {
           position: absolute;
           z-index: 4;
-          right: 18px;
-          top: 42px;
+          right: 14px;
+          top: 100px;
           padding: 12px 10px;
           background: #fff3a9;
           color: #9b6095;
           border: 3px solid white;
           border-radius: 45% 45% 45% 5px;
-          font-size: 11px;
+          font-size: 10px;
           line-height: 1.6;
           transform: rotate(11deg);
           box-shadow: 3px 3px 0 #77508444;
@@ -669,18 +648,6 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           color: #fff;
           font: 12px monospace;
           letter-spacing: 0.2em;
-        }
-        .ng-theme-credit {
-          padding: 10px 20px 14px;
-          color: #806080;
-          background: #e8cbea;
-          text-align: center;
-          font-size: 8px;
-          line-height: 1.8;
-        }
-        .ng-theme-credit a {
-          text-decoration: underline;
-          text-underline-offset: 3px;
         }
         .ng-unlock-opening {
           position: fixed;
@@ -866,10 +833,6 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         #theme-medium.medium-newgame .medium-footer-note {
           margin-top: 8px;
         }
-        .ng-theme-credit {
-          padding: 10px 20px 14px;
-          font-size: 8px;
-        }
         @keyframes ng-world-drift {
           to {
             transform: translate(48px, 32px);
@@ -915,7 +878,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             transform: translateX(70px);
           }
           to {
-            transform: rotate(4deg);
+            transform: none;
           }
         }
         @keyframes ng-card-enter {
@@ -934,6 +897,59 @@ export default function NewGameTheme({ active, opening, onToggle }) {
         @media (min-width: 1480px) {
           .ng-character-card {
             display: block;
+          }
+        }
+        #theme-medium.medium-newgame.medium-reading .medium-footer {
+          width: calc(100% - 64px);
+          max-width: 740px;
+          margin: 24px auto;
+        }
+        #theme-medium.medium-newgame.medium-full-width
+          :is(.medium-article-header, .medium-article-end) {
+          max-width: 100%;
+        }
+        #theme-medium.medium-newgame.medium-full-width .medium-footer {
+          max-width: 1440px;
+        }
+        #theme-medium.medium-newgame #comment {
+          border-radius: 16px;
+        }
+        #theme-medium.medium-newgame #comment .tk-input .el-textarea__inner {
+          border: 1px solid #dcc6e4;
+          border-radius: 14px;
+          background: #fdf8ff;
+          color: #49415c;
+        }
+        #theme-medium.medium-newgame #comment .el-input__inner {
+          border-color: #dcc6e4;
+          border-radius: 0 9px 9px 0;
+          background: #fffaff;
+          color: #49415c;
+        }
+        #theme-medium.medium-newgame #comment .el-input-group__prepend {
+          border-color: #dcc6e4;
+          border-radius: 9px 0 0 9px;
+          background: #f3e8fa;
+          color: #80648e;
+        }
+        #theme-medium.medium-newgame #comment .el-button {
+          border-radius: 9px;
+        }
+        #theme-medium.medium-newgame #comment .tk-comment {
+          padding: 16px;
+          border-radius: 14px;
+          background: #f8f1fb;
+          margin-top: 12px;
+        }
+        @media (max-width: 767px) {
+          #theme-medium.medium-newgame.medium-reading .medium-footer {
+            width: calc(100% - 44px);
+          }
+          #theme-medium.medium-newgame .medium-article-end {
+            padding: 20px 14px;
+          }
+          #theme-medium.medium-newgame .medium-article-header {
+            padding-inline: 11px;
           }
         }
         @media (max-width: 950px) {
@@ -1003,15 +1019,15 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             gap: 5px;
           }
           .ng-character-panel {
-            width: 27%;
-            right: 3%;
-            top: 70px;
+            width: 43%;
+            right: -5%;
+            top: 110px;
           }
           .ng-hero-art {
-            left: -6px;
-            width: 105px;
-            height: 300px;
-            background-size: auto 300px;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background-size: contain;
           }
           .ng-character-name {
             bottom: -20px;
@@ -1040,7 +1056,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
             padding: 20px 17px;
           }
           #theme-medium.medium-newgame .medium-article-header {
-            padding: 19px;
+            padding: 19px 11px;
           }
           #theme-medium.medium-newgame #notion-article {
             padding: 20px 14px;
@@ -1066,8 +1082,7 @@ export default function NewGameTheme({ active, opening, onToggle }) {
           .ng-character-card,
           .ng-edge-mark,
           .ng-unlock-opening,
-          .ng-hero,
-          .ng-theme-credit {
+          .ng-hero {
             display: none !important;
           }
         }

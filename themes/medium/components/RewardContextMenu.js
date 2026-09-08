@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/router'
+import SmartLink from '@/components/SmartLink'
 
 const DESKTOP = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 const NATIVE_TARGETS =
@@ -9,6 +10,7 @@ const NATIVE_TARGETS =
 // Mounted only after the cosmetic reward has been unlocked.
 export default function RewardContextMenu({ active, onToggle }) {
   const [position, setPosition] = useState(null)
+  const [notice, setNotice] = useState('')
   const [footer, setFooter] = useState(null)
   const menu = useRef(null)
   const previousFocus = useRef(null)
@@ -24,6 +26,7 @@ export default function RewardContextMenu({ active, onToggle }) {
     const close = () => setPosition(null)
     const open = (x, y) => {
       previousFocus.current = document.activeElement
+      setNotice('')
       setPosition({ x, y })
     }
     const onContext = event => {
@@ -59,13 +62,20 @@ export default function RewardContextMenu({ active, onToggle }) {
         open(rect?.left || 24, rect?.top || 100)
       }
     }
+    const onScroll = event => {
+      if (
+        !(event.target instanceof Node) ||
+        !menu.current?.contains(event.target)
+      )
+        close()
+    }
     const onPointer = event => {
       if (!menu.current?.contains(event.target)) close()
     }
     document.addEventListener('contextmenu', onContext, true)
     document.addEventListener('keydown', onKey)
     document.addEventListener('pointerdown', onPointer)
-    window.addEventListener('scroll', close, true)
+    window.addEventListener('scroll', onScroll, true)
     window.addEventListener('resize', close)
     window.addEventListener('blur', close)
     desktop.addEventListener('change', close)
@@ -73,7 +83,7 @@ export default function RewardContextMenu({ active, onToggle }) {
       document.removeEventListener('contextmenu', onContext, true)
       document.removeEventListener('keydown', onKey)
       document.removeEventListener('pointerdown', onPointer)
-      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', close)
       window.removeEventListener('blur', close)
       desktop.removeEventListener('change', close)
@@ -93,6 +103,11 @@ export default function RewardContextMenu({ active, onToggle }) {
     previousFocus.current?.focus?.({ preventScroll: true })
     onToggle()
   }
+  const perform = action => {
+    setPosition(null)
+    previousFocus.current?.focus?.({ preventScroll: true })
+    action()
+  }
   const label = active ? '恢复原主题' : '开启 NEW GAME! 主题'
   return (
     <>
@@ -106,7 +121,20 @@ export default function RewardContextMenu({ active, onToggle }) {
           onKeyDown={event => {
             if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
               event.preventDefault()
-              menu.current.querySelector('button')?.focus()
+              const items = Array.from(
+                menu.current.querySelectorAll('[role=menuitem]')
+              )
+              const current = items.indexOf(document.activeElement)
+              const next =
+                event.key === 'Home'
+                  ? 0
+                  : event.key === 'End'
+                    ? items.length - 1
+                    : (current +
+                        (event.key === 'ArrowUp' ? -1 : 1) +
+                        items.length) %
+                      items.length
+              items[next]?.focus()
             }
             if (event.key === 'Tab') setPosition(null)
           }}
@@ -115,6 +143,107 @@ export default function RewardContextMenu({ active, onToggle }) {
             <span>NEW GAME!</span>
             <small>UNLOCKED</small>
           </div>
+          <div className='ng-context-navigation'>
+            <button
+              type='button'
+              role='menuitem'
+              aria-label='后退'
+              title='后退'
+              onClick={() => perform(() => window.history.back())}
+            >
+              ←
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              aria-label='前进'
+              title='前进'
+              onClick={() => perform(() => window.history.forward())}
+            >
+              →
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              aria-label='刷新页面'
+              title='刷新页面'
+              onClick={() => perform(() => window.location.reload())}
+            >
+              ↻
+            </button>
+            <button
+              type='button'
+              role='menuitem'
+              aria-label='回到顶部'
+              title='回到顶部'
+              onClick={() =>
+                perform(() =>
+                  window.scrollTo({
+                    top: 0,
+                    behavior: window.matchMedia(
+                      '(prefers-reduced-motion: reduce)'
+                    ).matches
+                      ? 'auto'
+                      : 'smooth'
+                  })
+                )
+              }
+            >
+              ↑
+            </button>
+          </div>
+          <div className='ng-context-links'>
+            <SmartLink
+              role='menuitem'
+              href='/search'
+              onClick={() => setPosition(null)}
+            >
+              搜索文章
+            </SmartLink>
+            <SmartLink
+              role='menuitem'
+              href='/archive'
+              onClick={() => setPosition(null)}
+            >
+              文章归档
+            </SmartLink>
+            <SmartLink
+              role='menuitem'
+              href='/category'
+              onClick={() => setPosition(null)}
+            >
+              分类
+            </SmartLink>
+            <SmartLink
+              role='menuitem'
+              href='/tag'
+              onClick={() => setPosition(null)}
+            >
+              标签
+            </SmartLink>
+          </div>
+          <button
+            type='button'
+            role='menuitem'
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(window.location.href)
+                setNotice('已复制页面地址')
+              } catch {
+                setNotice('复制失败，请用浏览器菜单复制')
+              }
+            }}
+          >
+            复制页面地址 <span aria-hidden='true'>⧉</span>
+          </button>
+          <button
+            type='button'
+            role='menuitem'
+            onClick={() => perform(() => window.print())}
+          >
+            打印当前页 <span aria-hidden='true'>⌘</span>
+          </button>
+          <hr />
           <button type='button' role='menuitem' onClick={toggle}>
             <span className='ng-context-symbol' aria-hidden='true'>
               ✦
@@ -122,8 +251,13 @@ export default function RewardContextMenu({ active, onToggle }) {
             {label}
             <span aria-hidden='true'>→</span>
           </button>
+          {notice && (
+            <div className='ng-context-notice' role='status'>
+              {notice}
+            </div>
+          )}
           <p>
-            右键切换主题 <span>ESC 关闭</span>
+            Shift＋右键：浏览器菜单 <span>ESC 关闭</span>
           </p>
         </div>
       )}
@@ -140,6 +274,8 @@ export default function RewardContextMenu({ active, onToggle }) {
           z-index: 1000;
           width: 252px;
           max-width: calc(100vw - 16px);
+          max-height: calc(100dvh - 16px);
+          overflow-y: auto;
           padding: 6px;
           border: 1px solid #dcdce3;
           background: #fff;
@@ -162,7 +298,7 @@ export default function RewardContextMenu({ active, onToggle }) {
           font-size: 8px;
           color: #8a8491;
         }
-        .ng-context-menu button {
+        .ng-context-menu :is(button, a) {
           display: flex;
           align-items: center;
           gap: 10px;
@@ -182,7 +318,7 @@ export default function RewardContextMenu({ active, onToggle }) {
           color: #e8678c;
           font-size: 17px;
         }
-        .ng-context-menu button:is(:hover, :focus-visible) {
+        .ng-context-menu :is(button, a):is(:hover, :focus-visible) {
           background: #fff0f4;
           outline: 1px solid #f2c3d1;
           outline-offset: -1px;
@@ -193,6 +329,35 @@ export default function RewardContextMenu({ active, onToggle }) {
           padding: 10px 10px 5px;
           color: #85818b;
           font-size: 9px;
+        }
+        .ng-context-navigation {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 4px;
+          padding: 0 6px 8px;
+          border-bottom: 1px solid #f0e4ed;
+        }
+        .ng-context-navigation button {
+          justify-content: center;
+          padding: 5px;
+          font-size: 20px;
+        }
+        .ng-context-links {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 2px;
+          padding-block: 5px;
+          border-bottom: 1px solid #f0e4ed;
+        }
+        .ng-context-menu hr {
+          border: 0;
+          border-top: 1px solid #f0e4ed;
+          margin-block: 5px;
+        }
+        .ng-context-notice {
+          padding: 6px 10px;
+          color: #985588;
+          font-size: 11px;
         }
         .ng-touch-switch {
           display: inline-block;
