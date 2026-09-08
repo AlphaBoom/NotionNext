@@ -1,11 +1,10 @@
 import BLOG, { LAYOUT_MAPPINGS } from '@/blog.config'
-import getConfig from 'next/config'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { getQueryParam, getQueryVariable, isBrowser } from '../lib/utils'
 
 // 在next.config.js中扫描所有主题
-export const { THEMES = [] } = getConfig()?.publicRuntimeConfig || {}
+export const THEMES = JSON.parse(process.env.NEXT_PUBLIC_AVAILABLE_THEMES || '[]')
 const baseLayoutCache = new Map()
 const layoutByThemeCache = new Map()
 let domFixTimer = null
@@ -93,6 +92,33 @@ const getThemeExport = (mod, exportName) => {
   }
   return null
 }
+
+// Register the active blog's chunk before Next's preloadReady runs. Creating a
+// dynamic() component during render leaves the client on its loading fallback
+// while the server has already rendered the article (React #418 / #423).
+const MediumThemeLayout = dynamic(
+  () =>
+    import('@/themes/medium').then(mod => {
+      const MediumThemeLayout = ({ layoutName, ...props }) => {
+        const Layout =
+          getThemeExport(mod, layoutName) ||
+          getThemeExport(mod, 'LayoutSlug') ||
+          EmptyPageLayout
+        return <Layout {...props} />
+      }
+      return MediumThemeLayout
+    }),
+  { ssr: true }
+)
+const MediumBaseLayout = props => (
+  <MediumThemeLayout {...props} layoutName='LayoutBase' />
+)
+const mediumPageLayouts = new Map(
+  [...new Set(Object.values(LAYOUT_MAPPINGS))].map(layoutName => [
+    layoutName,
+    props => <MediumThemeLayout {...props} layoutName={layoutName} />
+  ])
+)
 
 const scheduleFixThemeDOM = (delay = 120) => {
   if (!isBrowser) return
@@ -191,6 +217,7 @@ const getCurrentTheme = (router, fallbackTheme) => {
  */
 export const getBaseLayoutByTheme = theme => {
   const normalizedTheme = normalizeThemeName(theme)
+  if (normalizedTheme === 'medium') return MediumBaseLayout
   if (baseLayoutCache.has(normalizedTheme)) {
     return baseLayoutCache.get(normalizedTheme)
   }
@@ -222,6 +249,9 @@ export const DynamicLayout = props => {
 export const useLayoutByTheme = ({ layoutName, theme }) => {
   const router = useRouter()
   const themeQuery = getCurrentTheme(router, theme)
+  if (themeQuery === 'medium') {
+    return mediumPageLayouts.get(layoutName) || mediumPageLayouts.get('LayoutSlug')
+  }
   const cacheKey = `${themeQuery}:${layoutName}`
 
   if (layoutByThemeCache.has(cacheKey)) {

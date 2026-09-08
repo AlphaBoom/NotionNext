@@ -458,9 +458,9 @@ const nextConfig = {
     delete pages['/auth']
     return pages
   },
-  publicRuntimeConfig: {
-    // 这里的配置既可以服务端获取到，也可以在浏览器端获取到
-    THEMES: themes
+  env: {
+    // Build-time directory list, shared by the server and browser bundles.
+    NEXT_PUBLIC_AVAILABLE_THEMES: JSON.stringify(themes)
   }
 }
 
