@@ -54,7 +54,8 @@ async function request(path, body) {
         : {}),
       signal: controller.signal,
       credentials: 'omit',
-      cache: body ? 'no-store' : 'default'
+      // Explicit refreshes must not restore a cached pre-upload leaderboard.
+      cache: 'no-store'
     })
     const data = await response.json()
     if (!response.ok) throw new Error(data.error || '排行榜暂时连不上。')
