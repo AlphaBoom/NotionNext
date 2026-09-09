@@ -1,6 +1,5 @@
 import Comment from '@/components/Comment'
 import Live2D from '@/components/Live2D'
-import replaceSearchResult from '@/components/Mark'
 import NotionPage from '@/components/NotionPage'
 import ShareBar from '@/components/ShareBar'
 import { siteConfig } from '@/lib/config'
@@ -24,7 +23,7 @@ import CategoryItem from './components/CategoryItem'
 import Footer from './components/Footer'
 import JumpToTopButton from './components/JumpToTopButton'
 import RouteTransition from './components/RouteTransition'
-import SearchInput from './components/SearchInput'
+import SearchPage from './components/SearchPage'
 import TagGroups from './components/TagGroups'
 import TagItemMini from './components/TagItemMini'
 import TocDrawer from './components/TocDrawer'
@@ -206,52 +205,7 @@ const LayoutSlug = props => {
  * @param {*} props
  * @returns
  */
-const LayoutSearch = props => {
-  const { locale } = useGlobal()
-  const { keyword } = props
-  const router = useRouter()
-  const currentSearch = keyword || router?.query?.s
-
-  useEffect(() => {
-    if (isBrowser) {
-      replaceSearchResult({
-        doms: document.getElementById('posts-wrapper'),
-        search: keyword,
-        target: {
-          element: 'span',
-          className: 'text-red-500 border-b border-dashed'
-        }
-      })
-    }
-  }, [])
-
-  return (
-    <>
-      {/* 搜索导航栏 */}
-      <div className='medium-search-panel py-12'>
-        <div className='pb-4 w-full'>{locale.NAV.SEARCH}</div>
-        <SearchInput currentSearch={currentSearch} {...props} />
-        {!currentSearch && (
-          <>
-            <TagGroups {...props} />
-            <CategoryGroup {...props} />
-          </>
-        )}
-      </div>
-
-      {/* 文章列表 */}
-      {currentSearch && (
-        <div>
-          {siteConfig('POST_LIST_STYLE') === 'page' ? (
-            <BlogPostListPage {...props} />
-          ) : (
-            <BlogPostListScroll {...props} />
-          )}
-        </div>
-      )}
-    </>
-  )
-}
+const LayoutSearch = SearchPage
 
 /**
  * 归档

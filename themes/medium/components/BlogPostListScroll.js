@@ -13,14 +13,14 @@ import BlogPostListEmpty from './BlogPostListEmpty'
  * @returns {JSX.Element}
  * @constructor
  */
-const BlogPostListScroll = ({ posts = [], currentSearch }) => {
+const BlogPostListScroll = ({ posts = [], currentSearch, searchKeyword }) => {
   const { NOTION_CONFIG } = useGlobal()
   const POSTS_PER_PAGE = siteConfig('POSTS_PER_PAGE', null, NOTION_CONFIG)
   const [page, updatePage] = useState(1)
   const router = useRouter()
   let filteredPosts = Object.assign(posts)
   const searchKey = router?.query?.s || null
-  if (searchKey) {
+  if (searchKey && !searchKeyword) {
     filteredPosts = posts.filter(post => {
       const tagContent = post?.tags ? post?.tags.join(' ') : ''
       const searchContent = post.title + post.summary + tagContent
@@ -79,6 +79,7 @@ const BlogPostListScroll = ({ posts = [], currentSearch }) => {
               post={post}
               showSummary={true}
               priority={index === 0}
+              searchKeyword={searchKeyword}
             />
           ))}
         </div>
@@ -88,7 +89,8 @@ const BlogPostListScroll = ({ posts = [], currentSearch }) => {
             onClick={() => {
               handleGetMore()
             }}
-            className='w-full my-4 py-4 text-center cursor-pointer dark:text-gray-200'>
+            className='w-full my-4 py-4 text-center cursor-pointer dark:text-gray-200'
+          >
             {' '}
             {hasMore ? locale.COMMON.MORE : `${locale.COMMON.NO_MORE} 😰`}{' '}
           </div>

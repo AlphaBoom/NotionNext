@@ -1,86 +1,148 @@
 import { useRouter } from 'next/router'
-import { useImperativeHandle, useRef, useState } from 'react'
-let lock = false
+import { useEffect, useId, useImperativeHandle, useRef, useState } from 'react'
 
-const SearchInput = ({ currentTag, currentSearch, cRef, className }) => {
-  const [onLoading, setLoadingState] = useState(false)
+export default function SearchInput({
+  currentSearch = '',
+  cRef,
+  className = '',
+  onStatusChange
+}) {
   const router = useRouter()
-  const searchInputRef = useRef()
-  useImperativeHandle(cRef, () => {
-    return {
-      focus: () => {
-        searchInputRef?.current?.focus()
-      }
-    }
-  })
+  const input = useRef(null)
+  const composing = useRef(false)
+  const request = useRef(0)
+  const pending = useRef('')
+  const [value, setValue] = useState(currentSearch)
+  const [loading, setLoading] = useState('')
+  const [error, setError] = useState('')
+  const id = useId()
+  useImperativeHandle(cRef, () => ({ focus: () => input.current?.focus() }))
+  useEffect(() => {
+    setValue(currentSearch)
+  }, [currentSearch])
+  useEffect(
+    () => () => {
+      request.current++
+    },
+    []
+  )
 
-  const handleSearch = () => {
-    const key = searchInputRef.current.value
-
-    if (key && key !== '') {
-      setLoadingState(true)
-      location.href = '/search/' + key
-    } else {
-      router.push({ pathname: '/' }).then(r => {
-      })
-    }
-  }
-  const handleKeyUp = (e) => {
-    if (e.keyCode === 13) { // 回车
-      handleSearch(searchInputRef.current.value)
-    } else if (e.keyCode === 27) { // ESC
-      cleanSearch()
-    }
-  }
-  const cleanSearch = () => {
-    searchInputRef.current.value = ''
-  }
-
-  const [showClean, setShowClean] = useState(false)
-  const updateSearchKey = (val) => {
-    if (lock) {
+  const search = async event => {
+    event.preventDefault()
+    if (composing.current) return
+    const keyword = value.trim()
+    if (!keyword) {
+      setError('请输入关键词后再搜索。')
+      input.current?.focus()
       return
     }
-    searchInputRef.current.value = val
-
-    if (val) {
-      setShowClean(true)
-    } else {
-      setShowClean(false)
+    if (pending.current === keyword) return
+    const revision = ++request.current
+    pending.current = keyword
+    setValue(keyword)
+    setLoading(keyword)
+    setError('')
+    onStatusChange?.({ pending: true, keyword })
+    try {
+      await router.push(`/search/${encodeURIComponent(keyword)}`)
+    } catch (failure) {
+      if (revision === request.current && !failure?.cancelled)
+        setError('搜索暂时未能完成，请重新搜索。')
+    } finally {
+      if (revision === request.current) {
+        pending.current = ''
+        setLoading('')
+        onStatusChange?.({ pending: false, keyword })
+      }
     }
   }
-  function lockSearchInput () {
-    lock = true
+  const clear = () => {
+    setValue('')
+    setError('')
+    input.current?.focus()
   }
-
-  function unLockSearchInput () {
-    lock = false
-  }
-
-  return <div className={'flex w-full bg-gray-100 ' + className}>
-    <input
-      ref={searchInputRef}
-      type='text'
-      className={'outline-none w-full text-sm pl-2 transition focus:shadow-lg font-light leading-10 text-black bg-gray-100 dark:bg-gray-900 dark:text-white'}
-      onKeyUp={handleKeyUp}
-      onCompositionStart={lockSearchInput}
-      onCompositionUpdate={lockSearchInput}
-      onCompositionEnd={unLockSearchInput}
-      onChange={e => updateSearchKey(e.target.value)}
-      defaultValue={currentSearch}
-    />
-
-    <div className='-ml-8 cursor-pointer float-right items-center justify-center py-2'
-      onClick={handleSearch}>
-        <i className={`hover:text-black transform duration-200 text-gray-500  dark:hover:text-gray-300 cursor-pointer fas ${onLoading ? 'fa-spinner animate-spin' : 'fa-search'} `} />
-    </div>
-
-    {(showClean &&
-      <div className='-ml-12 cursor-pointer float-right items-center justify-center py-2'>
-        <i className='fas fa-times hover:text-black transform duration-200 text-gray-400 cursor-pointer   dark:hover:text-gray-300' onClick={cleanSearch} />
+  return (
+    <form
+      role='search'
+      aria-label='搜索文章'
+      onSubmit={search}
+      className={`medium-search-form ${className}`}
+    >
+      <label className='sr-only' htmlFor={id}>
+        搜索关键词
+      </label>
+      <div
+        className='medium-search-field'
+        data-invalid={error ? 'true' : undefined}
+      >
+        <svg
+          className='medium-search-icon'
+          viewBox='0 0 24 24'
+          fill='none'
+          stroke='currentColor'
+          strokeWidth='1.7'
+          aria-hidden='true'
+        >
+          <circle cx='10.5' cy='10.5' r='6.5' />
+          <path d='m16 16 5 5' />
+        </svg>
+        <input
+          id={id}
+          ref={input}
+          type='search'
+          value={value}
+          placeholder='输入关键词，按 Enter 搜索'
+          autoComplete='off'
+          enterKeyHint='search'
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={event => {
+            setValue(event.target.value)
+            setError('')
+          }}
+          onCompositionStart={() => {
+            composing.current = true
+          }}
+          onCompositionEnd={() => {
+            composing.current = false
+          }}
+          onKeyDown={event => {
+            if (
+              event.key === 'Enter' &&
+              (composing.current ||
+                event.nativeEvent.isComposing ||
+                event.keyCode === 229)
+            )
+              event.preventDefault()
+            if (event.key === 'Escape' && !composing.current) {
+              event.preventDefault()
+              clear()
+            }
+          }}
+        />
+        {value && (
+          <button
+            type='button'
+            className='medium-search-clear'
+            onClick={clear}
+            aria-label='清空搜索关键词'
+          >
+            ×
+          </button>
+        )}
+        <button
+          type='submit'
+          className='medium-search-submit'
+          disabled={Boolean(loading && loading === value.trim())}
+        >
+          {loading ? '搜索中…' : '搜索'}
+        </button>
       </div>
+      {error && (
+        <p id={`${id}-error`} className='medium-search-error' role='alert'>
+          {error}
+        </p>
       )}
-  </div>
+    </form>
+  )
 }
-
-export default SearchInput

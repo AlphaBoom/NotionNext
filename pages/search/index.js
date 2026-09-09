@@ -3,6 +3,7 @@ import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { DynamicLayout } from '@/themes/theme'
 import { useRouter } from 'next/router'
+import { matchesMetadata, normalizeKeyword } from '@/lib/search/metadata'
 
 /**
  * 搜索路由
@@ -13,23 +14,17 @@ const Search = props => {
   const { posts } = props
 
   const router = useRouter()
-  const keyword = router?.query?.s
-
-  let filteredPosts
-  // 静态过滤
-  if (keyword) {
-    filteredPosts = posts.filter(post => {
-      const tagContent = post?.tags ? post?.tags.join(' ') : ''
-      const categoryContent = post.category ? post.category.join(' ') : ''
-      const searchContent =
-        post.title + post.summary + tagContent + categoryContent
-      return searchContent.toLowerCase().includes(keyword.toLowerCase())
-    })
-  } else {
-    filteredPosts = []
+  const keyword = normalizeKeyword(router?.query?.s)
+  const filteredPosts = (posts || []).filter(post =>
+    matchesMetadata(post, keyword)
+  )
+  props = {
+    ...props,
+    keyword,
+    posts: filteredPosts,
+    postCount: filteredPosts.length,
+    searchClientSide: true
   }
-
-  props = { ...props, posts: filteredPosts }
 
   const theme = siteConfig('THEME', BLOG.THEME, props.NOTION_CONFIG)
   return <DynamicLayout theme={theme} layoutName='LayoutSearch' {...props} />
