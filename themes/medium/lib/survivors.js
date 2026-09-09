@@ -312,21 +312,22 @@ export function orbitPositions(run) {
   })
 }
 
-// Swept collision avoids quills crossing small enemies between low-FPS frames.
-function segmentDistance(from, to, point) {
+// Return the first intersection with a circle along this frame's travel.
+// Entry time, rather than spawn order or center distance, determines piercing.
+function segmentHitTime(from, to, point, radius) {
   const dx = to.x - from.x,
     dy = to.y - from.y
+  const ox = from.x - point.x,
+    oy = from.y - point.y
+  const offset = ox * ox + oy * oy - radius * radius
+  if (offset <= 0) return 0
   const length = dx * dx + dy * dy
-  const t = length
-    ? Math.max(
-        0,
-        Math.min(
-          1,
-          ((point.x - from.x) * dx + (point.y - from.y) * dy) / length
-        )
-      )
-    : 0
-  return Math.hypot(point.x - from.x - dx * t, point.y - from.y - dy * t)
+  if (!length) return Infinity
+  const projection = ox * dx + oy * dy
+  const discriminant = projection * projection - length * offset
+  if (projection >= 0 || discriminant < 0) return Infinity
+  const time = (-projection - Math.sqrt(discriminant)) / length
+  return time <= 1 ? time : Infinity
 }
 
 function effect(run, data) {
@@ -463,11 +464,13 @@ function moveEnemy(run, e, dt) {
 
 function updateHazards(run, dt) {
   for (const hazard of run.hazards) {
+    if (hazard.life <= 0) continue
     const from = { x: hazard.x, y: hazard.y }
-    hazard.x += hazard.vx * dt
-    hazard.y += hazard.vy * dt
+    const travel = Math.min(dt, hazard.life)
+    hazard.x += hazard.vx * travel
+    hazard.y += hazard.vy * travel
     hazard.life -= dt
-    if (segmentDistance(from, hazard, run.player) < 13) {
+    if (segmentHitTime(from, hazard, run.player, 13) !== Infinity) {
       hurtPlayer(run)
       hazard.life = 0
       if (run.phase === 'lost') break
@@ -604,18 +607,21 @@ function stepFrame(run, input, elapsed, width, height) {
       e.escaped = true
   }
   for (const shot of run.shots) {
+    if (shot.life <= 0) continue
     const from = { x: shot.x, y: shot.y }
-    shot.x += shot.vx * dt
-    shot.y += shot.vy * dt
+    const travel = Math.min(dt, shot.life)
+    shot.x += shot.vx * travel
+    shot.y += shot.vy * travel
     shot.life -= dt
+    const collisions = []
     for (const e of run.enemies) {
-      if (shot.life <= 0) break
-      if (
-        e.hp <= 0 ||
-        shot.hits.includes(e.id) ||
-        segmentDistance(from, shot, e) > e.radius + p.shotSize
-      )
-        continue
+      if (e.hp <= 0 || shot.hits.includes(e.id)) continue
+      const time = segmentHitTime(from, shot, e, e.radius + p.shotSize)
+      if (time !== Infinity) collisions.push({ enemy: e, time })
+    }
+    collisions.sort((a, b) => a.time - b.time || a.enemy.id - b.enemy.id)
+    for (const { enemy: e } of collisions) {
+      if (shot.hits.length > shot.pierce) break
       hit(run, e, shot.damage)
       if (run.upgrades.frost) e.slow = 2
       shot.hits.push(e.id)

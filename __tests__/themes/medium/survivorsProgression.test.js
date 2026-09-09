@@ -240,6 +240,69 @@ test('fast projectiles cannot tunnel through targets or damage the same target t
   expect(run.shots[0].hits).toEqual([1])
 })
 
+test.each([false, true])(
+  'quills hit the first intersected enemy regardless of spawn order (reverse=%s)',
+  reverse => {
+    const run = playing()
+    run.shotClock = 100
+    const near = enemy(1, 110, 0, 10)
+    const far = enemy(2, 116, 0, 10)
+    run.enemies = reverse ? [near, far] : [far, near]
+    run.shots = [
+      { x: 90, y: 0, vx: 656, vy: 0, life: 1, damage: 2, pierce: 0, hits: [] }
+    ]
+    stepRun(run, idle, 1 / 60)
+    expect(near.hp).toBe(8)
+    expect(far.hp).toBe(10)
+  }
+)
+
+test('piercing follows entry points, including large targets and overlapping targets', () => {
+  const run = playing()
+  run.shotClock = 100
+  const small = enemy(1, 135, 0, 10)
+  const large = { ...enemy(2, 145, 0, 10), radius: 30 }
+  const overlap = enemy(3, 100, 0, 10)
+  run.enemies = [small, large, overlap]
+  run.shots = [
+    { x: 100, y: 0, vx: 6000, vy: 0, life: 1, damage: 2, pierce: 1, hits: [] }
+  ]
+  stepRun(run, idle, 1 / 60)
+  expect(overlap.hp).toBe(8)
+  expect(large.hp).toBe(8)
+  expect(small.hp).toBe(10)
+})
+
+test.each([0.005, 0])(
+  'projectiles only collide along their remaining lifetime (%s seconds)',
+  life => {
+    const run = playing()
+    run.shotClock = 100
+    const near = enemy(1, 120, 0, 10)
+    const far = enemy(2, 175, 0, 10)
+    run.enemies = [near, far]
+    run.shots = [
+      { x: 100, y: 0, vx: 6000, vy: 0, life, damage: 2, pierce: 2, hits: [] }
+    ]
+    stepRun(run, idle, 1 / 60)
+    expect(near.hp).toBe(life ? 8 : 10)
+    expect(far.hp).toBe(10)
+    expect(run.shots).toHaveLength(0)
+  }
+)
+
+test.each([0.005, 0])(
+  'expired hostile shots cannot damage or consume shields (%s seconds)',
+  life => {
+    const run = playing()
+    equip(run, 'guard')
+    run.hazards = [{ x: -100, y: 0, vx: 6000, vy: 0, life }]
+    stepRun(run, idle, 1 / 60)
+    expect(run.player.shield).toBe(true)
+    expect(run.hazards).toHaveLength(0)
+  }
+)
+
 test('enemy attacks telegraph before firing or dashing, and shield collision also covers hostile shots', () => {
   const run = playing()
   run.shotClock = 100
