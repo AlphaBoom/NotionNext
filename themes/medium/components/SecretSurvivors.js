@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import SurvivorsLeaderboard from './SurvivorsLeaderboard'
+import {
+  beginLeaderboardRun,
+  LEADERBOARD_ENABLED
+} from '../lib/survivorsLeaderboard'
 import { useVictoryReveal } from '../lib/useVictoryReveal'
 import { handleMovementKey } from '../lib/survivorsInput'
 import {
@@ -42,6 +47,8 @@ export default function SecretSurvivors({
     actions = useRef(null)
   const close = useRef(onClose)
   const challenge = useRef(unlocked)
+  const leaderboardRun = useRef(null)
+  const [rankingEntry, setRankingEntry] = useState(null)
   challenge.current = unlocked
   const [hud, setHud] = useState(() =>
     snapshot(createRun(undefined, unlocked ? 'endless' : 'intro'))
@@ -82,6 +89,19 @@ export default function SecretSurvivors({
     const taps = new Set()
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const sync = () => {
+      if (
+        run.phase === 'lost' &&
+        leaderboardRun.current &&
+        !leaderboardRun.current.result
+      ) {
+        leaderboardRun.current.result = {
+          durationMs: Math.floor(run.time * 1000),
+          kills: run.kills,
+          bosses: run.bosses,
+          level: run.level
+        }
+        setRankingEntry(leaderboardRun.current)
+      }
       setHud(snapshot(run))
       element.dataset.playerPosition = `${Math.round(run.player.x)},${Math.round(run.player.y)}`
       element.dataset.enemies = String(run.enemies.length)
@@ -158,6 +178,14 @@ export default function SecretSurvivors({
     }
     const start = () => {
       if (document.hidden) return
+      if (
+        run.phase === 'ready' &&
+        run.mode === 'endless' &&
+        LEADERBOARD_ENABLED
+      ) {
+        leaderboardRun.current = beginLeaderboardRun()
+        setRankingEntry(leaderboardRun.current)
+      }
       run.phase = 'playing'
       previous = 0
       keys.clear()
@@ -174,6 +202,8 @@ export default function SecretSurvivors({
       draw()
     }
     const onKeyDown = event => {
+      if (event.target.closest?.('input, textarea, [contenteditable="true"]'))
+        return
       if (event.code === 'KeyP' && !event.repeat) {
         event.preventDefault()
         if (run.phase === 'playing') pause()
@@ -541,6 +571,14 @@ export default function SecretSurvivors({
           <kbd>ESC</kbd> 返回
         </span>
       </div>
+      {LEADERBOARD_ENABLED &&
+        hud.mode === 'endless' &&
+        ['ready', 'paused', 'lost'].includes(hud.phase) && (
+          <SurvivorsLeaderboard
+            entry={rankingEntry}
+            finished={hud.phase === 'lost'}
+          />
+        )}
       <style jsx>{`
         .survivors-countdown {
           display: flex;
