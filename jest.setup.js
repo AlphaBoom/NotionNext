@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom'
+import { cleanup } from '@testing-library/react'
 
 // Mock Next.js router
 jest.mock('next/router', () => ({
@@ -181,6 +182,8 @@ beforeEach(() => {
 
 // Cleanup after each test
 afterEach(() => {
+  // Unmount React before removing styled-jsx tags from the document head.
+  cleanup()
   // Cleanup any side effects
   if (typeof document !== 'undefined') {
     document.body.innerHTML = ''
