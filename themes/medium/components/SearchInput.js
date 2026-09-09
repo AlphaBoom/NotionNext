@@ -135,9 +135,6 @@ export default function SearchInput({
           className='medium-search-submit'
           disabled={Boolean(loading && loading === value.trim())}
         >
-          {loading && (
-            <span className='medium-search-spinner' aria-hidden='true' />
-          )}
           {loading ? '搜索中…' : '搜索'}
         </button>
       </div>
