@@ -1,5 +1,6 @@
 import BLOG from '@/blog.config'
 import { installBookmarkImageFallback } from '@/lib/db/notion/bookmarkImages.mjs'
+import { installAttachmentImageFallback } from '@/lib/db/notion/attachmentImageFallback'
 import { siteConfig } from '@/lib/config'
 import { compressImage, mapImgUrl } from '@/lib/db/notion/mapImage'
 import NotionEmbed from '@/components/NotionEmbed'
@@ -28,7 +29,12 @@ const NotionPage = ({ post, className }) => {
   const zoomRef = useRef(null)
   useEffect(() => {
     if (articleRef.current) {
-      return installBookmarkImageFallback(articleRef.current, BLOG.NOTION_HOST)
+      const cleanBookmarks = installBookmarkImageFallback(articleRef.current, BLOG.NOTION_HOST)
+      const cleanAttachments = installAttachmentImageFallback(articleRef.current, BLOG.NOTION_HOST)
+      return () => {
+        cleanBookmarks()
+        cleanAttachments()
+      }
     }
   }, [post?.id])
   const IMAGE_ZOOM_IN_WIDTH = siteConfig('IMAGE_ZOOM_IN_WIDTH', 1200)
