@@ -145,8 +145,12 @@ function collectExperience(run, value) {
   run.xpFraction = Math.max(0, reward - whole)
   run.xp += whole
   run.xpEarned += whole
-  run.pickupValue = (run.pickupFlash > 0 ? run.pickupValue : 0) + whole
-  run.pickupFlash = 0.65
+  // Keep a fixed display window so continuous pickups cannot inflate one popup.
+  if (run.pickupFlash <= 0) {
+    run.pickupValue = 0
+    run.pickupFlash = 0.65
+  }
+  run.pickupValue += whole
 }
 
 function dropExperience(run, enemy, value) {

@@ -251,7 +251,6 @@ export function applyUpgrade(run, id) {
     p.shield = true
     p.shieldClock = 0
   }
-  if (id === 'regen') p.regenClock = 0
   if (id === 'vigor') p.damage += 2
   if (id === 'ration') p.hp = Math.min(p.maxHp, p.hp + 4)
 }

@@ -82,6 +82,27 @@ test('normal drops can be picked up immediately; scholarship carries fractional 
   expect(run.gems).toHaveLength(0)
 })
 
+test('continuous XP pickups use bounded display windows without losing earned XP', () => {
+  const run = playing()
+  run.nextXp = 1000
+  for (let i = 0; i < 20; i++) {
+    run.gems.push({ x: 0, y: 0, value: 1 })
+    stepRun(run, idle, 1 / 60)
+    expect(run.pickupValue).toBe(i % 2 === 0 ? 1 : 2)
+    advance(run, 0.5 - 1 / 60)
+  }
+  expect(run.xp).toBe(20)
+  expect(run.xpEarned).toBe(20)
+  expect(run.gems).toHaveLength(0)
+
+  advance(run, 1)
+  expect(run.pickupFlash).toBe(0)
+  run.gems.push({ x: 0, y: 0, value: 3 })
+  stepRun(run, idle, 1 / 60)
+  expect(run.pickupValue).toBe(3)
+  expect(run.xpEarned).toBe(23)
+})
+
 test('large rewards unlock tiers in order, with capped upgrades removed and prerequisite evolutions guaranteed', () => {
   const run = playing()
   run.level = 5
@@ -227,6 +248,25 @@ test('shield blocks one hit and recharges; regeneration and kill healing have re
   expect(run.kills).toBe(1)
   expect(run.player.hp).toBe(5)
 })
+
+test.each([9.8, 11.9])(
+  'regeneration upgrade preserves %s seconds of progress and uses the shorter interval',
+  elapsed => {
+    const run = playing()
+    equip(run, 'regen')
+    run.player.hp = 1
+    advance(run, elapsed)
+    expect(run.player.hp).toBe(1)
+
+    equip(run, 'regen')
+    advance(run, 0.3)
+    expect(run.player.hp).toBe(2)
+    advance(run, 9.5)
+    expect(run.player.hp).toBe(2)
+    advance(run, 0.6)
+    expect(run.player.hp).toBe(3)
+  }
+)
 
 test('fast projectiles cannot tunnel through targets or damage the same target twice', () => {
   const run = playing()
