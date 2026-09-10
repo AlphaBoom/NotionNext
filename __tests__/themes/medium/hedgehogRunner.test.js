@@ -9,6 +9,8 @@ import {
   swipeLane
 } from '@/themes/medium/lib/hedgehogRunner'
 
+import { chooseRunnerUpgrade } from '@/themes/medium/lib/runnerUpgrades'
+
 const playing = (mode = 'intro', seed = 4) => ({
   ...createRunner(mode, seed),
   phase: 'playing'
@@ -184,6 +186,7 @@ test('endless challenge ramps up while scene size and numeric firepower remain b
   const run = playing('endless', 6)
   let greatestHealth = 0
   for (let step = 0; step < 18000; step++) {
+    while (run.phase === 'upgrade') chooseRunnerUpgrade(run, run.choices[0].id)
     // Isolate long-running spawning/cleanup from player survival.
     run.hp = 3
     run.invincible = 1
@@ -194,7 +197,7 @@ test('endless challenge ramps up while scene size and numeric firepower remain b
       ...run.items.filter(item => item.kind === 'enemy').map(item => item.maxHp)
     )
     expect(run.items.length).toBeLessThan(24)
-    expect(run.shots.length).toBeLessThan(8)
+    expect(run.shots.length).toBeLessThanOrEqual(48)
     expect(run.effects.length).toBeLessThanOrEqual(12)
     expect(run.power).toBeLessThanOrEqual(MAX_POWER)
   }
