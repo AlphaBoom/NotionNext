@@ -4,6 +4,7 @@ import HomeIntro from '@/themes/medium/components/HomeIntro'
 
 const mockDesktopLoad = jest.fn(),
   mockMobileLoad = jest.fn()
+let mockRewardActive = false
 jest.mock('@/themes/medium/components/SecretSurvivors', () => {
   mockDesktopLoad()
   return {
@@ -25,7 +26,7 @@ jest.mock('@/themes/medium/components/SecretRunner', () => {
   }
 })
 jest.mock('@/themes/medium/components/RewardProvider', () => ({
-  useReward: () => ({ unlocked: true })
+  useReward: () => ({ unlocked: true, active: mockRewardActive })
 }))
 jest.mock('@/components/LazyImage', () => () => <span>Portrait</span>)
 jest.mock('@/components/SmartLink', () => ({ children, ...props }) => (
@@ -40,6 +41,7 @@ const originals = {
 let desktop, mediaChanged
 beforeEach(() => {
   jest.useFakeTimers()
+  mockRewardActive = false
   desktop = false
   window.matchMedia = jest.fn(query => ({
     get matches() {
@@ -89,9 +91,21 @@ test('the touch avatar opens only the mobile chunk and passes the existing unloc
 
 test('desktop keeps Survivors and a device-mode change safely returns to the profile', async () => {
   desktop = true
-  render(<HomeIntro />)
+  const { rerender } = render(<HomeIntro />)
   await open()
   expect(screen.getByRole('button', { name: 'Desktop game exit' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Desktop game exit' }))
+  await act(async () => jest.runOnlyPendingTimers())
+  const about = screen.getByRole('link', { name: '关于 AlphaBoom' })
+  about.focus()
+  Element.prototype.scrollIntoView.mockClear()
+  for (const active of [true, false]) {
+    mockRewardActive = active
+    rerender(<HomeIntro />)
+    expect(about).toHaveFocus()
+  }
+  expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+  await open()
   desktop = false
   act(() => mediaChanged())
   expect(screen.queryByRole('button', { name: 'Desktop game exit' })).toBeNull()

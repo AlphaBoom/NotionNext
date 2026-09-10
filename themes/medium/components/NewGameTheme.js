@@ -1,5 +1,4 @@
 import { siteConfig } from '@/lib/config'
-import RewardContextMenu from './RewardContextMenu'
 import RewardPlayground from './RewardPlayground'
 
 const ART = '/images/new-game/hifumi-soujirou.webp'
@@ -132,13 +131,11 @@ export function NewGameHero() {
 export default function NewGameTheme({
   active,
   opening,
-  onToggle,
   onCovered,
   onOpeningEnd
 }) {
   return (
     <>
-      <RewardContextMenu active={active} onToggle={onToggle} />
       {active && (
         <>
           <RewardPlayground />

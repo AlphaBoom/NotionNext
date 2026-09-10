@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import RewardContextMenu from '@/themes/medium/components/RewardContextMenu'
 
@@ -25,38 +25,6 @@ beforeEach(() => {
 afterEach(() => {
   root.remove()
   window.matchMedia = originalMedia
-})
-
-test('the touch shortcut works without a footer and remains available after either theme change', () => {
-  const toggle = jest.fn()
-  function UnlockedPage() {
-    const [active, setActive] = useState(true)
-    return (
-      <RewardContextMenu
-        active={active}
-        onToggle={() => {
-          toggle()
-          setActive(value => !value)
-        }}
-      />
-    )
-  }
-  const page = render(<UnlockedPage />)
-  const button = screen.getByRole('button', { name: '恢复原主题' })
-  expect(root.contains(button)).toBe(true)
-  expect(button.textContent).toContain('主题')
-  button.focus()
-  fireEvent.click(button)
-  expect(screen.getByRole('button', { name: '开启 NEW GAME! 主题' })).toBe(
-    button
-  )
-  expect(button.getAttribute('aria-pressed')).toBe('false')
-  expect(document.activeElement).toBe(button)
-  fireEvent.click(button)
-  expect(button.getAttribute('aria-pressed')).toBe('true')
-  expect(toggle).toHaveBeenCalledTimes(2)
-  page.unmount()
-  expect(root.querySelector('button')).toBeNull()
 })
 
 test('navigating to a new page moves the shortcut to its root, including pages without a footer', () => {

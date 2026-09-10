@@ -17,13 +17,17 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   const [leaving, setLeaving] = useState(false)
   const [preparing, setPreparing] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
-  const [height, setHeight] = useState()
+  const [measurement, setMeasurement] = useState()
   const content = useRef(null)
   const avatar = useRef(null)
   const transition = useRef(null)
   const hasSwitched = useRef(false)
   const prepareId = useRef(0)
   const Games = useRef({})
+  // A theme changes the masthead's layout immediately. Drop the old theme's
+  // fixed height in that same render, before ResizeObserver can measure it,
+  // so reading below the intro does not follow a second height animation.
+  const hasCurrentHeight = measurement && measurement.theme === rewardActive
 
   useEffect(() => {
     const media = window.matchMedia(DESKTOP_GAME)
@@ -44,10 +48,21 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
   }, [])
   useEffect(() => {
     const element = content.current
-    const measure = () => setHeight(element.getBoundingClientRect().height)
+    const measure = () => {
+      const height = element.getBoundingClientRect().height
+      setMeasurement(current =>
+        current?.height === height && current.theme === rewardActive
+          ? current
+          : { height, theme: rewardActive }
+      )
+    }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(element)
+    return () => observer.disconnect()
+  }, [view, rewardActive])
+  useEffect(() => {
+    const element = content.current
     if (hasSwitched.current && window.matchMedia(DESKTOP_GAME).matches) {
       if (view === 'profile') avatar.current?.focus({ preventScroll: true })
     }
@@ -58,7 +73,6 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
           )
         : 0
     return () => {
-      observer.disconnect()
       cancelAnimationFrame(scroll)
     }
   }, [view])
@@ -124,7 +138,10 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
       {rewardActive && Hero && <Hero />}
       <div
         className={`medium-intro-stage ${view !== 'profile' ? 'is-playing' : ''} ${leaving && view === 'profile' ? 'is-booting' : ''}`}
-        style={{ height }}
+        style={{
+          height: hasCurrentHeight ? measurement.height : undefined,
+          transition: hasCurrentHeight ? undefined : 'none'
+        }}
       >
         <div
           ref={content}

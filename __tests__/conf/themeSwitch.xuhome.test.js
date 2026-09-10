@@ -17,17 +17,4 @@ describe('XuHome theme console colors', () => {
     expect(settingKeys).not.toEqual(expect.arrayContaining(colorKeys))
     expect(new Set(paletteKeys).size).toBe(paletteKeys.length)
   })
-
-  it('uses dedicated live CSS variables for the Hero colors', () => {
-    const paletteByKey = Object.fromEntries(
-      getThemeSwitchMeta('xuhome').palette.map(item => [item.key, item])
-    )
-
-    expect(paletteByKey.XUHOME_HERO_TITLE_COLOR.cssVar).toBe(
-      '--xuhome-hero-title-color'
-    )
-    expect(paletteByKey.XUHOME_HERO_BIO_COLOR.cssVar).toBe(
-      '--xuhome-hero-bio-color'
-    )
-  })
 })

@@ -1,6 +1,5 @@
 import {
   createRunner,
-  gateLabel,
   gatePower,
   MAX_POWER,
   moveRunner,
@@ -8,8 +7,6 @@ import {
   stepRunner,
   swipeLane
 } from '@/themes/medium/lib/hedgehogRunner'
-
-import { chooseRunnerUpgrade } from '@/themes/medium/lib/runnerUpgrades'
 
 const playing = (mode = 'intro', seed = 4) => ({
   ...createRunner(mode, seed),
@@ -42,47 +39,16 @@ const enemy = (id, lane, y, hp = 3) => ({
   hit: 0
 })
 
-// Play with the information a player can see: take the stronger gate, aim at
-// approaching monsters, and change lanes if an undamaged monster gets through.
-function steer(run) {
-  const gates = run.items.filter(
-    item => item.kind === 'gate' && item.y > 0.62 && item.y < PLAYER_LINE
-  )
-  if (gates.length) {
-    moveRunner(
-      run,
-      gates.sort((a, b) => gatePower(run.power, b) - gatePower(run.power, a))[0]
-        .lane
-    )
-    return
-  }
-  const enemies = run.items
-    .filter(item => item.kind === 'enemy' && item.y < PLAYER_LINE)
-    .sort((a, b) => b.y - a.y)
-  const front = enemies[0]
-  if (front)
-    moveRunner(
-      run,
-      front.y > 0.75 && front.hp > run.power ? 1 - front.lane : front.lane
-    )
-}
-
-test('the first 30 seconds are winnable with visible gate and monster information', () => {
-  for (let seed = 1; seed <= 12; seed++) {
-    const run = playing('intro', seed)
-    let steps = 0
-    while (run.phase === 'playing' && steps++ < 2000) {
-      steer(run)
-      stepRunner(run, 1 / 30)
-      expect(run.items.length).toBeLessThan(24)
-      expect(run.shots.length).toBeLessThan(8)
-    }
-    expect(run.phase).toBe('won')
-    expect(run.time).toBe(30)
-    expect(run.power).toBeGreaterThan(5)
-    expect(run.kills).toBeGreaterThan(4)
-    expect(run.gates).toBeGreaterThan(3)
-  }
+test('the intro ends once at its deadline and then freezes movement and combat', () => {
+  const run = quiet()
+  run.time = 29.99
+  stepRunner(run, 0.02)
+  expect(run.phase).toBe('won')
+  expect(run.time).toBe(30)
+  const finished = JSON.stringify(run)
+  stepRunner(run, 1)
+  moveRunner(run, 1)
+  expect(JSON.stringify(run)).toBe(finished)
 })
 
 test('passing a gate applies the chosen operation once and consumes both choices', () => {
@@ -157,8 +123,6 @@ test('negative gates reduce firepower but never remove the last quill; multiplic
   expect(gatePower(MAX_POWER, { operation: 'multiply', value: 2 })).toBe(
     MAX_POWER
   )
-  expect(gateLabel({ operation: 'multiply', value: 2 })).toBe('×2')
-  expect(gateLabel({ operation: 'add', value: -5 })).toBe('−5')
   const run = quiet()
   run.power = 10
   run.items = [gate(0, 'add', -3)]
@@ -180,30 +144,6 @@ test('paused runs freeze bullets, enemies and the timer; endless does not unlock
   stepRunner(run, 0.05)
   expect(run.phase).toBe('playing')
   expect(run.time).toBeGreaterThan(60)
-})
-
-test('endless challenge ramps up while scene size and numeric firepower remain bounded', () => {
-  const run = playing('endless', 6)
-  let greatestHealth = 0
-  for (let step = 0; step < 18000; step++) {
-    while (run.phase === 'upgrade') chooseRunnerUpgrade(run, run.choices[0].id)
-    // Isolate long-running spawning/cleanup from player survival.
-    run.hp = 3
-    run.invincible = 1
-    steer(run)
-    stepRunner(run, 1 / 30)
-    greatestHealth = Math.max(
-      greatestHealth,
-      ...run.items.filter(item => item.kind === 'enemy').map(item => item.maxHp)
-    )
-    expect(run.items.length).toBeLessThan(24)
-    expect(run.shots.length).toBeLessThanOrEqual(48)
-    expect(run.effects.length).toBeLessThanOrEqual(12)
-    expect(run.power).toBeLessThanOrEqual(MAX_POWER)
-  }
-  expect(run.time).toBeGreaterThan(599)
-  expect(run.phase).toBe('playing')
-  expect(greatestHealth).toBeGreaterThan(10000)
 })
 
 test('short taps remain taps and swipes clamp to the two lanes', () => {

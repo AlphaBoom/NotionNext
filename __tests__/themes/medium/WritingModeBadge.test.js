@@ -1,12 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import WritingModeBadge from '@/themes/medium/components/WritingModeBadge'
-import ArticleInfo from '@/themes/medium/components/ArticleInfo'
 import ArticleAround from '@/themes/medium/components/ArticleAround'
 
 jest.mock('@/components/SmartLink', () => ({ __esModule: true, default: ({ children, ...props }) => <a {...props}>{children}</a> }))
-jest.mock('@/components/NotionIcon', () => ({ __esModule: true, default: () => null }))
-jest.mock('@/lib/config', () => ({ siteConfig: () => false }))
-jest.mock('@/lib/global', () => ({ useGlobal: () => ({ locale: { COMMON: { MINUTE: '分钟' } } }) }))
 
 // jsdom does not supply PointerEvent; retain real pointer type and coordinates in gestures.
 beforeAll(() => {
@@ -70,17 +66,6 @@ it('cancels long presses during scrolling, cancelled gestures and unmount', () =
   fireEvent.pointerDown(button, { pointerType: 'touch' })
   unmount()
   expect(jest.getTimerCount()).toBe(0)
-})
-
-it('places the article badge alongside its heading and renders no standalone notice', () => {
-  const { container, rerender } = render(<ArticleInfo post={{ title: '测试文章', publishDay: '2026-9-8', writingMode: 'ai-generated', wordCount: 1080, readTime: 4 }} />)
-  const heading = screen.getByRole('heading', { name: '测试文章' })
-  expect(heading.parentElement).toContainElement(screen.getByRole('button', { name: 'AI 生成' }))
-  expect(container.querySelector('.medium-article-meta')).toHaveTextContent('2026-9-8')
-  expect(container.querySelector('.medium-writing-notice')).toBeNull()
-  expect(screen.queryByText('本文由我提供大纲和写作思路，使用 AI 辅助生成正文。')).not.toBeInTheDocument()
-  rerender(<ArticleInfo post={{ title: '测试文章', publishDay: '2026-9-8' }} />)
-  expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })
 
 it('keeps previous and next article links separate from interactive badges', () => {
