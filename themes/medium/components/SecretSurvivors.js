@@ -1,4 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import SurvivorsLeaderboard from './SurvivorsLeaderboard'
+import SurvivorsResult from './SurvivorsResult'
+import { useSurvivorsLeaderboard } from '../lib/useSurvivorsLeaderboard'
+import {
+  beginLeaderboardRun,
+  LEADERBOARD_ENABLED
+} from '../lib/survivorsLeaderboard'
 import { useVictoryReveal } from '../lib/useVictoryReveal'
 import { handleMovementKey } from '../lib/survivorsInput'
 import {
@@ -61,10 +68,24 @@ export default function SecretSurvivors({
     actions = useRef(null)
   const close = useRef(onClose)
   const challenge = useRef(unlocked)
+  const leaderboardRun = useRef(null)
+  const rankingDialog = useRef(null)
+  const [rankingEntry, setRankingEntry] = useState(null)
+  const [rankingOpen, setRankingOpen] = useState(false)
   challenge.current = unlocked
   const [hud, setHud] = useState(() =>
     snapshot(createRun(undefined, unlocked ? 'endless' : 'intro'))
   )
+  const showResult =
+    LEADERBOARD_ENABLED &&
+    hud.mode === 'endless' &&
+    hud.phase === 'lost' &&
+    Boolean(rankingEntry?.result)
+  const leaderboard = useSurvivorsLeaderboard({
+    entry: rankingEntry,
+    finished: showResult,
+    active: rankingOpen
+  })
   const reward = useVictoryReveal(hud.phase, onVictory, () => close.current())
   useEffect(() => {
     close.current = onClose
@@ -72,6 +93,8 @@ export default function SecretSurvivors({
   useEffect(() => {
     const onEscape = event => {
       if (event.key !== 'Escape' && event.code !== 'Escape') return
+      // The native dialog handles Escape first; closing it must keep the game.
+      if (rankingDialog.current?.open) return
       event.preventDefault()
       if (!event.repeat) close.current()
     }
@@ -101,6 +124,19 @@ export default function SecretSurvivors({
     const taps = new Set()
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
     const sync = () => {
+      if (
+        run.phase === 'lost' &&
+        leaderboardRun.current &&
+        !leaderboardRun.current.result
+      ) {
+        leaderboardRun.current.result = {
+          durationMs: Math.floor(run.time * 1000),
+          kills: run.kills,
+          bosses: run.bosses,
+          level: run.level
+        }
+        setRankingEntry(leaderboardRun.current)
+      }
       setHud(snapshot(run))
       element.dataset.playerPosition = `${Math.round(run.player.x)},${Math.round(run.player.y)}`
       element.dataset.enemies = String(run.enemies.length)
@@ -183,6 +219,14 @@ export default function SecretSurvivors({
         draw()
         return
       }
+      if (
+        !leaderboardRun.current &&
+        run.mode === 'endless' &&
+        LEADERBOARD_ENABLED
+      ) {
+        leaderboardRun.current = beginLeaderboardRun()
+        setRankingEntry(leaderboardRun.current)
+      }
       run.phase = 'playing'
       previous = 0
       keys.clear()
@@ -205,6 +249,9 @@ export default function SecretSurvivors({
       if (run.phase === 'playing') start()
     }
     const onKeyDown = event => {
+      if (rankingDialog.current?.open) return
+      if (event.target.closest?.('input, textarea, [contenteditable="true"]'))
+        return
       if (
         run.phase === 'upgrade' &&
         event.repeat &&
@@ -256,6 +303,8 @@ export default function SecretSurvivors({
       restart: () => {
         stop()
         run = createRun(undefined, challenge.current ? 'endless' : 'intro')
+        leaderboardRun.current = null
+        setRankingEntry(null)
         run.phase = 'ready'
         samples = []
         intervals = []
@@ -298,11 +347,26 @@ export default function SecretSurvivors({
     }
   }, [])
   useEffect(() => {
-    if (hud.phase !== 'playing')
-      panel.current
-        ?.querySelector('.survivors-overlay button')
-        ?.focus({ preventScroll: true })
+    if (hud.phase !== 'playing') {
+      const target =
+        panel.current?.querySelector('[data-result-title]') ||
+        panel.current?.querySelector('.survivors-overlay button')
+      target?.focus({ preventScroll: true })
+    }
   }, [hud.phase, hud.choices])
+  useEffect(() => {
+    const dialog = rankingDialog.current
+    if (!dialog) return
+    if (rankingOpen && !dialog.open) {
+      dialog.showModal()
+    } else if (!rankingOpen && dialog.open) {
+      dialog.close()
+    }
+  }, [rankingOpen])
+  const openRankings = () => {
+    actions.current?.pause()
+    setRankingOpen(true)
+  }
   const time = `${String(Math.floor(hud.time / 60)).padStart(2, '0')}:${String(hud.time % 60).padStart(2, '0')}`
   const build = UPGRADES.filter(u => hud.upgrades[u.id])
   const choiceLevel = hud.level - Math.max(0, hud.pendingUpgrades - 1)
@@ -324,8 +388,25 @@ export default function SecretSurvivors({
             棘夜 <span>QUILL SURVIVORS</span>
           </h2>
         </div>
+        {LEADERBOARD_ENABLED && (
+          <button
+            type='button'
+            className='survivors-ranking-button'
+            aria-haspopup='dialog'
+            onClick={openRankings}
+          >
+            排行榜 <small>TOP 20</small>
+          </button>
+        )}
       </div>
-      <div className='survivors-arena'>
+      {LEADERBOARD_ENABLED && hud.phase === 'ready' && (
+        <p className='survivors-ranking-note'>
+          {hud.mode === 'endless'
+            ? '本局参与无限挑战，结束后可填写昵称上传成绩。'
+            : '通关后解锁无限挑战排行榜。首次一分钟关卡不计排名。'}
+        </p>
+      )}
+      <div className={`survivors-arena${showResult ? ' has-result' : ''}`}>
         <canvas
           ref={canvas}
           tabIndex={0}
@@ -524,6 +605,9 @@ export default function SecretSurvivors({
                 </p>
                 <h3>恭喜通关！你发现了隐藏主题。</h3>
                 <p>一分钟的散步，通往另一个世界。</p>
+                {LEADERBOARD_ENABLED && (
+                  <p>无限挑战排行榜已解锁，再次点击头像即可挑战。</p>
+                )}
                 <div
                   className='survivors-countdown'
                   role='status'
@@ -562,7 +646,16 @@ export default function SecretSurvivors({
                 )}
               </>
             )}
-            {hud.phase === 'lost' && (
+            {showResult && (
+              <SurvivorsResult
+                result={rankingEntry.result}
+                board={leaderboard}
+                onRestart={() => actions.current?.restart()}
+                onClose={onClose}
+                onDetails={openRankings}
+              />
+            )}
+            {hud.phase === 'lost' && !showResult && (
               <>
                 <p className='survivors-overlay-kicker'>
                   ANOTHER NIGHT, ANOTHER TRY
@@ -658,6 +751,45 @@ export default function SecretSurvivors({
           <kbd>ESC</kbd> 返回
         </span>
       </div>
+      {LEADERBOARD_ENABLED && (
+        <dialog
+          ref={rankingDialog}
+          className='survivors-ranking-dialog'
+          aria-labelledby='survivors-ranking-title'
+          onCancel={event => {
+            event.preventDefault()
+            setRankingOpen(false)
+          }}
+          onClose={() => setRankingOpen(false)}
+        >
+          <div className='survivors-ranking-heading'>
+            <div>
+              <span className='survivors-ranking-kicker'>
+                QUILL SURVIVORS / NIGHT RECORDS
+              </span>
+              <h3 id='survivors-ranking-title'>
+                夜行榜<span>无限挑战</span>
+              </h3>
+            </div>
+            <button
+              type='button'
+              className='survivors-ranking-close'
+              onClick={() => setRankingOpen(false)}
+              aria-label='关闭排行榜'
+            >
+              ×
+            </button>
+          </div>
+          <p className='survivors-ranking-note'>
+            {hud.mode !== 'endless'
+              ? '通关首次一分钟关卡后，再次点击头像即可参加无限挑战。'
+              : hud.phase === 'lost'
+                ? '关闭榜单即可回到本局结算，选择上传或继续挑战。'
+                : '看看谁走得更远，也为下一次夜行定个目标。'}
+          </p>
+          <SurvivorsLeaderboard board={leaderboard} />
+        </dialog>
+      )}
       <style jsx>{`
         .medium-survivors[data-mode='endless'] canvas {
           height: clamp(520px, 65vh, 660px);
@@ -765,6 +897,98 @@ export default function SecretSurvivors({
           color: var(--muted);
           font: 9px monospace;
           letter-spacing: 0.18em;
+        }
+        .survivors-ranking-button {
+          flex-shrink: 0;
+          padding: 9px 13px;
+          border: 1px solid var(--line);
+          border-radius: 5px;
+          background: transparent;
+          color: var(--ink);
+          font-size: 13px;
+          cursor: pointer;
+        }
+        .survivors-ranking-button small {
+          margin-left: 8px;
+          color: var(--muted);
+          font: 10px monospace;
+        }
+        .survivors-ranking-button:hover,
+        .survivors-ranking-button:focus-visible {
+          background: var(--wash);
+          outline: 1px solid currentColor;
+          outline-offset: 3px;
+        }
+        .survivors-ranking-note {
+          margin: 0 0 14px;
+          color: var(--muted);
+          font-size: 13px;
+          line-height: 1.7;
+        }
+        .survivors-ranking-dialog {
+          width: min(700px, calc(100vw - 32px));
+          max-height: calc(100dvh - 48px);
+          margin: auto;
+          padding: 28px;
+          border: 1px solid var(--line);
+          border-top: 3px solid var(--accent);
+          border-radius: 16px;
+          background: var(--paper);
+          color: var(--ink);
+          box-shadow: 0 24px 80px #0004;
+          overflow: auto;
+        }
+        .survivors-ranking-dialog::backdrop {
+          background: #17151f88;
+          backdrop-filter: blur(5px);
+        }
+        .survivors-ranking-heading {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 12px;
+        }
+        .survivors-ranking-heading h3 {
+          margin: 0;
+          font-family: 'Noto Serif SC', serif;
+          font-size: 28px;
+          font-weight: 500;
+        }
+        .survivors-ranking-heading h3 span {
+          margin-left: 12px;
+          font-family: inherit;
+          font-size: 12px;
+          color: var(--muted);
+        }
+        .survivors-ranking-kicker {
+          display: block;
+          margin-bottom: 8px;
+          color: var(--accent);
+          font: 9px monospace;
+          letter-spacing: 0.13em;
+        }
+        .survivors-ranking-close {
+          display: grid;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          border: 1px solid var(--line);
+          border-radius: 50%;
+          color: var(--muted);
+          background: var(--wash);
+          font: 22px/1 sans-serif;
+          cursor: pointer;
+        }
+        .survivors-ranking-close:hover {
+          color: var(--accent);
+          border-color: var(--accent);
+        }
+        .survivors-arena.has-result canvas {
+          height: clamp(500px, 60vh, 580px);
+        }
+        .survivors-arena.has-result .survivors-overlay {
+          overflow-y: auto;
         }
         .survivors-heading h2 {
           font:

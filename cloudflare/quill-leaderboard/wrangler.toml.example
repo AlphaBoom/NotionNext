@@ -1,0 +1,17 @@
+name = "quill-leaderboard"
+main = "worker.mjs"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://your-blog.example.com"
+SEASON = "endless-v1"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "quill-leaderboard"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[triggers]
+crons = ["17 3 * * *"]
