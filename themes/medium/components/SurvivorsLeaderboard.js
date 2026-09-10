@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   formatSurvivalTime,
   loadLeaderboard,
@@ -6,7 +6,11 @@ import {
   submitLeaderboardRun
 } from '../lib/survivorsLeaderboard'
 
-export default function SurvivorsLeaderboard({ entry, finished }) {
+export default function SurvivorsLeaderboard({
+  entry,
+  finished,
+  active = false
+}) {
   const [open, setOpen] = useState(false)
   const [rows, setRows] = useState(null)
   const [loadError, setLoadError] = useState('')
@@ -33,7 +37,7 @@ export default function SurvivorsLeaderboard({ entry, finished }) {
     setHighlight('')
   }, [entry])
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     const id = ++loadId.current
     setLoading(true)
     setLoadError('')
@@ -45,7 +49,14 @@ export default function SurvivorsLeaderboard({ entry, finished }) {
     } finally {
       if (mounted.current && id === loadId.current) setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (active) {
+      setOpen(true)
+      refresh()
+    }
+  }, [active, refresh])
 
   async function submit(event) {
     event.preventDefault()
@@ -114,21 +125,23 @@ export default function SurvivorsLeaderboard({ entry, finished }) {
           </p>
         </form>
       )}
-      <button
-        type='button'
-        className='quill-toggle'
-        aria-expanded={open}
-        aria-controls='quill-rankings'
-        onClick={() => {
-          setOpen(!open)
-          if (!open) refresh()
-        }}
-      >
-        <span>
-          无限模式排行榜 <small>TOP 20</small>
-        </span>
-        <span aria-hidden='true'>{open ? '−' : '+'}</span>
-      </button>
+      {!active && (
+        <button
+          type='button'
+          className='quill-toggle'
+          aria-expanded={open}
+          aria-controls='quill-rankings'
+          onClick={() => {
+            setOpen(!open)
+            if (!open) refresh()
+          }}
+        >
+          <span>
+            无限模式排行榜 <small>TOP 20</small>
+          </span>
+          <span aria-hidden='true'>{open ? '−' : '+'}</span>
+        </button>
+      )}
       {open && (
         <div id='quill-rankings'>
           <p>先比生存时间，再比击退数、首领数。同分先到者在前。</p>

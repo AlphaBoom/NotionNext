@@ -85,3 +85,24 @@ test('an older GET cannot overwrite standings returned by a successful upload', 
   await act(async () => resolveLoad({ entries: [] }))
   expect(screen.getByRole('cell', { name: '刺猬' })).toBeTruthy()
 })
+
+test('opening the dialog loads rankings and reopening preserves the submitted result', async () => {
+  loadLeaderboard.mockResolvedValue({ entries: [row] })
+  submitLeaderboardRun.mockResolvedValue({
+    personalBest: true,
+    best: row,
+    entries: [row]
+  })
+  const { rerender } = render(
+    <SurvivorsLeaderboard entry={entry} finished active />
+  )
+  expect(await screen.findByRole('cell', { name: '刺猬' })).toBeTruthy()
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: '刺猬' } })
+  fireEvent.click(screen.getByRole('button', { name: '上传成绩' }))
+  await screen.findByRole('button', { name: '已上传' })
+  rerender(<SurvivorsLeaderboard entry={entry} finished active={false} />)
+  rerender(<SurvivorsLeaderboard entry={entry} finished active />)
+  await waitFor(() => expect(loadLeaderboard).toHaveBeenCalledTimes(2))
+  expect(screen.getByRole('button', { name: '已上传' })).toBeDisabled()
+  expect(submitLeaderboardRun).toHaveBeenCalledTimes(1)
+})
