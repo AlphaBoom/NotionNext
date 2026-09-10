@@ -25,6 +25,7 @@ export const useReward = () => useContext(RewardContext)
 
 export default function RewardProvider({ children }) {
   const [reward, setReward] = useState(EMPTY_REWARD)
+  const [Menu, setMenu] = useState(null)
   const [Appearance, setAppearance] = useState(null)
   const [Hero, setHero] = useState(null)
   const [opening, setOpening] = useState(null)
@@ -71,8 +72,8 @@ export default function RewardProvider({ children }) {
       } catch {}
       currentReward.current = saved
       setReward(current => ({ ...current, unlocked: saved.unlocked }))
-      if (!saved.unlocked) {
-        setReward(EMPTY_REWARD)
+      if (!saved.enabled) {
+        setReward(saved)
         setRestoring(false)
         return
       }
@@ -113,6 +114,19 @@ export default function RewardProvider({ children }) {
       window.removeEventListener('storage', onStorage)
     }
   }, [loadAppearance, cancelOpening])
+  useEffect(() => {
+    if (!reward.unlocked) return
+    let current = true
+    // Keep the switch available without importing the theme, artwork or toys.
+    void import('./RewardContextMenu')
+      .then(entry => {
+        if (current) setMenu(() => entry.default)
+      })
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+  }, [reward.unlocked])
   const persist = value => {
     currentReward.current = value
     setReward(value)
@@ -197,13 +211,15 @@ export default function RewardProvider({ children }) {
     >
       <RewardColorScheme active={reward.enabled}>
         {children}
-        {Appearance && reward.unlocked && (
+        {Menu && reward.unlocked && (
+          <Menu active={reward.enabled} onToggle={toggleReward} />
+        )}
+        {Appearance && reward.unlocked && (reward.enabled || opening) && (
           <Appearance
             active={reward.enabled}
             opening={opening}
             onCovered={commitCoveredTheme}
             onOpeningEnd={() => setOpening(null)}
-            onToggle={toggleReward}
           />
         )}
       </RewardColorScheme>
