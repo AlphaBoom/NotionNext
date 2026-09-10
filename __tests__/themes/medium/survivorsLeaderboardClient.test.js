@@ -73,3 +73,21 @@ test('format keeps long runs readable and no credentials are sent with board req
   expect(fetch.mock.calls[0][0]).toContain('season=endless-v1')
   expect(fetch.mock.calls[0][1].credentials).toBe('omit')
 })
+
+test('rank preview follows score tie breakers and never invents a rank below the top 20', () => {
+  const score = { durationMs: 90000, kills: 30, bosses: 1 }
+  const rows = [
+    { ...score, durationMs: 91000 },
+    { ...score, kills: 31 },
+    { ...score, bosses: 2 },
+    { ...score },
+    { ...score, bosses: 0 }
+  ]
+  expect(client.estimateLeaderboardRank(score, rows)).toBe(5)
+  expect(client.estimateLeaderboardRank(score, [])).toBe(1)
+  expect(client.estimateLeaderboardRank(score, null)).toBeNull()
+  expect(
+    client.estimateLeaderboardRank(score, Array(20).fill(score))
+  ).toBeNull()
+  expect(client.estimateLeaderboardRank(score, Array(19).fill(score))).toBe(20)
+})

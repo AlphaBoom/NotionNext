@@ -1,260 +1,117 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  formatSurvivalTime,
-  loadLeaderboard,
-  savedNickname,
-  submitLeaderboardRun
-} from '../lib/survivorsLeaderboard'
+import { formatSurvivalTime } from '../lib/survivorsLeaderboard'
 
-export default function SurvivorsLeaderboard({
-  entry,
-  finished,
-  active = false
-}) {
-  const [open, setOpen] = useState(false)
-  const [rows, setRows] = useState(null)
-  const [loadError, setLoadError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [nickname, setNickname] = useState(savedNickname)
-  const [status, setStatus] = useState('idle')
-  const [message, setMessage] = useState('')
-  const [highlight, setHighlight] = useState('')
-  const mounted = useRef(true)
-  const submitting = useRef(false)
-  const generation = useRef(0)
-  const loadId = useRef(0)
-  useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-    }
-  }, [])
-  useEffect(() => {
-    generation.current++
-    submitting.current = false
-    setStatus('idle')
-    setMessage('')
-    setHighlight('')
-  }, [entry])
-
-  const refresh = useCallback(async () => {
-    const id = ++loadId.current
-    setLoading(true)
-    setLoadError('')
-    try {
-      const data = await loadLeaderboard()
-      if (mounted.current && id === loadId.current) setRows(data.entries)
-    } catch (error) {
-      if (mounted.current && id === loadId.current) setLoadError(error.message)
-    } finally {
-      if (mounted.current && id === loadId.current) setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (active) {
-      setOpen(true)
-      refresh()
-    }
-  }, [active, refresh])
-
-  async function submit(event) {
-    event.preventDefault()
-    if (submitting.current || status === 'done' || !entry?.result) return
-    submitting.current = true
-    const current = generation.current
-    setStatus('sending')
-    setMessage('')
-    try {
-      const data = await submitLeaderboardRun(entry, nickname.trim())
-      if (!mounted.current || current !== generation.current) return
-      loadId.current++ // A pre-submit GET must not overwrite the fresh standings.
-      setLoading(false)
-      setLoadError('')
-      setRows(data.entries)
-      setOpen(true)
-      setHighlight(data.best.id)
-      setStatus('done')
-      const rank = data.entries.find(row => row.id === data.best.id)?.rank
-      setMessage(
-        `${data.personalBest ? '最佳成绩已更新' : '成绩已上传，保留之前的最佳纪录'}${rank ? ` · 当前第 ${rank} 名` : ' · 暂未进入前 20 名'}。`
-      )
-    } catch (error) {
-      if (!mounted.current || current !== generation.current) return
-      setStatus('error')
-      setMessage(error.message)
-    } finally {
-      if (current === generation.current) submitting.current = false
-    }
-  }
-
+export default function SurvivorsLeaderboard({ board }) {
+  const rows = board.rows || []
   return (
     <section className='quill-leaderboard' aria-label='无限模式排行榜'>
-      {finished && entry?.result && (
-        <form onSubmit={submit}>
-          <label htmlFor='quill-nickname'>留下这次夜行的名字</label>
-          <div className='quill-submit'>
-            <input
-              id='quill-nickname'
-              name='nickname'
-              value={nickname}
-              onChange={event => setNickname(event.target.value)}
-              placeholder='昵称（1–16 字）'
-              maxLength={32}
-              required
-              autoComplete='nickname'
-              disabled={status === 'sending' || status === 'done'}
-              aria-describedby='quill-upload-note'
-            />
-            <button
-              type='submit'
-              disabled={status === 'sending' || status === 'done'}
-            >
-              {status === 'sending'
-                ? '上传中…'
-                : status === 'done'
-                  ? '已上传'
-                  : '上传成绩'}
-            </button>
-          </div>
-          <p id='quill-upload-note'>
-            免登录，昵称与成绩公开。每个浏览器保留最佳纪录。
-          </p>
-          <p role='status' aria-live='polite'>
-            {message}
-          </p>
-        </form>
+      <div className='quill-board-summary'>
+        <span>
+          <i aria-hidden='true'>✧</i> 每一次夜行，都值得被记住
+        </span>
+        <span className='quill-board-tag'>TOP 20</span>
+      </div>
+      {board.loading && (
+        <p className='quill-board-notice' role='status'>
+          正在读取排行榜…
+        </p>
       )}
-      {!active && (
-        <button
-          type='button'
-          className='quill-toggle'
-          aria-expanded={open}
-          aria-controls='quill-rankings'
-          onClick={() => {
-            setOpen(!open)
-            if (!open) refresh()
-          }}
-        >
-          <span>
-            无限模式排行榜 <small>TOP 20</small>
-          </span>
-          <span aria-hidden='true'>{open ? '−' : '+'}</span>
-        </button>
+      {board.loadError && (
+        <p className='quill-board-notice' role='alert'>
+          {board.loadError}
+        </p>
       )}
-      {open && (
-        <div id='quill-rankings'>
-          <p>先比生存时间，再比击退数、首领数。同分先到者在前。</p>
-          {loading && <p role='status'>正在读取排行榜…</p>}
-          {loadError && <p role='alert'>{loadError}</p>}
-          {!loading && !loadError && rows?.length === 0 && (
-            <p>还没有成绩。来留下第一段夜行吧。</p>
-          )}
-          {Boolean(rows?.length) && (
-            <div className='quill-table-wrap'>
-              <table>
-                <caption className='sr-only'>无限模式前 20 名</caption>
-                <thead>
-                  <tr>
-                    <th scope='col'>名次</th>
-                    <th scope='col'>昵称</th>
-                    <th scope='col'>生存</th>
-                    <th scope='col'>击退</th>
-                    <th scope='col'>首领</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map(row => (
-                    <tr
-                      key={row.id}
-                      className={row.id === highlight ? 'quill-self' : ''}
-                    >
-                      <td>{row.rank}</td>
-                      <td className='quill-name'>{row.nickname}</td>
-                      <td>{formatSurvivalTime(row.durationMs)}</td>
-                      <td>{row.kills}</td>
-                      <td>{row.bosses}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <button type='button' disabled={loading} onClick={refresh}>
-            刷新排行
-          </button>
+      {!board.loading && !board.loadError && rows.length === 0 && (
+        <div className='quill-board-empty'>
+          <span aria-hidden='true'>✧</span>
+          <h4>第一段夜行，等你留下名字。</h4>
+          <p>完成一次无限挑战，选择上传，就能在这里相遇。</p>
         </div>
       )}
+      {rows.length > 0 && (
+        <div className='quill-table-wrap'>
+          <table>
+            <caption className='quill-sr-only'>无限模式前 20 名</caption>
+            <thead>
+              <tr>
+                <th scope='col'>名次</th>
+                <th scope='col'>夜行者</th>
+                <th scope='col'>生存时间</th>
+                <th scope='col'>击退</th>
+                <th scope='col'>首领</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(row => (
+                <tr
+                  key={row.id}
+                  className={`${row.rank <= 3 ? 'quill-leading' : ''} ${row.id === board.best?.id ? 'quill-self' : ''}`}
+                >
+                  <td>
+                    <span className='quill-rank-number'>
+                      {String(row.rank).padStart(2, '0')}
+                    </span>
+                  </td>
+                  <td className='quill-name'>
+                    <span>{row.nickname}</span>
+                    {row.id === board.best?.id && <small>你</small>}
+                  </td>
+                  <td className='quill-time'>
+                    {formatSurvivalTime(row.durationMs)}
+                  </td>
+                  <td>{row.kills}</td>
+                  <td>{row.bosses}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div className='quill-board-footer'>
+        <p>
+          先比生存时间，再比击退、首领数。
+          <br />
+          同分先到者在前，每个浏览器保留最佳纪录。
+        </p>
+        <button type='button' disabled={board.loading} onClick={board.refresh}>
+          刷新排行 <span aria-hidden='true'>↻</span>
+        </button>
+      </div>
       <style jsx>{`
         .quill-leaderboard {
-          margin-top: 20px;
-          padding-top: 16px;
-          border-top: 1px solid var(--border, #cad0c8);
-          font-size: 14px;
           color: var(--ink);
+          font-size: 13px;
         }
-        form {
-          padding-bottom: 16px;
-        }
-        label {
-          display: block;
-          font-weight: 500;
-          margin-bottom: 10px;
-        }
-        .quill-submit {
+        .quill-board-summary {
           display: flex;
-          flex-wrap: wrap;
-          gap: 8px;
-        }
-        input {
-          flex: 1;
-          min-width: 120px;
-          max-width: 280px;
-          background: transparent;
-          border: 1px solid var(--muted, #71806f);
-          border-radius: 5px;
-          padding: 9px 12px;
-          color: inherit;
-          font-size: 16px;
-        }
-        button {
-          padding: 9px 14px;
-          border: 1px solid var(--muted, #71806f);
-          border-radius: 5px;
-          cursor: pointer;
-          color: inherit;
-          background: transparent;
-        }
-        button:disabled {
-          cursor: default;
-          opacity: 0.6;
-        }
-        button:focus-visible,
-        input:focus-visible {
-          outline: 2px solid currentColor;
-          outline-offset: 3px;
-        }
-        p {
-          margin: 10px 0;
-          color: var(--muted);
-          line-height: 1.6;
-        }
-        p:empty {
-          display: none;
-        }
-        .quill-toggle {
-          display: flex;
-          justify-content: space-between;
           align-items: center;
-          width: 100%;
-          border: 0;
-          padding: 8px 0;
-          text-align: left;
-          font-size: 16px;
+          justify-content: space-between;
+          gap: 16px;
+          margin: 20px 0 8px;
+          padding: 14px 16px;
+          background: var(--wash);
+          color: var(--accent);
+          border-radius: 9px;
         }
-        small {
-          margin-left: 10px;
-          font: 12px monospace;
+        .quill-board-summary > span:first-child {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .quill-board-summary i {
+          font-size: 22px;
+          font-style: normal;
+          line-height: 1;
+        }
+        .quill-board-tag {
+          font: 10px monospace;
+          letter-spacing: 0.1em;
+          white-space: nowrap;
+        }
+        .quill-board-notice {
+          margin: 16px 0;
+          padding: 12px 16px;
+          background: var(--wash);
+          border-radius: 7px;
           color: var(--muted);
         }
         .quill-table-wrap {
@@ -263,28 +120,170 @@ export default function SurvivorsLeaderboard({
         }
         table {
           width: 100%;
-          border-collapse: collapse;
+          border-collapse: separate;
+          border-spacing: 0 5px;
           font-variant-numeric: tabular-nums;
           text-align: left;
         }
-        th,
-        td {
-          padding: 10px 8px;
-          border-bottom: 1px solid var(--border, #cad0c8);
+        th {
+          padding: 8px 12px;
+          color: var(--muted);
+          font-size: 10px;
+          font-weight: 400;
           white-space: nowrap;
         }
-        th {
-          font-weight: 500;
+        td {
+          padding: 12px;
+          border-bottom: 1px solid var(--line);
+          white-space: nowrap;
+          font-size: 12px;
+        }
+        td:first-child {
+          width: 54px;
+          border-radius: 8px 0 0 8px;
+        }
+        td:last-child {
+          border-radius: 0 8px 8px 0;
+        }
+        .quill-rank-number {
+          display: inline-grid;
+          place-items: center;
+          width: 28px;
+          height: 28px;
           color: var(--muted);
+          font: 13px monospace;
+        }
+        .quill-leading td {
+          background: var(--wash);
+          border-bottom-color: transparent;
+          padding-top: 15px;
+          padding-bottom: 15px;
+        }
+        .quill-leading .quill-rank-number {
+          color: var(--accent);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--paper);
+          font-size: 15px;
+        }
+        .quill-leading .quill-name {
+          font-size: 14px;
+          font-weight: 500;
+        }
+        .quill-leading .quill-time {
+          color: var(--accent);
+          font-size: 19px;
+        }
+        .quill-time {
+          font-family: monospace;
+          letter-spacing: -0.04em;
+          font-size: 15px;
         }
         .quill-name {
+          min-width: 95px;
           max-width: 220px;
           white-space: normal;
           overflow-wrap: anywhere;
         }
-        .quill-self {
-          background: rgba(135, 167, 119, 0.16);
-          font-weight: 600;
+        .quill-name small {
+          display: inline-block;
+          margin-left: 7px;
+          padding: 1px 5px;
+          border: 1px solid var(--accent);
+          border-radius: 4px;
+          color: var(--accent);
+          font-size: 9px;
+        }
+        .quill-self td:first-child {
+          box-shadow: inset 3px 0 var(--accent);
+        }
+        .quill-board-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 20px;
+          padding-top: 16px;
+          margin-top: 12px;
+          border-top: 1px solid var(--line);
+        }
+        .quill-board-footer p {
+          margin: 0;
+          color: var(--muted);
+          font-size: 11px;
+          line-height: 1.7;
+        }
+        button {
+          flex-shrink: 0;
+          padding: 8px 12px;
+          border: 1px solid var(--line);
+          border-radius: 6px;
+          color: var(--accent);
+          background: var(--paper);
+          font: inherit;
+          font-size: 11px;
+          cursor: pointer;
+        }
+        button span {
+          margin-left: 5px;
+        }
+        button:hover {
+          background: var(--wash);
+        }
+        button:focus-visible {
+          outline: 2px solid var(--accent);
+          outline-offset: 3px;
+        }
+        button:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+        .quill-board-empty {
+          text-align: center;
+          padding: 40px 16px;
+        }
+        .quill-board-empty > span {
+          display: inline-grid;
+          place-items: center;
+          width: 64px;
+          height: 64px;
+          margin-bottom: 14px;
+          border: 1px solid var(--line);
+          border-radius: 18px;
+          color: var(--accent);
+          background: var(--wash);
+          font-size: 40px;
+        }
+        .quill-board-empty h4 {
+          margin: 0 0 8px;
+          color: var(--ink);
+          font-weight: 500;
+          font-size: 17px;
+        }
+        .quill-board-empty p {
+          margin: 0;
+          color: var(--muted);
+          font-size: 12px;
+          line-height: 1.7;
+        }
+        .quill-sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip-path: inset(50%);
+        }
+        @media (max-width: 560px) {
+          th,
+          td {
+            padding-left: 7px;
+            padding-right: 7px;
+          }
+          .quill-leading .quill-time {
+            font-size: 16px;
+          }
+          .quill-board-footer {
+            gap: 10px;
+          }
         }
       `}</style>
     </section>

@@ -76,6 +76,19 @@ export function loadLeaderboard() {
   )
 }
 
+// Public standings contain only the first 20. Never invent a rank below that
+// boundary; existing tied records precede an as-yet unsubmitted result.
+export function estimateLeaderboardRank(result, rows) {
+  if (!result || !Array.isArray(rows)) return null
+  const ahead = rows.filter(row => {
+    for (const field of ['durationMs', 'kills', 'bosses']) {
+      if (row[field] !== result[field]) return row[field] > result[field]
+    }
+    return true
+  }).length
+  return ahead < 20 ? ahead + 1 : null
+}
+
 // Begin once per new game, never on resume or upgrade. A slow or failed request
 // cannot hold up play; the caught promise cannot produce an unhandled rejection.
 export function beginLeaderboardRun() {

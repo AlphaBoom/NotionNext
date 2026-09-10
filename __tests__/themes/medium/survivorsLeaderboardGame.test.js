@@ -8,6 +8,7 @@ import {
 import { stepRun } from '@/themes/medium/lib/survivors'
 
 jest.mock('@/themes/medium/lib/survivorsLeaderboard', () => ({
+  ...jest.requireActual('@/themes/medium/lib/survivorsLeaderboard'),
   LEADERBOARD_ENABLED: true,
   beginLeaderboardRun: jest.fn(),
   loadLeaderboard: jest.fn(async () => ({ entries: [] })),
@@ -80,29 +81,33 @@ test('new endless run registers once; pause/resume keeps ticket; death freezes r
   expect(beginLeaderboardRun).toHaveBeenCalledTimes(1)
   fireEvent.click(screen.getByRole('button', { name: /^排行榜/ }))
   expect(screen.getByRole('dialog')).toBeTruthy()
-  await screen.findByText(/还没有成绩/)
+  await screen.findByText(/第一段夜行/)
   fireEvent.click(screen.getByRole('button', { name: '关闭排行榜' }))
   expect(screen.getByRole('button', { name: /继续夜行/ })).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: /继续夜行/ }))
   expect(beginLeaderboardRun).toHaveBeenCalledTimes(1)
   act(() => frame(1000))
-  fireEvent.click(screen.getByRole('button', { name: /上传成绩 \/ 查看排名/ }))
+  expect(await screen.findByText('#01')).toBeTruthy()
+  expect(submitLeaderboardRun).not.toHaveBeenCalled()
   const nickname = screen.getByRole('textbox', {
-    name: '留下这次夜行的名字'
+    name: '排行榜昵称'
   })
-  expect(nickname).toHaveFocus()
+  expect(
+    screen.getByRole('heading', { name: '这一夜，你走了这么远。' })
+  ).toHaveFocus()
   expect(fireEvent.keyDown(nickname, { key: 'p', code: 'KeyP' })).toBe(true)
   fireEvent.change(nickname, { target: { value: '刺猬' } })
-  fireEvent.click(screen.getByRole('button', { name: '上传成绩', exact: true }))
-  expect(await screen.findByRole('button', { name: '已上传' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('button', { name: /上传成绩/ }))
+  expect(await screen.findByRole('button', { name: /已上传/ })).toBeDisabled()
   expect(submitLeaderboardRun).toHaveBeenCalledWith(
     expect.objectContaining({
       result: { durationMs: 90125, kills: 30, bosses: 1, level: 5 }
     }),
     '刺猬'
   )
+  fireEvent.click(screen.getByRole('button', { name: /查看完整榜单/ }))
   fireEvent.click(screen.getByRole('button', { name: '关闭排行榜' }))
-  fireEvent.click(screen.getByRole('button', { name: /再出发一次/ }))
+  fireEvent.click(screen.getByRole('button', { name: '再来一局' }))
   expect(beginLeaderboardRun).toHaveBeenCalledTimes(2)
 })
 
@@ -110,7 +115,7 @@ test('intro games never register for the endless board', async () => {
   render(<SecretSurvivors onClose={() => {}} />)
   fireEvent.click(screen.getByRole('button', { name: /^排行榜/ }))
   expect(screen.getByRole('dialog')).toHaveTextContent('通关首次一分钟关卡后')
-  await screen.findByText(/还没有成绩/)
+  await screen.findByText(/第一段夜行/)
   expect(screen.queryByRole('textbox')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: '关闭排行榜' }))
   fireEvent.click(screen.getByRole('button', { name: /出发/ }))
@@ -123,7 +128,7 @@ test('the leaderboard consumes game shortcuts and Escape closes only the dialog'
   fireEvent.click(screen.getByRole('button', { name: /出发/ }))
   fireEvent.click(screen.getByRole('button', { name: /^排行榜/ }))
   const dialog = screen.getByRole('dialog')
-  await screen.findByText(/还没有成绩/)
+  await screen.findByText(/第一段夜行/)
   fireEvent.keyDown(dialog, { key: 'p', code: 'KeyP' })
   expect(container.querySelector('.medium-survivors')).toHaveAttribute(
     'data-phase',
@@ -136,4 +141,22 @@ test('the leaderboard consumes game shortcuts and Escape closes only the dialog'
   expect(beginLeaderboardRun).toHaveBeenCalledTimes(1)
   fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
   expect(onClose).toHaveBeenCalledTimes(1)
+})
+
+test('restarting while hidden creates the new ticket only when that run resumes', async () => {
+  const { container } = render(<SecretSurvivors unlocked onClose={() => {}} />)
+  fireEvent.click(screen.getByRole('button', { name: /出发/ }))
+  act(() => frame(1000))
+  await screen.findByText('#01')
+  const hidden = jest.spyOn(document, 'hidden', 'get').mockReturnValue(true)
+  fireEvent.click(screen.getByRole('button', { name: '不上传，再来一局' }))
+  expect(container.querySelector('.medium-survivors')).toHaveAttribute(
+    'data-phase',
+    'paused'
+  )
+  expect(beginLeaderboardRun).toHaveBeenCalledTimes(1)
+  hidden.mockReturnValue(false)
+  fireEvent.click(screen.getByRole('button', { name: /继续夜行/ }))
+  expect(beginLeaderboardRun).toHaveBeenCalledTimes(2)
+  expect(submitLeaderboardRun).not.toHaveBeenCalled()
 })

@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import SurvivorsLeaderboard from './SurvivorsLeaderboard'
+import SurvivorsResult from './SurvivorsResult'
+import { useSurvivorsLeaderboard } from '../lib/useSurvivorsLeaderboard'
 import {
   beginLeaderboardRun,
   LEADERBOARD_ENABLED
@@ -10,9 +12,17 @@ import {
   assessPerformance,
   chooseUpgrade,
   createRun,
+  rerollUpgrades,
   RUN_SECONDS,
   stepRun
 } from '../lib/survivors'
+import {
+  UPGRADES,
+  EVOLUTIONS,
+  BUILD_SLOTS,
+  occupiedSlots,
+  upgradeAvailable
+} from '../lib/survivorsUpgrades'
 import {
   createRenderer,
   HEDGEHOG,
@@ -33,6 +43,17 @@ function snapshot(run) {
     level: run.level,
     kills: run.kills,
     choices: run.choices,
+    pendingUpgrades: run.pendingUpgrades,
+    rerolls: run.rerolls,
+    canReroll:
+      run.rerolls > 0 &&
+      UPGRADES.some(
+        u => !run.choices.some(c => c.id === u.id) && upgradeAvailable(run, u)
+      ),
+    upgrades: { ...run.upgrades },
+    slots: occupiedSlots(run),
+    pickupValue: run.pickupFlash > 0 ? run.pickupValue : 0,
+    shield: run.player.shield,
     boss: run.enemies.some(e => e.kind === 'boss' && e.hp > 0)
   }
 }
@@ -55,6 +76,16 @@ export default function SecretSurvivors({
   const [hud, setHud] = useState(() =>
     snapshot(createRun(undefined, unlocked ? 'endless' : 'intro'))
   )
+  const showResult =
+    LEADERBOARD_ENABLED &&
+    hud.mode === 'endless' &&
+    hud.phase === 'lost' &&
+    Boolean(rankingEntry?.result)
+  const leaderboard = useSurvivorsLeaderboard({
+    entry: rankingEntry,
+    finished: showResult,
+    active: rankingOpen
+  })
   const reward = useVictoryReveal(hud.phase, onVictory, () => close.current())
   useEffect(() => {
     close.current = onClose
@@ -181,9 +212,15 @@ export default function SecretSurvivors({
       else stop()
     }
     const start = () => {
-      if (document.hidden) return
+      if (run.phase === 'upgrade') return
+      if (document.hidden) {
+        run.phase = 'paused'
+        sync()
+        draw()
+        return
+      }
       if (
-        run.phase === 'ready' &&
+        !leaderboardRun.current &&
         run.mode === 'endless' &&
         LEADERBOARD_ENABLED
       ) {
@@ -205,10 +242,24 @@ export default function SecretSurvivors({
       sync()
       draw()
     }
+    const upgrade = id => {
+      if (!chooseUpgrade(run, id)) return
+      sync()
+      draw()
+      if (run.phase === 'playing') start()
+    }
     const onKeyDown = event => {
       if (rankingDialog.current?.open) return
       if (event.target.closest?.('input, textarea, [contenteditable="true"]'))
         return
+      if (
+        run.phase === 'upgrade' &&
+        event.repeat &&
+        /^(Enter|Space|Digit[123])$/.test(event.code)
+      ) {
+        event.preventDefault()
+        return
+      }
       if (event.code === 'KeyP' && !event.repeat) {
         event.preventDefault()
         if (run.phase === 'playing') pause()
@@ -239,7 +290,7 @@ export default function SecretSurvivors({
       if (run.phase === 'upgrade' && /^Digit[123]$/.test(event.code)) {
         event.preventDefault()
         const choice = run.choices[Number(event.code.slice(-1)) - 1]
-        if (choice && chooseUpgrade(run, choice.id)) start()
+        if (choice && !event.repeat) upgrade(choice.id)
       }
     }
     const onKeyUp = event => keys.delete(event.code)
@@ -252,13 +303,20 @@ export default function SecretSurvivors({
       restart: () => {
         stop()
         run = createRun(undefined, challenge.current ? 'endless' : 'intro')
+        leaderboardRun.current = null
+        setRankingEntry(null)
+        run.phase = 'ready'
         samples = []
         intervals = []
         slowWindows = 0
         start()
       },
-      upgrade: id => {
-        if (chooseUpgrade(run, id)) start()
+      upgrade,
+      reroll: () => {
+        if (rerollUpgrades(run)) {
+          sync()
+          draw()
+        }
       }
     }
     const root = panel.current
@@ -289,17 +347,18 @@ export default function SecretSurvivors({
     }
   }, [])
   useEffect(() => {
-    if (hud.phase !== 'playing')
-      panel.current
-        ?.querySelector('.survivors-overlay button')
-        ?.focus({ preventScroll: true })
-  }, [hud.phase])
+    if (hud.phase !== 'playing') {
+      const target =
+        panel.current?.querySelector('[data-result-title]') ||
+        panel.current?.querySelector('.survivors-overlay button')
+      target?.focus({ preventScroll: true })
+    }
+  }, [hud.phase, hud.choices])
   useEffect(() => {
     const dialog = rankingDialog.current
     if (!dialog) return
     if (rankingOpen && !dialog.open) {
       dialog.showModal()
-      dialog.querySelector('input:not(:disabled)')?.focus()
     } else if (!rankingOpen && dialog.open) {
       dialog.close()
     }
@@ -309,6 +368,8 @@ export default function SecretSurvivors({
     setRankingOpen(true)
   }
   const time = `${String(Math.floor(hud.time / 60)).padStart(2, '0')}:${String(hud.time % 60).padStart(2, '0')}`
+  const build = UPGRADES.filter(u => hud.upgrades[u.id])
+  const choiceLevel = hud.level - Math.max(0, hud.pendingUpgrades - 1)
   return (
     <div
       ref={panel}
@@ -345,7 +406,7 @@ export default function SecretSurvivors({
             : '通关后解锁无限挑战排行榜。首次一分钟关卡不计排名。'}
         </p>
       )}
-      <div className='survivors-arena'>
+      <div className={`survivors-arena${showResult ? ' has-result' : ''}`}>
         <canvas
           ref={canvas}
           tabIndex={0}
@@ -358,6 +419,7 @@ export default function SecretSurvivors({
           >
             <span>
               ♥ {hud.hp}
+              {hud.shield ? ' ⬡' : ''}
               <small> / {hud.maxHp}</small>
             </span>
             <div className='survivors-health-track' aria-hidden='true'>
@@ -411,6 +473,9 @@ export default function SecretSurvivors({
               }}
             />
           </div>
+          {hud.pickupValue > 0 && (
+            <small className='survivors-pickup'>+{hud.pickupValue} XP</small>
+          )}
           <small>
             {hud.xp} / {hud.nextXp}
           </small>
@@ -454,7 +519,7 @@ export default function SecretSurvivors({
                 </h3>
                 <p>
                   {hud.mode === 'endless'
-                    ? '没有终点。每 30 秒更危险，每分钟迎战夜巡者。'
+                    ? '选择 8 种能力组成构筑。每 30 秒迎战精英，每分钟挑战首领；击败首领回血、吸取经验并补充一次重抽。'
                     : '移动躲开敌人，飞刺会自动攻击。拾起微光，选择新能力。'}
                 </p>
                 <button
@@ -469,33 +534,61 @@ export default function SecretSurvivors({
             {hud.phase === 'upgrade' && (
               <>
                 <p className='survivors-overlay-kicker'>
-                  LEVEL {hud.level} / MAKE IT YOURS
+                  LEVEL {choiceLevel} / MAKE IT YOURS
                 </p>
-                <h3>长出一点新本事</h3>
+                <h3>
+                  {hud.pendingUpgrades > 1
+                    ? `连续升级 · 还可选择 ${hud.pendingUpgrades} 项`
+                    : '长出一点新本事'}
+                </h3>
                 <p>方向键 / WASD 选择，Enter 确认；也可按 1 / 2 / 3。</p>
                 <div className='survivors-choices'>
                   {hud.choices.map((choice, i) => (
                     <button
                       type='button'
                       key={choice.id}
+                      className={choice.evolution ? 'survivors-evolution' : ''}
                       onClick={() => actions.current?.upgrade(choice.id)}
                     >
                       <span className='survivors-choice-mark'>
                         {choice.mark}
                       </span>
                       <strong>{choice.name}</strong>
+                      <span className='survivors-choice-rank'>
+                        {choice.rank === 1 ? '新能力' : '强化'} · {choice.rank}
+                        {Number.isFinite(choice.max) ? ` / ${choice.max}` : ''}
+                      </span>
                       <span>{choice.detail}</span>
                       <small>0{i + 1}</small>
                     </button>
                   ))}
                 </div>
+                {hud.mode === 'endless' && (
+                  <div className='survivors-upgrade-tools'>
+                    <span>
+                      能力 {hud.slots}/{BUILD_SLOTS} · LV.3 专精 / 5 元素 / 8
+                      协同 / 12 进化
+                    </span>
+                    <button
+                      type='button'
+                      disabled={!hud.canReroll}
+                      onClick={() => actions.current?.reroll()}
+                    >
+                      重抽 · 剩余 {hud.rerolls} 次
+                    </button>
+                  </div>
+                )}
               </>
             )}
             {hud.phase === 'paused' && (
               <>
                 <p className='survivors-overlay-kicker'>TAKE A BREATH</p>
                 <h3>夜色替你等一会儿</h3>
-                <p>准备好，再继续。</p>
+                <p>
+                  红色虚线是冲锋预警；橙色圆环是首领弹幕预警。
+                  <br />
+                  先横向躲开，再寻找突破口。
+                </p>
                 <button
                   type='button'
                   className='survivors-primary'
@@ -553,7 +646,16 @@ export default function SecretSurvivors({
                 )}
               </>
             )}
-            {hud.phase === 'lost' && (
+            {showResult && (
+              <SurvivorsResult
+                result={rankingEntry.result}
+                board={leaderboard}
+                onRestart={() => actions.current?.restart()}
+                onClose={onClose}
+                onDetails={openRankings}
+              />
+            )}
+            {hud.phase === 'lost' && !showResult && (
               <>
                 <p className='survivors-overlay-kicker'>
                   ANOTHER NIGHT, ANOTHER TRY
@@ -568,16 +670,6 @@ export default function SecretSurvivors({
                   {hud.level}
                 </p>
                 <div className='survivors-end-actions'>
-                  {LEADERBOARD_ENABLED && hud.mode === 'endless' && (
-                    <button
-                      type='button'
-                      className='survivors-primary'
-                      aria-haspopup='dialog'
-                      onClick={openRankings}
-                    >
-                      上传成绩 / 查看排名 ↗
-                    </button>
-                  )}
                   <button
                     type='button'
                     className='survivors-primary'
@@ -611,6 +703,45 @@ export default function SecretSurvivors({
           </div>
         )}
       </div>
+      {hud.mode === 'endless' && (
+        <details className='survivors-build'>
+          <summary>
+            本局构筑 · 能力槽 {hud.slots}/{BUILD_SLOTS}{' '}
+            <span>查看能力与进化条件</span>
+          </summary>
+          {build.length > 0 && (
+            <div className='survivors-build-list'>
+              {build.map(u => (
+                <span key={u.id} title={u.detail}>
+                  {u.mark} {u.name} <b>{hud.upgrades[u.id]}</b>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className='survivors-evolution-guide'>
+            {EVOLUTIONS.map(u => (
+              <p key={u.id}>
+                <strong>
+                  {hud.upgrades[u.id] ? '已进化 · ' : 'LV.12 · '}
+                  {u.name.replace('进化 · ', '')}
+                </strong>
+                <span>
+                  {Object.entries(u.requires)
+                    .map(
+                      ([id, rank]) =>
+                        `${UPGRADES.find(item => item.id === id).name} ${hud.upgrades[id] || 0}/${rank}`
+                    )
+                    .join(' ＋ ')}
+                </span>
+              </p>
+            ))}
+          </div>
+          <p className='survivors-build-note'>
+            最多选择 8 种基础能力，进化与补给不占槽位。经验球停留 12
+            秒或落在远处时自动计入经验；金色大微光包含更多经验。连续升级时战斗保持暂停。
+          </p>
+        </details>
+      )}
       <div className='survivors-footer'>
         <span>
           <kbd>W A S D</kbd> / <kbd>↑ ← ↓ →</kbd> 移动 · 自动攻击
@@ -632,31 +763,113 @@ export default function SecretSurvivors({
           onClose={() => setRankingOpen(false)}
         >
           <div className='survivors-ranking-heading'>
-            <h3 id='survivors-ranking-title'>无限挑战排行榜</h3>
+            <div>
+              <span className='survivors-ranking-kicker'>
+                QUILL SURVIVORS / NIGHT RECORDS
+              </span>
+              <h3 id='survivors-ranking-title'>
+                夜行榜<span>无限挑战</span>
+              </h3>
+            </div>
             <button
               type='button'
-              className='survivors-ranking-button'
+              className='survivors-ranking-close'
               onClick={() => setRankingOpen(false)}
               aria-label='关闭排行榜'
             >
-              关闭 ×
+              ×
             </button>
           </div>
           <p className='survivors-ranking-note'>
             {hud.mode !== 'endless'
               ? '通关首次一分钟关卡后，再次点击头像即可参加无限挑战。'
               : hud.phase === 'lost'
-                ? `本局生存 ${time} · 击退 ${hud.kills} · 首领 ${hud.bosses}。填写昵称后手动上传。`
-                : '按生存时间排名，每个浏览器保留最佳成绩。挑战结束后可上传。'}
+                ? '关闭榜单即可回到本局结算，选择上传或继续挑战。'
+                : '看看谁走得更远，也为下一次夜行定个目标。'}
           </p>
-          <SurvivorsLeaderboard
-            entry={rankingEntry}
-            finished={hud.mode === 'endless' && hud.phase === 'lost'}
-            active={rankingOpen}
-          />
+          <SurvivorsLeaderboard board={leaderboard} />
         </dialog>
       )}
       <style jsx>{`
+        .medium-survivors[data-mode='endless'] canvas {
+          height: clamp(520px, 65vh, 660px);
+        }
+        .survivors-build {
+          margin-top: 12px;
+          padding: 12px 16px;
+          border: 1px solid var(--line);
+          font-size: 14px;
+        }
+        .survivors-build summary {
+          cursor: pointer;
+        }
+        .survivors-build summary > span {
+          color: var(--muted);
+          margin-left: 16px;
+        }
+        .survivors-build-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-top: 14px;
+        }
+        .survivors-build-list > span {
+          padding: 5px 9px;
+          border: 1px solid var(--line);
+        }
+        .survivors-evolution-guide {
+          display: grid;
+          gap: 10px;
+          margin-top: 16px;
+        }
+        .survivors-evolution-guide p {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px 16px;
+        }
+        .survivors-evolution-guide span,
+        .survivors-build-note {
+          color: var(--muted);
+        }
+        .survivors-build-note {
+          margin-top: 14px;
+          line-height: 1.7;
+        }
+        .survivors-upgrade-tools {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          width: min(660px, 100%);
+          margin-top: 16px;
+          font-size: 14px;
+        }
+        .survivors-upgrade-tools > span {
+          color: #b7c8ae;
+        }
+        .survivors-upgrade-tools button {
+          border: 1px solid #9aac8f;
+          padding: 8px 12px;
+          white-space: nowrap;
+        }
+        .survivors-upgrade-tools button:disabled {
+          opacity: 0.4;
+        }
+        .survivors-upgrade-tools button:focus-visible {
+          outline: 2px solid #e7c898;
+          outline-offset: 3px;
+        }
+        .survivors-choices button.survivors-evolution {
+          border-color: #e7c898;
+          background: #393a28;
+        }
+        .survivors-choices button > .survivors-choice-rank {
+          color: #e7c898;
+          margin-bottom: 6px;
+        }
+        .survivors-xp-hud .survivors-pickup {
+          color: #e7c898;
+        }
         .survivors-countdown {
           display: flex;
           align-items: center;
@@ -688,7 +901,7 @@ export default function SecretSurvivors({
         .survivors-ranking-button {
           flex-shrink: 0;
           padding: 9px 13px;
-          border: 1px solid var(--border, #cad0c8);
+          border: 1px solid var(--line);
           border-radius: 5px;
           background: transparent;
           color: var(--ink);
@@ -702,7 +915,7 @@ export default function SecretSurvivors({
         }
         .survivors-ranking-button:hover,
         .survivors-ranking-button:focus-visible {
-          background: rgba(135, 167, 119, 0.16);
+          background: var(--wash);
           outline: 1px solid currentColor;
           outline-offset: 3px;
         }
@@ -713,31 +926,69 @@ export default function SecretSurvivors({
           line-height: 1.7;
         }
         .survivors-ranking-dialog {
-          width: min(640px, calc(100vw - 32px));
+          width: min(700px, calc(100vw - 32px));
           max-height: calc(100dvh - 48px);
           margin: auto;
-          padding: 24px;
-          border: 1px solid var(--border, #cad0c8);
-          border-radius: 10px;
-          background: var(--paper, #f7f8f4);
+          padding: 28px;
+          border: 1px solid var(--line);
+          border-top: 3px solid var(--accent);
+          border-radius: 16px;
+          background: var(--paper);
           color: var(--ink);
-          box-shadow: 0 20px 70px #0004;
+          box-shadow: 0 24px 80px #0004;
           overflow: auto;
         }
         .survivors-ranking-dialog::backdrop {
-          background: #102019aa;
+          background: #17151f88;
+          backdrop-filter: blur(5px);
         }
         .survivors-ranking-heading {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 16px;
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
         .survivors-ranking-heading h3 {
           margin: 0;
-          font-size: 20px;
+          font-family: 'Noto Serif SC', serif;
+          font-size: 28px;
           font-weight: 500;
+        }
+        .survivors-ranking-heading h3 span {
+          margin-left: 12px;
+          font-family: inherit;
+          font-size: 12px;
+          color: var(--muted);
+        }
+        .survivors-ranking-kicker {
+          display: block;
+          margin-bottom: 8px;
+          color: var(--accent);
+          font: 9px monospace;
+          letter-spacing: 0.13em;
+        }
+        .survivors-ranking-close {
+          display: grid;
+          place-items: center;
+          width: 34px;
+          height: 34px;
+          border: 1px solid var(--line);
+          border-radius: 50%;
+          color: var(--muted);
+          background: var(--wash);
+          font: 22px/1 sans-serif;
+          cursor: pointer;
+        }
+        .survivors-ranking-close:hover {
+          color: var(--accent);
+          border-color: var(--accent);
+        }
+        .survivors-arena.has-result canvas {
+          height: clamp(500px, 60vh, 580px);
+        }
+        .survivors-arena.has-result .survivors-overlay {
+          overflow-y: auto;
         }
         .survivors-heading h2 {
           font:
@@ -897,6 +1148,7 @@ export default function SecretSurvivors({
           justify-content: center;
           z-index: 2;
           padding: 70px 22px 48px;
+          overflow-y: auto;
           background: #172720ed;
           color: #e7e8d5;
           text-align: center;
@@ -919,7 +1171,7 @@ export default function SecretSurvivors({
           letter-spacing: 0.04em;
         }
         .survivors-overlay p {
-          font-size: 12px;
+          font-size: 14px;
           color: #a1b1a1;
           margin: 12px 0 0;
         }
@@ -944,7 +1196,7 @@ export default function SecretSurvivors({
         }
         .survivors-choices {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
           width: min(660px, 100%);
           gap: 12px;
           margin-top: 22px;
@@ -979,8 +1231,8 @@ export default function SecretSurvivors({
         .survivors-choices button > span:not(.survivors-choice-mark) {
           display: block;
           color: #a1b1a1;
-          font-size: 11px;
-          line-height: 1.8;
+          font-size: 14px;
+          line-height: 1.6;
         }
         .survivors-choices small {
           position: absolute;

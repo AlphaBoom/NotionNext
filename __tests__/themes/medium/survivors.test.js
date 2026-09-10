@@ -74,7 +74,7 @@ describe('inline survivors simulation', () => {
     stepRun(run, { x: 1, y: 0 }, 1)
     assert.equal(JSON.stringify(run), before)
   })
-  test('piercing cannot damage one enemy twice; orbit hits and capped drops preserve XP', () => {
+  test('piercing cannot damage one enemy twice; capped drops bank old XP and keep new drops nearby', () => {
     const run = createRun(8, 'endless')
     run.phase = 'playing'
     run.spawnClock = 100
@@ -97,9 +97,10 @@ describe('inline survivors simulation', () => {
     assert.equal(run.kills, 1)
     assert.equal(run.gems.length, LIMITS.gems)
     assert.equal(
-      run.gems.reduce((total, gem) => total + gem.value, 0),
+      run.xpEarned + run.gems.reduce((total, gem) => total + gem.value, 0),
       LIMITS.gems + 1
     )
+    assert.ok(run.gems.some(gem => gem.x < 100 && gem.y < 100))
   })
   test('random full runs remain bounded and can end in either survival or defeat', () => {
     const sides = new Set()
@@ -216,7 +217,7 @@ describe('inline survivors simulation', () => {
     }
     assert.ok(counts[1] > counts[0])
     assert.ok(counts[2] > counts[1])
-    assert.ok(counts[3] <= 10)
+    assert.ok(counts[3] <= 11) // Ten regular enemies and one scheduled elite.
   })
   test('upgrade pool respects caps and performance adapts only after sustained measured cost', () => {
     const run = createRun(10)

@@ -55,6 +55,8 @@ export function createRenderer(canvas) {
     hero: sprite(HEDGEHOG, HEDGEHOG_COLORS),
     blob: sprite(BLOB, { 1: '#192a25', 2: '#82977a', 3: '#dbe6c3' }),
     moth: sprite(MOTH, { 1: '#efd6ba', 2: '#b58683' }),
+    charger: sprite(MOTH, { 1: '#ffe3c1', 2: '#d86960' }),
+    tank: sprite(BLOB, { 1: '#242538', 2: '#7a85b1', 3: '#e0e4ff' }),
     boss: sprite(BOSS, { 1: '#e9e6c9', 2: '#1b2421', 3: '#bd7966' })
   }
   let width = 900,
@@ -110,22 +112,37 @@ export function createRenderer(canvas) {
         const x = gem.x + ox,
           y = gem.y + oy
         if (x < -10 || x > width + 10 || y < -10 || y > height + 10) continue
-        ctx.fillStyle = '#b6d5b0'
+        const large = gem.value >= 5
+        const size = large ? 8 : 5
+        ctx.fillStyle = large ? '#e7c898' : '#b6d5b0'
         ctx.beginPath()
-        ctx.moveTo(x, y - 5)
-        ctx.lineTo(x + 3, y)
-        ctx.lineTo(x, y + 5)
-        ctx.lineTo(x - 3, y)
+        ctx.moveTo(x, y - size)
+        ctx.lineTo(x + size * 0.65, y)
+        ctx.lineTo(x, y + size)
+        ctx.lineTo(x - size * 0.65, y)
         ctx.fill()
         ctx.fillStyle = '#e4efc9'
         ctx.fillRect(x - 1, y - 2, 1, 3)
+        if (large) {
+          ctx.font = '12px monospace'
+          ctx.textAlign = 'center'
+          ctx.fillText(String(gem.value), x, y - 11)
+        }
       }
       for (const enemy of run.enemies) {
         const x = enemy.x + ox,
           y = enemy.y + oy
         if (x < -40 || x > width + 40 || y < -40 || y > height + 40) continue
         const size =
-          enemy.kind === 'boss' ? 54 : enemy.kind === 'moth' ? 25 : 24
+          enemy.kind === 'boss'
+            ? 54
+            : enemy.elite
+              ? 38
+              : enemy.kind === 'tank'
+                ? 34
+                : enemy.kind === 'moth'
+                  ? 25
+                  : 24
         const bob = reducedMotion
           ? 0
           : Math.sin(run.time * (enemy.kind === 'moth' ? 16 : 5) + enemy.id) * 2
@@ -138,12 +155,84 @@ export function createRenderer(canvas) {
           size
         )
         ctx.globalAlpha = 1
-        if (enemy.kind === 'boss') {
-          ctx.fillStyle = '#433a32'
-          ctx.fillRect(x - 28, y - 36, 56, 3)
-          ctx.fillStyle = '#d6947a'
-          ctx.fillRect(x - 28, y - 36, (56 * enemy.hp) / enemy.maxHp, 3)
+        if (enemy.warning > 0) {
+          ctx.strokeStyle = enemy.kind === 'boss' ? '#efb77e' : '#ff8c80'
+          ctx.lineWidth = 2
+          ctx.setLineDash([5, 5])
+          ctx.beginPath()
+          if (enemy.kind === 'charger') {
+            ctx.moveTo(x, y)
+            ctx.lineTo(x + enemy.dx * 175, y + enemy.dy * 175)
+          } else
+            ctx.arc(x, y, 36 + (1 - enemy.warning / 0.9) * 14, 0, Math.PI * 2)
+          ctx.stroke()
+          ctx.setLineDash([])
         }
+        if (enemy.elite || enemy.slow > 0 || enemy.frozen > 0) {
+          ctx.strokeStyle =
+            enemy.frozen > 0
+              ? '#d8f5ff'
+              : enemy.slow > 0
+                ? '#89c4e5'
+                : '#e7c898'
+          ctx.strokeRect(x - size / 2 - 2, y - size / 2 - 2, size + 4, size + 4)
+        }
+        if (enemy.kind === 'boss' || enemy.elite || enemy.hp < enemy.maxHp) {
+          const barWidth = enemy.kind === 'boss' ? 56 : size
+          const barY = y - size / 2 - 8
+          ctx.fillStyle = '#433a32'
+          ctx.fillRect(x - barWidth / 2, barY, barWidth, 3)
+          ctx.fillStyle = '#d6947a'
+          ctx.fillRect(
+            x - barWidth / 2,
+            barY,
+            (barWidth * Math.max(0, enemy.hp)) / enemy.maxHp,
+            3
+          )
+        }
+      }
+      for (const hazard of run.hazards) {
+        ctx.fillStyle = '#f3ad76'
+        ctx.beginPath()
+        ctx.arc(hazard.x + ox, hazard.y + oy, 5, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = '#512e24'
+        ctx.stroke()
+      }
+      for (const effect of run.effects) {
+        ctx.strokeStyle =
+          effect.kind === 'lightning'
+            ? '#c7d9ff'
+            : effect.kind === 'ice'
+              ? '#a9e8f5'
+              : '#e7c898'
+        ctx.lineWidth = effect.kind === 'lightning' ? 2 : 3
+        ctx.globalAlpha = Math.min(0.8, effect.life * 3)
+        ctx.beginPath()
+        if (effect.kind === 'lightning') {
+          ctx.moveTo(effect.x + ox, effect.y + oy)
+          ctx.lineTo(effect.tx + ox, effect.ty + oy)
+        } else {
+          const radius = reducedMotion
+            ? effect.radius
+            : effect.radius * (1 - effect.life / 0.5)
+          ctx.arc(
+            effect.x + ox,
+            effect.y + oy,
+            Math.max(1, radius),
+            0,
+            Math.PI * 2
+          )
+        }
+        ctx.stroke()
+      }
+      ctx.globalAlpha = 1
+      if (p.shield) {
+        ctx.strokeStyle = '#bbd7ac'
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.arc(width / 2, height / 2, 27, 0, Math.PI * 2)
+        ctx.stroke()
       }
       ctx.strokeStyle = '#f1d3a0'
       ctx.lineWidth = 2
