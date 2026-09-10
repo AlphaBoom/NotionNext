@@ -77,8 +77,10 @@ export default function RewardProvider({ children }) {
         return
       }
       try {
-        const module = await loadAppearance()
-        if (saved.enabled) await module.prepareArtwork()
+        // Restore styles and color scheme before exposing the page. Let the
+        // mounted regions load their own CSS artwork so slow homepage images
+        // never delay reading, or get preloaded on an article without a hero.
+        await loadAppearance()
         if (mounted.current && request === revision.current) {
           // If the boot watchdog already restored the normal blog, do not
           // switch its appearance late while the visitor is reading it.
