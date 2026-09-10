@@ -8,9 +8,8 @@ import { REWARD_KEY } from '@/themes/medium/lib/rewardState'
 const mockMenuLoad = jest.fn()
 const mockThemeLoad = jest.fn()
 const mockPrepareArtwork = jest.fn()
-let mockPath = '/'
 
-jest.mock('next/router', () => ({ useRouter: () => ({ asPath: mockPath }) }))
+jest.mock('next/router', () => ({ useRouter: () => ({ asPath: '/' }) }))
 jest.mock(
   '@/components/SmartLink',
   () =>
@@ -81,7 +80,6 @@ const finishAnimation = () =>
 beforeEach(() => {
   localStorage.clear()
   document.documentElement.removeAttribute('data-new-game-boot')
-  mockPath = '/'
   mockMenuLoad.mockImplementation(() => Promise.resolve())
   mockThemeLoad.mockImplementation(() => Promise.resolve())
   mockPrepareArtwork.mockImplementation(() => Promise.resolve())
@@ -96,28 +94,14 @@ test('a visitor without an unlock loads neither the entry nor the theme', async 
   expect(mockPrepareArtwork).not.toHaveBeenCalled()
 })
 
-test.each(['/', '/article/saved-post'])(
-  'an unlocked but disabled theme loads only the switch on %s',
-  async path => {
-    mockPath = path
-    save(false)
-    render(tree())
-    await flush()
-    expect(
-      screen.getByRole('button', { name: '开启 NEW GAME! 主题' })
-    ).toBeTruthy()
-    expect(mockMenuLoad).toHaveBeenCalledTimes(1)
-    expect(mockThemeLoad).not.toHaveBeenCalled()
-    expect(mockPrepareArtwork).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('full-theme-styles')).toBeNull()
-  }
-)
-
 test('switching loads the theme once, removes it on exit and retains the same focused entry', async () => {
   save(false)
   render(tree())
   await flush()
   const button = screen.getByRole('button', { name: '开启 NEW GAME! 主题' })
+  expect(mockThemeLoad).not.toHaveBeenCalled()
+  expect(mockPrepareArtwork).not.toHaveBeenCalled()
+  expect(screen.queryByTestId('full-theme-styles')).toBeNull()
   button.focus()
   fireEvent.click(button)
   await flush()

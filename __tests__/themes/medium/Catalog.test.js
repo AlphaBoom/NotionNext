@@ -1,6 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import Catalog from '@/themes/medium/components/Catalog'
 
+// Fixtures already use compact IDs. Keep navigation real without loading
+// notion-utils' ESM dependency graph into this CommonJS Jest suite.
+jest.mock('notion-utils', () => ({ uuidToId: id => id }))
+
 const toc = [
   { id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', text: '第一章', indentLevel: 0 },
   { id: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', text: '第一章细节', indentLevel: 1 },

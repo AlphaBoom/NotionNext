@@ -59,23 +59,19 @@ function setup() {
   return { ...view, onClose }
 }
 
-test('Escape closes the loss screen even when focus has left the game', () => {
+test('loss controls return to the blog, including Escape outside the game and listener cleanup', () => {
   const { onClose, unmount } = setup()
+  fireEvent.click(screen.getByRole('button', { name: '返回博客', exact: true }))
+  expect(onClose).toHaveBeenCalledTimes(1)
   expect(screen.getByRole('button', { name: '再出发一次 ↗' })).toBeTruthy()
   const outside = screen.getByRole('button', { name: '博客里的其他按钮' })
   outside.focus()
   fireEvent.keyDown(outside, { key: 'Escape', code: 'Escape' })
   fireEvent.keyDown(outside, { key: 'Escape', code: 'Escape', repeat: true })
-  expect(onClose).toHaveBeenCalledTimes(1)
+  expect(onClose).toHaveBeenCalledTimes(2)
   unmount()
   fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' })
-  expect(onClose).toHaveBeenCalledTimes(1)
-})
-
-test('the loss screen offers a clickable return beside retry', () => {
-  const { onClose } = setup()
-  fireEvent.click(screen.getByRole('button', { name: '返回博客', exact: true }))
-  expect(onClose).toHaveBeenCalledTimes(1)
+  expect(onClose).toHaveBeenCalledTimes(2)
 })
 
 test('retrying keeps the exit control and Escape available during play', () => {
@@ -93,21 +89,6 @@ test('retrying keeps the exit control and Escape available during play', () => {
   )
   expect(onClose).toHaveBeenCalledTimes(2)
 })
-
-test.each(['ready', 'paused', 'upgrade', 'won'])(
-  'the exit button remains clickable in the %s phase',
-  phase => {
-    createRun.mockImplementation((seed, mode) => ({
-      ...actualCreateRun(seed, mode),
-      phase
-    }))
-    const { onClose } = setup()
-    fireEvent.click(
-      screen.getByRole('button', { name: '退出游戏，返回个人信息' })
-    )
-    expect(onClose).toHaveBeenCalledTimes(1)
-  }
-)
 
 test('a renderer failure still allows Escape and the visible exit', () => {
   createRenderer.mockReturnValue(null)

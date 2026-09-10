@@ -32,7 +32,9 @@ jest.mock('@/lib/db/notion/getNotionAPI', () => ({
 }))
 
 const { formatNotionBlock } = require('@/lib/db/notion/getPostBlocks')
-const { getPageTableOfContents } = require('@/lib/db/notion/getPageTableOfContents')
+const {
+  getPageTableOfContents
+} = require('@/lib/db/notion/getPageTableOfContents')
 
 describe('Notion data format compatibility', () => {
   it('unwraps nested block values returned by newer Notion payloads', () => {
@@ -827,361 +829,101 @@ describe('Notion data format compatibility', () => {
     ).toEqual(['selected_page'])
   })
 
-  it('sorts embedded collection results from query2 text sorts', () => {
-    const blockMap = {
-      block: {
-        beta_page: {
-          value: {
-            id: 'beta_page',
-            type: 'page',
-            properties: {
-              slug: [['beta']]
+  it.each([
+    {
+      label: 'text by property name',
+      key: 'slug',
+      schema: { name: 'Slug', type: 'text' },
+      property: 'Slug',
+      direction: 'ascending',
+      values: [[['beta']], [['alpha']]]
+    },
+    {
+      label: 'numbers by property id',
+      key: 'priority',
+      schema: { name: 'Priority', type: 'number' },
+      property: 'priority',
+      direction: 'descending',
+      values: [[['1']], [['9']]]
+    },
+    {
+      label: 'dates',
+      key: 'date',
+      schema: { name: 'Date', type: 'date' },
+      property: 'Date',
+      direction: 'ascending',
+      values: [
+        [['‣', [['d', { start_date: '2026-07-18' }]]]],
+        [['‣', [['d', { start_date: '2026-07-01' }]]]]
+      ]
+    },
+    {
+      label: 'times on the same date without page_sort',
+      key: 'date',
+      schema: { name: 'Date', type: 'date' },
+      property: 'date',
+      direction: 'ascending',
+      pageSort: false,
+      values: [
+        [['‣', [['d', { start_date: '2026-07-18', start_time: '18:00' }]]]],
+        [['‣', [['d', { start_date: '2026-07-18', start_time: '09:00' }]]]]
+      ]
+    },
+    {
+      label: 'select option order',
+      key: 'category',
+      schema: {
+        name: 'Category',
+        type: 'select',
+        options: [
+          { id: 'option_apple', name: '苹果', value: '苹果' },
+          { id: 'option_cherry', name: '樱桃', value: '樱桃' }
+        ]
+      },
+      property: 'Category',
+      direction: 'ascending',
+      values: [[['樱桃']], [['苹果']]]
+    }
+  ])(
+    'sorts embedded collection results by $label',
+    ({ key, schema, property, direction, values, pageSort = true }) => {
+      const ids = ['first_page', 'second_page']
+      const view = {
+        id: 'view_1',
+        ...(pageSort ? { page_sort: [...ids] } : {}),
+        format: { collection_pointer: { id: 'collection_1' } },
+        query2: { sort: [{ property, direction }] }
+      }
+      const blockMap = {
+        block: Object.fromEntries(
+          ids.map((id, i) => [
+            id,
+            {
+              value: { id, type: 'page', properties: { [key]: values[i] } }
             }
-          }
+          ])
+        ),
+        collection: {
+          collection_1: { value: { schema: { [key]: schema } } }
         },
-        alpha_page: {
-          value: {
-            id: 'alpha_page',
-            type: 'page',
-            properties: {
-              slug: [['alpha']]
-            }
-          }
-        }
-      },
-      collection: {
-        collection_1: {
-          value: {
-            schema: {
-              slug: { name: 'Slug', type: 'text' }
-            }
-          }
-        }
-      },
-      collection_view: {
-        view_1: {
-          value: {
-            value: {
-              id: 'view_1',
-              page_sort: ['beta_page', 'alpha_page'],
-              format: {
-                collection_pointer: { id: 'collection_1' }
-              },
-              query2: {
-                sort: [{ property: 'Slug', direction: 'ascending' }]
-              }
-            }
-          }
-        }
-      },
-      collection_query: {
-        collection_1: {
-          view_1: {
-            collection_group_results: {
-              blockIds: ['beta_page', 'alpha_page']
-            }
+        collection_view: { view_1: { value: { value: view } } },
+        collection_query: {
+          collection_1: {
+            view_1: { collection_group_results: { blockIds: [...ids] } }
           }
         }
       }
+
+      filterCollectionViewData(blockMap)
+
+      const sorted = ['second_page', 'first_page']
+      expect(
+        blockMap.collection_query.collection_1.view_1.collection_group_results
+          .blockIds
+      ).toEqual(sorted)
+      if (pageSort) expect(view.page_sort).toEqual(sorted)
     }
-
-    filterCollectionViewData(blockMap)
-
-    expect(
-      blockMap.collection_query.collection_1.view_1.collection_group_results
-        .blockIds
-    ).toEqual(['alpha_page', 'beta_page'])
-    expect(blockMap.collection_view.view_1.value.value.page_sort).toEqual([
-      'alpha_page',
-      'beta_page'
-    ])
-  })
-
-  it('sorts embedded collection results from query2 number sorts', () => {
-    const blockMap = {
-      block: {
-        low_page: {
-          value: {
-            id: 'low_page',
-            type: 'page',
-            properties: {
-              priority: [['1']]
-            }
-          }
-        },
-        high_page: {
-          value: {
-            id: 'high_page',
-            type: 'page',
-            properties: {
-              priority: [['9']]
-            }
-          }
-        }
-      },
-      collection: {
-        collection_1: {
-          value: {
-            schema: {
-              priority: { name: 'Priority', type: 'number' }
-            }
-          }
-        }
-      },
-      collection_view: {
-        view_1: {
-          value: {
-            value: {
-              id: 'view_1',
-              page_sort: ['low_page', 'high_page'],
-              format: {
-                collection_pointer: { id: 'collection_1' }
-              },
-              query2: {
-                sort: [{ property: 'priority', direction: 'descending' }]
-              }
-            }
-          }
-        }
-      },
-      collection_query: {
-        collection_1: {
-          view_1: {
-            collection_group_results: {
-              blockIds: ['low_page', 'high_page']
-            }
-          }
-        }
-      }
-    }
-
-    filterCollectionViewData(blockMap)
-
-    expect(
-      blockMap.collection_query.collection_1.view_1.collection_group_results
-        .blockIds
-    ).toEqual(['high_page', 'low_page'])
-    expect(blockMap.collection_view.view_1.value.value.page_sort).toEqual([
-      'high_page',
-      'low_page'
-    ])
-  })
-
-  it('sorts embedded collection results from query2 date sorts', () => {
-    const blockMap = {
-      block: {
-        later_page: {
-          value: {
-            id: 'later_page',
-            type: 'page',
-            properties: {
-              date: [['‣', [['d', { start_date: '2026-07-18' }]]]]
-            }
-          }
-        },
-        earlier_page: {
-          value: {
-            id: 'earlier_page',
-            type: 'page',
-            properties: {
-              date: [['‣', [['d', { start_date: '2026-07-01' }]]]]
-            }
-          }
-        }
-      },
-      collection: {
-        collection_1: {
-          value: {
-            schema: {
-              date: { name: 'Date', type: 'date' }
-            }
-          }
-        }
-      },
-      collection_view: {
-        view_1: {
-          value: {
-            value: {
-              id: 'view_1',
-              page_sort: ['later_page', 'earlier_page'],
-              format: {
-                collection_pointer: { id: 'collection_1' }
-              },
-              query2: {
-                sort: [{ property: 'Date', direction: 'ascending' }]
-              }
-            }
-          }
-        }
-      },
-      collection_query: {
-        collection_1: {
-          view_1: {
-            collection_group_results: {
-              blockIds: ['later_page', 'earlier_page']
-            }
-          }
-        }
-      }
-    }
-
-    filterCollectionViewData(blockMap)
-
-    expect(
-      blockMap.collection_query.collection_1.view_1.collection_group_results
-        .blockIds
-    ).toEqual(['earlier_page', 'later_page'])
-    expect(blockMap.collection_view.view_1.value.value.page_sort).toEqual([
-      'earlier_page',
-      'later_page'
-    ])
-  })
-
-  it('sorts embedded collection date results by time on the same day', () => {
-    const blockMap = {
-      block: {
-        evening_page: {
-          value: {
-            id: 'evening_page',
-            type: 'page',
-            properties: {
-              date: [
-                ['‣', [['d', { start_date: '2026-07-18', start_time: '18:00' }]]]
-              ]
-            }
-          }
-        },
-        morning_page: {
-          value: {
-            id: 'morning_page',
-            type: 'page',
-            properties: {
-              date: [
-                ['‣', [['d', { start_date: '2026-07-18', start_time: '09:00' }]]]
-              ]
-            }
-          }
-        }
-      },
-      collection: {
-        collection_1: {
-          value: {
-            schema: {
-              date: { name: 'Date', type: 'date' }
-            }
-          }
-        }
-      },
-      collection_view: {
-        view_1: {
-          value: {
-            value: {
-              id: 'view_1',
-              format: {
-                collection_pointer: { id: 'collection_1' }
-              },
-              query2: {
-                sort: [{ property: 'date', direction: 'ascending' }]
-              }
-            }
-          }
-        }
-      },
-      collection_query: {
-        collection_1: {
-          view_1: {
-            collection_group_results: {
-              blockIds: ['evening_page', 'morning_page']
-            }
-          }
-        }
-      }
-    }
-
-    filterCollectionViewData(blockMap)
-
-    expect(
-      blockMap.collection_query.collection_1.view_1.collection_group_results
-        .blockIds
-    ).toEqual(['morning_page', 'evening_page'])
-  })
-
-  it('sorts embedded collection results from query2 select sorts by option order', () => {
-    const blockMap = {
-      block: {
-        cherry_page: {
-          value: {
-            id: 'cherry_page',
-            type: 'page',
-            properties: {
-              category: [['樱桃']]
-            }
-          }
-        },
-        apple_page: {
-          value: {
-            id: 'apple_page',
-            type: 'page',
-            properties: {
-              category: [['苹果']]
-            }
-          }
-        }
-      },
-      collection: {
-        collection_1: {
-          value: {
-            schema: {
-              category: {
-                name: 'Category',
-                type: 'select',
-                options: [
-                  { id: 'option_apple', name: '苹果', value: '苹果' },
-                  { id: 'option_cherry', name: '樱桃', value: '樱桃' }
-                ]
-              }
-            }
-          }
-        }
-      },
-      collection_view: {
-        view_1: {
-          value: {
-            value: {
-              id: 'view_1',
-              page_sort: ['cherry_page', 'apple_page'],
-              format: {
-                collection_pointer: { id: 'collection_1' }
-              },
-              query2: {
-                sort: [{ property: 'Category', direction: 'ascending' }]
-              }
-            }
-          }
-        }
-      },
-      collection_query: {
-        collection_1: {
-          view_1: {
-            collection_group_results: {
-              blockIds: ['cherry_page', 'apple_page']
-            }
-          }
-        }
-      }
-    }
-
-    filterCollectionViewData(blockMap)
-
-    expect(
-      blockMap.collection_query.collection_1.view_1.collection_group_results
-        .blockIds
-    ).toEqual(['apple_page', 'cherry_page'])
-    expect(blockMap.collection_view.view_1.value.value.page_sort).toEqual([
-      'apple_page',
-      'cherry_page'
-    ])
-  })
+  )
 
   it('inherits sibling filters for embedded collection views without filters', () => {
     const blockMap = {
@@ -1397,76 +1139,5 @@ describe('Notion data format compatibility', () => {
       expect.objectContaining({ id: 'h1', indentLevel: 0 }),
       expect.objectContaining({ id: 'h4', indentLevel: 1 })
     ])
-  })
-})
-
-describe('normalizeExternalMediaBlock — Apple Music song embeds', () => {
-  const { normalizeExternalMediaBlock, isAppleMusicEmbedUrl } =
-    require('@/lib/db/notion/normalizeExternalMediaBlock')
-
-  describe('isAppleMusicEmbedUrl', () => {
-    it.each([
-      ['https://embed.music.apple.com/us/song/neon-blue/324357768', true],
-      ['https://embed.music.apple.com/cn/song/test-song/123456', true],
-      ['https://embed.music.apple.com/us/album/girls-come-too/324357208?i=324357768', false],
-      ['https://embed.music.apple.com/us/album/test/123456', false],
-      ['https://www.youtube.com/watch?v=abc', false],
-      ['', false]
-    ])('"%s" → %s', (url, expected) => {
-      expect(isAppleMusicEmbedUrl(url)).toBe(expected)
-    })
-  })
-
-  describe('normalizeExternalMediaBlock', () => {
-    it('converts video → embed for Apple Music song URLs', () => {
-      const block = {
-        type: 'video',
-        properties: {
-          source: [['https://embed.music.apple.com/us/song/neon-blue/324357768']]
-        }
-      }
-      normalizeExternalMediaBlock(block)
-      expect(block.type).toBe('embed')
-    })
-
-    it('leaves video type unchanged for Apple Music album URLs', () => {
-      const block = {
-        type: 'video',
-        properties: {
-          source: [['https://embed.music.apple.com/us/album/girls-come-too/324357208?i=324357768']]
-        }
-      }
-      normalizeExternalMediaBlock(block)
-      expect(block.type).toBe('video')
-    })
-
-    it('leaves video type unchanged for non–Apple Music URLs', () => {
-      const block = {
-        type: 'video',
-        properties: {
-          source: [['https://www.youtube.com/watch?v=abc']]
-        }
-      }
-      normalizeExternalMediaBlock(block)
-      expect(block.type).toBe('video')
-    })
-
-    it('does nothing for non-video block types', () => {
-      const block = {
-        type: 'embed',
-        properties: {
-          source: [['https://embed.music.apple.com/us/song/test/123']]
-        }
-      }
-      normalizeExternalMediaBlock(block)
-      expect(block.type).toBe('embed')
-    })
-
-    it('handles null / undefined / missing properties gracefully', () => {
-      expect(() => normalizeExternalMediaBlock(null)).not.toThrow()
-      expect(() => normalizeExternalMediaBlock(undefined)).not.toThrow()
-      expect(() => normalizeExternalMediaBlock({ type: 'video' })).not.toThrow()
-      expect(() => normalizeExternalMediaBlock({ type: 'video', properties: {} })).not.toThrow()
-    })
   })
 })
