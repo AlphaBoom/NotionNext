@@ -6,12 +6,12 @@ const Style = () => (
   <style jsx global>{`
     ${themeConsoleStyle('medium', CONFIG)}
 
-    body:has(#theme-medium) { --medium-page-paper: #faf9f6; background: var(--medium-page-paper); }
+    body:has(#theme-medium) { --medium-page-paper: #faf9f6; background: var(--medium-page-background, var(--medium-page-paper)); }
     .dark body:has(#theme-medium) { --medium-page-paper: #1c201e; }
     body:has(#theme-medium) #canvasRibbon { display: none; }
     #theme-medium {
       --paper: var(--medium-page-paper);
-      --reading-width: 860px;
+      --reading-width: 780px;
       --ink: #292e2b;
       --muted: #727871;
       --line: #e0e3dc;
@@ -20,7 +20,7 @@ const Style = () => (
       position: relative;
       z-index: 1;
       min-height: 100vh;
-      background: var(--paper);
+      background: var(--medium-page-background, var(--paper));
       color: var(--ink);
       font-family: 'Noto Sans SC', 'Noto Sans CJK SC', sans-serif;
       font-size: 15px;
@@ -481,6 +481,19 @@ const Style = () => (
     #theme-medium .medium-footer-main > div { font-size: 16px; color: var(--muted); }
     #theme-medium .medium-footer-note { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-size: 10px; margin-top: 16px; }
 
+    /* One quiet reading surface on desktop; mobile keeps its full text space. */
+    @media screen and (min-width: 768px) {
+      body:has(#theme-medium.medium-reading:not(.medium-newgame)) { --medium-page-background: #f1f0ec; }
+      .dark body:has(#theme-medium.medium-reading:not(.medium-newgame)) { --medium-page-background: #161a18; }
+      #theme-medium.medium-reading:not(.medium-newgame) :is(.medium-nav, .medium-footer) { background: transparent; }
+      #theme-medium.medium-reading:not(.medium-newgame) .medium-layout { padding-top: 24px; padding-bottom: 40px; }
+      #theme-medium.medium-reading:not(.medium-newgame) #container-inner {
+        padding-inline: 32px; border-radius: 8px;
+        box-shadow: 0 0 0 1px #292e2b08, 0 6px 24px #292e2b04;
+      }
+      #theme-medium.medium-reading:not(.medium-newgame):not(.medium-full-width) #container-inner { max-width: calc(var(--reading-width) + 64px); }
+      #theme-medium.medium-reading:not(.medium-newgame) .medium-desktop-toc { left: calc(50% + var(--reading-width) / 2 + 72px); }
+    }
     @media (min-width: 1560px) {
       #theme-medium .medium-desktop-toc { display: block; }
       #theme-medium .medium-mobile-toc, #theme-medium .medium-mobile-top { display: none; }
