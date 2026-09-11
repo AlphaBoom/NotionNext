@@ -218,6 +218,8 @@ export default function NewGameTheme({
         }
         #theme-medium.medium-newgame {
           --paper: #fffaff;
+          /* Keep 780px for text inside the existing 30px card padding. */
+          --reading-width: 840px;
           --ink: #49415c;
           --muted: #81718c;
           --line: #e9d9ee;
