@@ -11,6 +11,7 @@ jest.mock('@/lib/config', () => ({
 
 const BLOG = require('@/blog.config')
 const { compressImage, mapImgUrl } = require('@/lib/db/notion/mapImage')
+const { adapterNotionBlockMap } = require('@/lib/utils/notion.util')
 
 describe('mapImgUrl signed attachments', () => {
   const attachment = 'attachment:file-id:blog-home.jpg'
@@ -22,7 +23,7 @@ describe('mapImgUrl signed attachments', () => {
   const signedUrl = expiration =>
     `https://file.notion.com/f/f/space-id/file-id/blog-home.jpg?expirationTimestamp=${expiration}&signature=temporary`
 
-  it('uses the same stable attachment URL before and after the signature expires', () => {
+  it('keeps page data and rendered image URLs stable across signature refreshes', () => {
     const expected = mapImgUrl(attachment, block)
     const expired = mapImgUrl(signedUrl(1), block)
     const fresh = mapImgUrl(signedUrl(Date.now() + 86400000), block)
@@ -36,6 +37,29 @@ describe('mapImgUrl signed attachments', () => {
     expect(result.searchParams.has('expirationTimestamp')).toBe(false)
     expect(result.searchParams.has('signature')).toBe(false)
     expect(result.searchParams.has('width')).toBe(false)
+
+    const raw = {
+      block: {
+        [block.id]: { value: { role: 'reader', value: block } }
+      },
+      signed_urls: { [block.id]: signedUrl(1) }
+    }
+    const original = JSON.stringify(raw)
+    const expiredMap = adapterNotionBlockMap(raw)
+    const freshMap = adapterNotionBlockMap({
+      ...raw,
+      signed_urls: { [block.id]: signedUrl(86400000) }
+    })
+
+    expect(JSON.stringify(expiredMap)).toBe(JSON.stringify(freshMap))
+    expect(JSON.stringify(raw)).toBe(original)
+    expect(expiredMap.signed_urls).not.toHaveProperty(block.id)
+    const imageBlock = expiredMap.block[block.id].value
+    const source = expiredMap.signed_urls[block.id] || imageBlock.properties.source[0][0]
+    expect(mapImgUrl(source, imageBlock)).toBe(expected)
+    const sourceWithSpace = new URL(source)
+    sourceWithSpace.searchParams.set('spaceId', 'space-id')
+    expect(mapImgUrl(sourceWithSpace.href, imageBlock)).toBe(expected)
   })
 
   it('respects the configured Notion image CDN', () => {
@@ -62,9 +86,14 @@ describe('mapImgUrl signed attachments', () => {
 
   it('keeps the input when an original attachment is unavailable', () => {
     const source = signedUrl(1)
-    expect(mapImgUrl(source, { id: block.id, type: 'image' })).toBe(
+    const imageBlock = { id: block.id, type: 'image' }
+    expect(mapImgUrl(source, imageBlock)).toBe(
       `${source}&t=${block.id}`
     )
+    expect(adapterNotionBlockMap({
+      block: { [block.id]: { value: imageBlock } },
+      signed_urls: { [block.id]: source }
+    }).signed_urls[block.id]).toBe(source)
   })
 
   it('preserves the renderer GIF path so animations are not converted to still images', () => {
@@ -74,13 +103,22 @@ describe('mapImgUrl signed attachments', () => {
       properties: { source: [['attachment:file-id:animated.gif']] }
     }
     expect(mapImgUrl(source, gifBlock)).toBe(`${source}&t=${block.id}`)
+    expect(adapterNotionBlockMap({
+      block: { [block.id]: { value: gifBlock } },
+      signed_urls: { [block.id]: source }
+    }).signed_urls[block.id]).toBe(source)
   })
 
-  it('does not substitute an unrelated page icon with the block attachment', () => {
+  it('preserves signatures for page icons, files and other media', () => {
     const source = signedUrl(1)
-    expect(mapImgUrl(source, { ...block, type: 'page' })).toBe(
-      `${source}&t=${block.id}`
-    )
+    for (const type of ['page', 'file', 'pdf', 'video', 'audio', 'embed']) {
+      const mediaBlock = { ...block, type }
+      expect(mapImgUrl(source, mediaBlock)).toBe(`${source}&t=${block.id}`)
+      expect(adapterNotionBlockMap({
+        block: { [block.id]: { value: mediaBlock } },
+        signed_urls: { [block.id]: source }
+      }).signed_urls[block.id]).toBe(source)
+    }
   })
 })
 
