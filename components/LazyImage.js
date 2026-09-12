@@ -3,6 +3,17 @@ import { compressImage } from '@/lib/db/notion/mapImage'
 import Head from 'next/head'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+// Remember recent successes across client-side navigation, without retaining
+// image bytes or replacing the browser's HTTP cache.
+const loadedSources = new Set()
+const rememberLoadedSource = src => {
+  loadedSources.delete(src)
+  loadedSources.add(src)
+  if (loadedSources.size > 200) {
+    loadedSources.delete(loadedSources.values().next().value)
+  }
+}
+
 const getTargetImageWidth = (width, maxWidth) => {
   const parsedWidth = Number(width)
   const parsedMaxWidth = Number(maxWidth)
@@ -40,121 +51,119 @@ export default function LazyImage({
   const maxWidth = siteConfig('IMAGE_COMPRESS_WIDTH')
   const targetImageWidth = getTargetImageWidth(width, maxWidth)
   const defaultPlaceholderSrc = siteConfig('IMG_LAZY_LOAD_PLACEHOLDER')
+  const adjustedImageSrc = adjustImgSize(src, targetImageWidth)
   const imageRef = useRef(null)
+  const onLoadRef = useRef(onLoad)
+  const failedSources = useRef(new Set())
+  useEffect(() => {
+    onLoadRef.current = onLoad
+  }, [onLoad])
   const [currentSrc, setCurrentSrc] = useState(
-    priority && src
-      ? adjustImgSize(src, targetImageWidth)
+    (priority || loadedSources.has(adjustedImageSrc)) && src
+      ? adjustedImageSrc
       : placeholderSrc || defaultPlaceholderSrc
   )
-  const [imageLoaded, setImageLoaded] = useState(Boolean(priority && src))
+  const [imageLoaded, setImageLoaded] = useState(
+    Boolean(src && (priority || loadedSources.has(adjustedImageSrc)))
+  )
 
-  /**
-   * 占位图加载成功
-   */
-  const handleThumbnailLoaded = () => {
-    if (typeof onLoad === 'function') {
-      // onLoad() // 触发传递的onLoad回调函数
-    }
-  }
-
-  const handleImageError = useCallback(() => {
-    if (imageRef.current) {
-      // 优先回退 fallbackSrc，再尝试 placeholderSrc，最后 defaultPlaceholderSrc
-      if (imageRef.current.src !== fallbackSrc && fallbackSrc) {
-        imageRef.current.src = fallbackSrc
-      } else if (imageRef.current.src !== placeholderSrc && placeholderSrc) {
-        imageRef.current.src = placeholderSrc
-      } else {
-        imageRef.current.src = defaultPlaceholderSrc
+  const handleImageError = useCallback(
+    failedSource => {
+      if (!imageRef.current) return
+      loadedSources.delete(adjustedImageSrc)
+      const failed = failedSources.current
+      // DOM .src is absolute even when fallbackSrc is relative. Compare normalized
+      // URLs and attempt each candidate once so failures cannot form a loop.
+      const failedUrl =
+        typeof failedSource === 'string'
+          ? new URL(failedSource, document.baseURI).href
+          : imageRef.current.src
+      // The displayed image and its preloader can report the same failure.
+      if (failed.has(failedUrl)) return
+      failed.add(failedUrl)
+      for (const candidate of [
+        fallbackSrc,
+        placeholderSrc,
+        defaultPlaceholderSrc
+      ]) {
+        if (!candidate) continue
+        const url = new URL(candidate, document.baseURI).href
+        if (failed.has(url)) continue
+        setCurrentSrc(candidate)
+        break
       }
       setImageLoaded(true)
-      imageRef.current.classList.remove('lazy-image-placeholder')
-    }
-  }, [defaultPlaceholderSrc, fallbackSrc, placeholderSrc])
+    },
+    [adjustedImageSrc, defaultPlaceholderSrc, fallbackSrc, placeholderSrc]
+  )
 
   useEffect(() => {
-    const adjustedImageSrc =
-      adjustImgSize(src, targetImageWidth) || defaultPlaceholderSrc
+    if (!adjustedImageSrc) return
     const imageElement = imageRef.current
+    let active = true
+    let img
+    let observer
+    failedSources.current = new Set()
     const handleImageLoaded = () => {
-      if (typeof onLoad === 'function') {
-        onLoad()
-      }
+      if (!active) return
+      rememberLoadedSource(adjustedImageSrc)
+      setCurrentSrc(adjustedImageSrc)
       setImageLoaded(true)
-      if (imageRef.current) {
-        imageRef.current.classList.remove('lazy-image-placeholder')
-      }
+      if (typeof onLoadRef.current === 'function') onLoadRef.current()
     }
-
-    // 如果是优先级图片，直接加载
-    if (priority) {
-      const img = new Image()
-      img.src = adjustedImageSrc
-      img.onload = () => {
-        setCurrentSrc(adjustedImageSrc)
-        handleImageLoaded(adjustedImageSrc)
-      }
-      img.onerror = handleImageError
+    if (loadedSources.has(adjustedImageSrc)) {
+      handleImageLoaded()
       return
     }
-
-    // 检查浏览器是否支持IntersectionObserver
-    if (!window.IntersectionObserver) {
-      // 降级处理：直接加载图片
-      const img = new Image()
-      img.src = adjustedImageSrc
-      img.onload = () => {
-        setCurrentSrc(adjustedImageSrc)
-        handleImageLoaded(adjustedImageSrc)
-      }
-      img.onerror = handleImageError
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            // 预加载图片
-            const img = new Image()
-            // 设置图片解码优先级
-            if ('decoding' in img) {
-              img.decoding = 'async'
-            }
-            img.src = adjustedImageSrc
-            img.onload = () => {
-              setCurrentSrc(adjustedImageSrc)
-              handleImageLoaded(adjustedImageSrc)
-            }
-            img.onerror = handleImageError
-
-            observer.unobserve(entry.target)
-          }
-        })
-      },
-      {
-        rootMargin: siteConfig('LAZY_LOAD_THRESHOLD', '200px'),
-        threshold: 0.1
-      }
+    setCurrentSrc(
+      priority ? adjustedImageSrc : placeholderSrc || defaultPlaceholderSrc
     )
+    setImageLoaded(Boolean(priority))
+    const loadImage = () => {
+      if (!active || img) return
+      img = new Image()
+      img.decoding = 'async'
+      img.onload = handleImageLoaded
+      img.onerror = () => {
+        if (active) handleImageError(adjustedImageSrc)
+      }
+      // Install handlers before assigning src, including browser cache hits.
+      img.src = adjustedImageSrc
+    }
 
-    if (imageElement) {
-      observer.observe(imageElement)
+    if (priority || !window.IntersectionObserver) {
+      loadImage()
+    } else {
+      observer = new IntersectionObserver(
+        entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              loadImage()
+              observer.unobserve(entry.target)
+            }
+          })
+        },
+        {
+          rootMargin: siteConfig('LAZY_LOAD_THRESHOLD', '200px'),
+          threshold: 0.1
+        }
+      )
+      if (imageElement) observer.observe(imageElement)
     }
 
     return () => {
-      if (imageElement) {
-        observer.unobserve(imageElement)
+      active = false
+      if (img) {
+        img.onload = null
+        img.onerror = null
       }
+      observer?.disconnect()
     }
   }, [
-    src,
-    targetImageWidth,
+    adjustedImageSrc,
     priority,
     defaultPlaceholderSrc,
-    fallbackSrc,
     handleImageError,
-    onLoad,
     placeholderSrc
   ])
 
@@ -164,7 +173,6 @@ export default function LazyImage({
     src: currentSrc,
     'data-src': src, // 存储原始图片地址
     alt: alt || 'Lazy loaded image',
-    onLoad: handleThumbnailLoaded,
     onError: handleImageError,
     className: `${className || ''}${imageLoaded ? '' : ' lazy-image-placeholder'}`,
     style: {

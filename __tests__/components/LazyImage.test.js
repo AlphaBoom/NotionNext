@@ -17,7 +17,7 @@ beforeEach(() => {
       requests.push(this)
     }
   }
-  observer = { observe: jest.fn(), unobserve: jest.fn() }
+  observer = { observe: jest.fn(), unobserve: jest.fn(), disconnect: jest.fn() }
   window.IntersectionObserver = jest.fn(callback => {
     intersect = callback
     return observer
@@ -71,18 +71,76 @@ test('priority images start immediately and notify callers when loaded', () => {
   expect(onLoad).toHaveBeenCalledTimes(1)
 })
 
-test('a failed image uses its fallback, then the placeholder if the fallback fails', () => {
+test('relative fallback URLs are tried once and stop after all placeholders fail', () => {
   render(
     <LazyImage
       src='/missing.jpg'
       alt='Photo'
-      fallbackSrc='https://images.example/fallback.jpg'
+      fallbackSrc='/fallback.jpg'
+      placeholderSrc='/thumbnail.jpg'
     />
   )
   const image = screen.getByRole('img', { name: 'Photo' })
   act(() => intersect([{ isIntersecting: true, target: image }]))
   act(() => requests[0].onerror())
-  expect(image).toHaveAttribute('src', 'https://images.example/fallback.jpg')
+  expect(image).toHaveAttribute('src', '/fallback.jpg')
+  act(() => requests[0].onerror())
+  expect(image).toHaveAttribute('src', '/fallback.jpg')
+  fireEvent.error(image)
+  expect(image).toHaveAttribute('src', '/thumbnail.jpg')
   fireEvent.error(image)
   expect(image).toHaveAttribute('src', '/placeholder.svg')
+  fireEvent.error(image)
+  expect(image).toHaveAttribute('src', '/placeholder.svg')
+})
+
+test('rerendering with a new callback does not restart an in-flight load', () => {
+  const oldOnLoad = jest.fn()
+  const newOnLoad = jest.fn()
+  const { rerender } = render(
+    <LazyImage src='/rerender.jpg' onLoad={oldOnLoad} />
+  )
+  const image = screen.getByRole('img')
+  act(() => intersect([{ isIntersecting: true, target: image }]))
+  rerender(<LazyImage src='/rerender.jpg' onLoad={newOnLoad} />)
+  expect(requests).toHaveLength(1)
+  expect(window.IntersectionObserver).toHaveBeenCalledTimes(1)
+  act(() => requests[0].onload())
+  expect(oldOnLoad).not.toHaveBeenCalled()
+  expect(newOnLoad).toHaveBeenCalledTimes(1)
+})
+
+test('returning to a loaded image skips the placeholder and preloader', () => {
+  const first = render(<LazyImage src='/return.jpg' />)
+  act(() =>
+    intersect([{ isIntersecting: true, target: screen.getByRole('img') }])
+  )
+  act(() => requests[0].onload())
+  first.unmount()
+  const onLoad = jest.fn()
+  render(<LazyImage src='/return.jpg' onLoad={onLoad} />)
+  expect(screen.getByRole('img')).toHaveAttribute('src', '/return.jpg')
+  expect(screen.getByRole('img')).not.toHaveClass('lazy-image-placeholder')
+  expect(requests).toHaveLength(1)
+  expect(onLoad).toHaveBeenCalledTimes(1)
+})
+
+test('a stale preload cannot replace a new source or notify after unmount', () => {
+  const onLoad = jest.fn()
+  const { rerender, unmount } = render(
+    <LazyImage src='/old.jpg' priority onLoad={onLoad} />
+  )
+  const staleLoad = requests[0].onload
+  const staleError = requests[0].onerror
+  rerender(<LazyImage src='/new.jpg' priority onLoad={onLoad} />)
+  act(() => {
+    staleLoad()
+    staleError()
+  })
+  expect(screen.getByRole('img')).toHaveAttribute('src', '/new.jpg')
+  expect(onLoad).not.toHaveBeenCalled()
+  const pendingLoad = requests[1].onload
+  unmount()
+  act(() => pendingLoad())
+  expect(onLoad).not.toHaveBeenCalled()
 })

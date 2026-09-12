@@ -18,7 +18,7 @@ export default {
     const cache = caches.default
     const cacheKey = new Request(request.url, { method: 'GET' })
     const cached = await cache.match(cacheKey)
-    if (cached) {
+    if (cached && isCacheableImage(cached)) {
       const hitHeaders = new Headers(cached.headers)
       setCacheHeaders(hitHeaders)
       setValidatorHeaders(hitHeaders)
@@ -37,11 +37,9 @@ export default {
     const response = await fetch(upstreamUrl, {
       method: 'GET',
       redirect: 'follow',
-      cf: {
-        cacheEverything: true,
-        cacheTtl: IMMUTABLE_TTL_SECONDS,
-        cacheKey: request.url
-      },
+      // Only the validated image below enters caches.default. Bypass the
+      // fetch cache, including errors cached by older Worker deployments.
+      cache: 'no-store',
       headers: {
         'User-Agent': USER_AGENT,
         Accept:
@@ -50,8 +48,9 @@ export default {
     })
 
     const headers = new Headers(response.headers)
-    setCacheHeaders(headers)
-    setValidatorHeaders(headers)
+    const cacheable = isCacheableImage(response)
+    setCacheHeaders(headers, cacheable)
+    if (cacheable) setValidatorHeaders(headers)
     headers.set('X-Notion-Image-Proxy', '1')
     headers.set('X-Notion-Image-Proxy-Cache', 'MISS')
     headers.delete('set-cookie')
@@ -64,11 +63,12 @@ export default {
       statusText: response.statusText,
       headers
     })
-    if (response.ok) {
-      await cache.put(cacheKey, proxied.clone())
+    if (cacheable) {
+      // A cache write failure must not turn a healthy image into an error.
+      await cache.put(cacheKey, proxied.clone()).catch(() => {})
     }
 
-    if (isNotModified(request, headers)) {
+    if (cacheable && isNotModified(request, headers)) {
       return notModifiedResponse(headers)
     }
 
@@ -80,10 +80,22 @@ function isAllowedPath(pathname) {
   return pathname.startsWith('/image/') || pathname.startsWith('/images/')
 }
 
-function setCacheHeaders(headers) {
+function isCacheableImage(response) {
+  return (
+    response.status === 200 &&
+    /^image\//i.test(response.headers.get('content-type') || '')
+  )
+}
+
+function setCacheHeaders(headers, cacheable = true) {
+  headers.delete('CDN-Cache-Control')
+  headers.delete('Cloudflare-CDN-Cache-Control')
+  headers.delete('Expires')
   headers.set(
     'Cache-Control',
-    `public, max-age=${IMMUTABLE_TTL_SECONDS}, s-maxage=${IMMUTABLE_TTL_SECONDS}, immutable`
+    cacheable
+      ? `public, max-age=${IMMUTABLE_TTL_SECONDS}, s-maxage=${IMMUTABLE_TTL_SECONDS}, immutable`
+      : 'no-store'
   )
 }
 
