@@ -32,7 +32,12 @@ jobs:
           ORIGINALITY_PROOF_AUTO_MANIFEST: 'true'
       - name: Push proof update branch
         run: |
-          if git diff --quiet -- public/proofs/originality.json; then
+          if [ ! -f public/proofs/originality.json ]; then
+            echo "No originality proof manifest generated."
+            exit 0
+          fi
+          git add -- public/proofs/originality.json
+          if git diff --cached --quiet -- public/proofs/originality.json; then
             echo "No originality proof changes."
             exit 0
           fi
@@ -40,7 +45,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           BRANCH="chore/update-originality-proofs"
           git checkout -B "$BRANCH"
-          git add public/proofs/originality.json
           git commit -m "chore: update originality proofs"
           git push --force-with-lease origin "$BRANCH"
           echo 'Create a pull request from `chore/update-originality-proofs` to `main` to publish the manifest.' >> "$GITHUB_STEP_SUMMARY"
