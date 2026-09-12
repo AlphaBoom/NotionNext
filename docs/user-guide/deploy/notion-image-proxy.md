@@ -26,7 +26,7 @@ https://www.notion.so/image/...
 https://cdn.example.com/image/...
 ```
 
-这样图片会先经过你的 Cloudflare Worker，再由 Worker 去 Notion 拿图，并同时缓存到 Cloudflare 边缘和访客浏览器。Notion 附件地址包含图片标识，替换图片后通常会生成新地址，因此可以安全使用长期缓存。
+这样图片会先经过你的 Cloudflare Worker，再由 Worker 去 Notion 拿图，并同时缓存到 Cloudflare 边缘和访客浏览器。仅状态为 200 且 Content-Type 为图片的响应会长期缓存；419、404、5xx 及非图片响应使用 `no-store`，下次请求可重新获取。Notion 附件地址包含图片标识，替换图片后通常会生成新地址，因此可以安全使用长期缓存。
 
 ## 不会代码怎么办
 
@@ -142,7 +142,7 @@ export default {
     const cache = caches.default
     const cacheKey = new Request(request.url, { method: 'GET' })
     const cached = await cache.match(cacheKey)
-    if (cached) {
+    if (cached && isCacheableImage(cached)) {
       const hitHeaders = new Headers(cached.headers)
       setCacheHeaders(hitHeaders)
       setValidatorHeaders(hitHeaders)
@@ -161,11 +161,9 @@ export default {
     const response = await fetch(upstreamUrl, {
       method: 'GET',
       redirect: 'follow',
-      cf: {
-        cacheEverything: true,
-        cacheTtl: IMMUTABLE_TTL_SECONDS,
-        cacheKey: request.url
-      },
+      // Only the validated image below enters caches.default. Bypass the
+      // fetch cache, including errors cached by older Worker deployments.
+      cache: 'no-store',
       headers: {
         'User-Agent': USER_AGENT,
         Accept:
@@ -174,8 +172,9 @@ export default {
     })
 
     const headers = new Headers(response.headers)
-    setCacheHeaders(headers)
-    setValidatorHeaders(headers)
+    const cacheable = isCacheableImage(response)
+    setCacheHeaders(headers, cacheable)
+    if (cacheable) setValidatorHeaders(headers)
     headers.set('X-Notion-Image-Proxy', '1')
     headers.set('X-Notion-Image-Proxy-Cache', 'MISS')
     headers.delete('set-cookie')
@@ -188,11 +187,12 @@ export default {
       statusText: response.statusText,
       headers
     })
-    if (response.ok) {
-      await cache.put(cacheKey, proxied.clone())
+    if (cacheable) {
+      // A cache write failure must not turn a healthy image into an error.
+      await cache.put(cacheKey, proxied.clone()).catch(() => {})
     }
 
-    if (isNotModified(request, headers)) {
+    if (cacheable && isNotModified(request, headers)) {
       return notModifiedResponse(headers)
     }
 
@@ -204,10 +204,22 @@ function isAllowedPath(pathname) {
   return pathname.startsWith('/image/') || pathname.startsWith('/images/')
 }
 
-function setCacheHeaders(headers) {
+function isCacheableImage(response) {
+  return (
+    response.status === 200 &&
+    /^image\//i.test(response.headers.get('content-type') || '')
+  )
+}
+
+function setCacheHeaders(headers, cacheable = true) {
+  headers.delete('CDN-Cache-Control')
+  headers.delete('Cloudflare-CDN-Cache-Control')
+  headers.delete('Expires')
   headers.set(
     'Cache-Control',
-    `public, max-age=${IMMUTABLE_TTL_SECONDS}, s-maxage=${IMMUTABLE_TTL_SECONDS}, immutable`
+    cacheable
+      ? `public, max-age=${IMMUTABLE_TTL_SECONDS}, s-maxage=${IMMUTABLE_TTL_SECONDS}, immutable`
+      : 'no-store'
   )
 }
 
@@ -427,12 +439,12 @@ https://www.notion.so/image/...
 这里有两层不同的缓存：
 
 - **浏览器缓存**：由 `Cache-Control` 控制。缓存新鲜时浏览器不会请求 Cloudflare。
-- **Cloudflare 边缘缓存**：由 `CF-Cache-Status` 判断，`HIT` 表示 Worker 不需要重新向 Notion 下载图片。
+- **Cloudflare 边缘缓存**：使用 Worker 的 Cache API，由 `X-Notion-Image-Proxy-Cache` 判断。`HIT` 表示 Worker 不需要重新向 Notion 下载图片。上游 fetch 缓存已关闭，避免再次读到旧版本缓存的错误；不要用上游的 `CF-Cache-Status` 判断这一层是否命中。
 
 第一次打开一张新图片，Cloudflare 常见结果是：
 
 ```text
-CF-Cache-Status: MISS
+X-Notion-Image-Proxy-Cache: MISS
 ```
 
 这不是失败。`MISS` 的意思是：Cloudflare 第一次还没有缓存，所以先去 Notion 拿图。
@@ -440,7 +452,7 @@ CF-Cache-Status: MISS
 同一张图第二次请求，理想结果是：
 
 ```text
-CF-Cache-Status: HIT
+X-Notion-Image-Proxy-Cache: HIT
 ```
 
 也可以看 Worker 自己加的响应头：

@@ -39,6 +39,24 @@ it('recovers images that failed before hydration attached the listener', () => {
   expect(new URL(image.src).pathname.startsWith('/signed/')).toBe(true)
 })
 
+it.each([
+  'https://prod-files-secure.s3.us-west-2.amazonaws.com/space-id/file-id/image.png',
+  'https://s3.us-west-2.amazonaws.com/secure.notion-static.com/file-id/image.png',
+  'https://secure.notion-static.com/file-id/image.png'
+])('recovers old uploaded images through a fresh original-file redirect: %s', source => {
+  const { root, image } = fixture(`${host}/image/${encodeURIComponent(source)}?table=block&id=image-id&width=800&cache=v2`)
+  installAttachmentImageFallback(root, host)
+  image.dispatchEvent(new Event('error'))
+  const fallback = new URL(image.src)
+  expect(fallback.origin).toBe('https://www.notion.so')
+  expect(decodeURIComponent(fallback.pathname)).toBe(`/signed/${source}`)
+  expect(fallback.searchParams.get('id')).toBe('image-id')
+  expect(fallback.searchParams.has('width')).toBe(false)
+  expect(fallback.searchParams.has('cache')).toBe(false)
+  image.dispatchEvent(new Event('error'))
+  expect(image.src).toBe(fallback.href)
+})
+
 it('leaves loaded images alone and removes the listener on cleanup', () => {
   const { root, image } = fixture()
   Object.defineProperty(image, 'complete', { value: true })
@@ -52,6 +70,8 @@ it('leaves loaded images alone and removes the listener on cleanup', () => {
 
 it.each([
   ['https://example.com/image.png', 'notion-asset-wrapper-image'],
+  [`${host}/image/${encodeURIComponent('https://prod-files-secure.s3.us-west-2.amazonaws.com.evil.test/photo.png')}?id=image-id`, 'notion-asset-wrapper-image'],
+  [`${host}/image/${encodeURIComponent('https://s3.us-west-2.amazonaws.com/unrelated-bucket/photo.png')}?id=image-id`, 'notion-asset-wrapper-image'],
   [`${host}/image/https%3A%2F%2Fexample.com%2Fphoto.png?id=image-id`, 'notion-asset-wrapper-image'],
   [proxy, 'notion-bookmark'],
   [`${host}/image/attachment%3Aid%3Aphoto.png`, 'notion-asset-wrapper-image']

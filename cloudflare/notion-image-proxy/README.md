@@ -2,8 +2,10 @@
 
 Cloudflare Worker proxy for NotionNext images.
 
-It keeps Notion attachment URLs in the browser and at Cloudflare's edge for one
-year. Fresh browser cache entries need no network request; explicit
+It keeps successful image responses in the browser and at Cloudflare's edge for
+one year. Only HTTP 200 responses with an image Content-Type enter the Worker
+Cache API. Upstream fetch caching is bypassed; errors and non-image responses
+use `no-store`, so a transient failure can recover on the next request. Fresh browser cache entries need no network request; explicit
 revalidation is answered with `304 Not Modified` when the validator matches.
 
 ## Deploy
@@ -36,7 +38,6 @@ Expected headers after repeat requests:
 ```text
 X-Notion-Image-Proxy: 1
 X-Notion-Image-Proxy-Cache: HIT
-CF-Cache-Status: HIT
 Cache-Control: public, max-age=31536000, s-maxage=31536000, immutable
 ETag: W/"..."
 ```
