@@ -3,6 +3,7 @@ import NotionIcon from '@/components/NotionIcon'
 import SmartLink from '@/components/SmartLink'
 import TwikooCommentCount from '@/components/TwikooCommentCount'
 import { siteConfig } from '@/lib/config'
+import { getCoverThumbnailUrl } from '@/lib/db/notion/mapImage'
 import CONFIG from '../config'
 import WritingModeBadge from './WritingModeBadge'
 import TextPostCover from './TextPostCover'
@@ -69,10 +70,11 @@ const BlogPostCard = ({ post, priority = false, searchKeyword }) => {
         >
           {cover ? (
             <LazyImage
-              src={cover}
+              // Request Notion attachment covers for a 180px slot at 2x density.
+              src={getCoverThumbnailUrl(cover, 360)}
               width={360}
               height={240}
-              alt=<SearchHighlight text={post.title} keyword={searchKeyword} />
+              alt={post.title}
               priority={priority}
             />
           ) : (

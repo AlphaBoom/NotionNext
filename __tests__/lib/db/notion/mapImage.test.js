@@ -10,7 +10,11 @@ jest.mock('@/lib/config', () => ({
 }))
 
 const BLOG = require('@/blog.config')
-const { compressImage, mapImgUrl } = require('@/lib/db/notion/mapImage')
+const {
+  compressImage,
+  getCoverThumbnailUrl,
+  mapImgUrl
+} = require('@/lib/db/notion/mapImage')
 const { adapterNotionBlockMap } = require('@/lib/utils/notion.util')
 
 describe('mapImgUrl signed attachments', () => {
@@ -158,6 +162,39 @@ describe('mapImgUrl signed attachments', () => {
 })
 
 describe('compressImage', () => {
+  it('requests a small attachment cover while keeping article images unchanged', () => {
+    const host = BLOG.NOTION_HOST
+    try {
+      for (const origin of ['https://www.notion.so', 'https://cdn.example.com']) {
+        BLOG.NOTION_HOST = origin
+        const source = `${origin}/image/attachment%3Afile-id%3Acover.png?table=block&id=page-id&t=page-id`
+        const thumbnail = getCoverThumbnailUrl(source, 360)
+        const url = new URL(thumbnail)
+        expect(url.origin).toBe(origin)
+        expect(url.searchParams.get('width')).toBe('360')
+        expect(url.searchParams.get('id')).toBe('page-id')
+        expect(url.searchParams.get('table')).toBe('block')
+        expect(url.searchParams.has('cache')).toBe(false)
+        expect(getCoverThumbnailUrl(`${thumbnail}&cache=v2`, 360)).toBe(thumbnail)
+        expect(compressImage(thumbnail, 360)).toBe(thumbnail)
+        expect(compressImage(source, 800)).toBe(source)
+      }
+    } finally {
+      BLOG.NOTION_HOST = host
+    }
+  })
+
+  it('does not rewrite unrelated cover hosts or relative files', () => {
+    for (const source of [
+      '/cover.jpg',
+      'https://images.example/cover.jpg',
+      'https://images.example/image/attachment%3Afile-id%3Acover.png',
+      'https://www.notion.so/images/page-cover/woodcuts_4.jpg'
+    ]) {
+      expect(getCoverThumbnailUrl(source, 360)).toBe(source)
+    }
+  })
+
   it('compresses non-attachment Notion proxy URLs', () => {
     const source =
       'https://www.notion.so/image/https%3A%2F%2Fimages.example.test%2Ffile.png?table=block&id=page-id'
