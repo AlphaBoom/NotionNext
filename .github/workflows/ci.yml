@@ -36,7 +36,7 @@ jobs:
           cache: yarn
       - run: yarn install --frozen-lockfile
       - run: yarn test --passWithNoTests
-      - run: node --test tests/*.test.mjs
+      - run: node --test tests/*.test.mjs cloudflare/*/worker.test.mjs
 
   lockfile:
     name: Lockfile consistency

@@ -24,12 +24,12 @@ function log(message, color = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`)
 }
 
-function runCommand(command, description, silent = false) {
+function runCommand(command, description, silent = false, timeout = 120000) {
   try {
     const output = execSync(command, { 
       encoding: 'utf8', 
       stdio: silent ? 'pipe' : 'inherit',
-      timeout: 30000
+      timeout
     })
     return { success: true, output }
   } catch (error) {
@@ -237,7 +237,7 @@ function testBuild() {
   log('\n🏗️ 测试项目构建...', 'blue')
   
   log('🔧 运行构建命令...', 'cyan')
-  const result = runCommand('npm run build', '项目构建', true)
+  const result = runCommand('npm run build', '项目构建', true, 15 * 60 * 1000)
   
   if (result.success) {
     log('✅ 项目构建成功', 'green')
@@ -266,7 +266,7 @@ function runTests() {
   log('\n🧪 运行测试...', 'blue')
   
   log('🔧 运行测试命令...', 'cyan')
-  const result = runCommand('npm test -- --passWithNoTests', '单元测试', true)
+  const result = runCommand('npm test -- --runInBand && node --test tests/*.test.mjs cloudflare/*/worker.test.mjs', '单元测试', true)
   
   if (result.success) {
     log('✅ 测试运行成功', 'green')
@@ -287,13 +287,15 @@ function checkSecurity() {
   log('\n🔒 检查安全性...', 'blue')
   
   log('🔧 运行安全审计...', 'cyan')
-  const result = runCommand('npm audit --audit-level=moderate', '安全审计', true)
+  // This repository uses yarn.lock and deliberately disables package-lock.json.
+  const result = runCommand('yarn audit --level moderate', '安全审计', true)
   
   if (result.success) {
     log('✅ 安全审计通过', 'green')
     return { passed: 1, total: 1 }
   } else {
-    log('⚠️  发现安全问题，请运行 npm audit fix', 'yellow')
+    log('⚠️  安全审计未通过或未能完成，请检查审计输出；不要自动修改依赖。', 'yellow')
+    if (result.error) console.log(result.error)
     return { passed: 0, total: 1 }
   }
 }
@@ -313,6 +315,8 @@ function generateHealthReport(results) {
     healthScore,
     totalChecks,
     totalPassed,
+    // Editor/docs inventory is informational; runtime checks must all pass.
+    passed: results.slice(5).every(result => result.passed === result.total),
     results: results.map((result, index) => ({
       category: [
         '配置文件',
@@ -369,12 +373,10 @@ async function main() {
   log(`🎯 健康评分: ${report.healthScore}%`, report.healthScore >= 90 ? 'green' : report.healthScore >= 70 ? 'yellow' : 'red')
   log(`✅ 通过检查: ${report.totalPassed}/${report.totalChecks}`, 'cyan')
   
-  if (report.healthScore >= 90) {
+  if (report.passed) {
     log('\n🎉 项目健康状况优秀！', 'green')
-  } else if (report.healthScore >= 70) {
-    log('\n⚠️  项目健康状况良好，但有改进空间', 'yellow')
   } else {
-    log('\n❌ 项目健康状况需要改进', 'red')
+    log('\n❌ 健康检查未通过，请查看失败项目', 'red')
   }
   
   log('\n💡 建议:', 'cyan')
@@ -383,7 +385,7 @@ async function main() {
   log('- 查看 DEVELOPMENT.md 了解开发指南', 'cyan')
   
   // 退出码
-  process.exit(report.healthScore >= 70 ? 0 : 1)
+  process.exit(report.passed ? 0 : 1)
 }
 
 // 运行主函数

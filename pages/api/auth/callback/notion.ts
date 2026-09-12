@@ -45,6 +45,7 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  res.setHeader('Cache-Control', 'no-store')
   try {
     const code = Array.isArray(req.query.code)
       ? req.query.code[0]
@@ -58,7 +59,7 @@ export default async function handler(
 
     if (params?.status === 200) {
       const redirectQuery = {
-        msg: '成功了' + JSON.stringify(params.data)
+        msg: '授权成功'
       }
 
       // 这里将用户数据写入到Notion数据库
@@ -67,14 +68,14 @@ export default async function handler(
         `/auth/result?${new URLSearchParams(redirectQuery).toString()}`
       )
     } else {
-      const redirectQuery = { msg: params?.statusText || '请求异常' }
+      const redirectQuery = { msg: '授权失败，请重试' }
       res.redirect(
         302,
         `/auth/result?${new URLSearchParams(redirectQuery).toString()}`
       )
     }
   } catch (error) {
-    console.error(error)
+    console.error('Notion OAuth callback failed')
     res.status(500).json({ error: 'Internal Server Error' })
   }
 }
@@ -87,6 +88,13 @@ const fetchToken = async (code: string): Promise<NotionTokenResponse> => {
   const clientId = process.env.OAUTH_CLIENT_ID
   const clientSecret = process.env.OAUTH_CLIENT_SECRET
   const redirectUri = process.env.OAUTH_REDIRECT_URI
+  if (!clientId || !clientSecret || !redirectUri) {
+    return {
+      status: 503,
+      statusText: 'OAuth is not configured',
+      data: null as unknown as NotionTokenResponseData
+    }
+  }
   const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
 
   try {
@@ -105,14 +113,14 @@ const fetchToken = async (code: string): Promise<NotionTokenResponse> => {
         }
       }
     )
-    console.log('OAuth身份信息', response.data)
     return {
       status: response.status,
       statusText: response.statusText,
       data: response.data
     }
   } catch (error) {
-    console.error('Error fetching token', error)
+    // Axios errors can include request credentials and token response bodies.
+    console.error('Notion OAuth token exchange failed')
     return {
       status: 400,
       statusText: 'failed',

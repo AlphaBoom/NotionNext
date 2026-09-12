@@ -9,5 +9,5 @@
 - 测试应调用真实业务逻辑，mock 浏览器和外部服务边界；不要把测试中的模拟状态变化当作功能集成验证。
 - 通过数量不代表整个工程正确。验证记录说明覆盖范围及限制；不靠跳过失败、扩大忽略范围或降低门槛获得通过。
 
-Jest 用例通过 `yarn test` 运行；`tests/*.test.mjs` 使用 `node --test tests/*.test.mjs`。
-Cloudflare Worker 用例由各自目录的命令运行。
+Jest 用例通过 `yarn test` 运行；Node 与 Cloudflare Worker 用例统一通过
+`node --test tests/*.test.mjs cloudflare/*/worker.test.mjs` 运行，CI 使用同一命令。

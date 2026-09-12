@@ -11,12 +11,13 @@ import { cleanCache } from '@/lib/cache/local_file_cache'
  *   Authorization: Bearer <REVALIDATION_TOKEN>
  *   Body: { "path": "/article/my-post" }        — 刷新单个页面
  *   Body: { "paths": ["/", "/article/post-1"] }  — 批量刷新
- *   Body: { "all": true }                        — 全站刷新
+ *   Body: { "all": true }                        — 清理本地文件缓存并刷新首页
  *
  * 环境变量：
  *   REVALIDATION_TOKEN — API 鉴权 Token（必须设置）
  */
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store')
   if (req.method !== 'POST') {
     return res.status(405).json({
       ok: false,
@@ -45,7 +46,8 @@ export default async function handler(req, res) {
   const { path, paths, all } = req.body || {}
 
   try {
-    // 全站刷新：清除本地缓存 + revalidate 首页
+    // Legacy "all" only affects this process's file cache and the homepage.
+    // It cannot invalidate other serverless instances' memory or Redis caches.
     if (all) {
       cleanCache()
       const results = []
@@ -55,15 +57,29 @@ export default async function handler(req, res) {
       } catch (e) {
         results.push({ path: '/', revalidated: false, error: e.message })
       }
-      return res.status(200).json({
-        ok: true,
-        message: 'Full site cache cleared. Homepage revalidated. Other pages will refresh on next visit.',
+      const ok = results.every(result => result.revalidated)
+      return res.status(ok ? 200 : 500).json({
+        ok,
+        message:
+          'Local file cache cleared. Only the homepage was requested for revalidation; other pages and runtime data caches retain their configured TTL.',
         results
       })
     }
 
     // 批量刷新
     const targetPaths = paths || (path ? [path] : ['/'])
+    if (
+      !Array.isArray(targetPaths) ||
+      targetPaths.length === 0 ||
+      targetPaths.some(p => typeof p !== 'string' || !p.trim())
+    ) {
+      return res
+        .status(400)
+        .json({
+          ok: false,
+          message: 'paths must be a non-empty array of paths'
+        })
+    }
     const results = []
 
     for (const p of targetPaths) {
@@ -72,12 +88,17 @@ export default async function handler(req, res) {
         await res.revalidate(normalizedPath)
         results.push({ path: normalizedPath, revalidated: true })
       } catch (e) {
-        results.push({ path: normalizedPath, revalidated: false, error: e.message })
+        results.push({
+          path: normalizedPath,
+          revalidated: false,
+          error: e.message
+        })
       }
     }
 
-    return res.status(200).json({
-      ok: true,
+    const ok = results.every(result => result.revalidated)
+    return res.status(ok ? 200 : 500).json({
+      ok,
       message: `Revalidated ${results.filter(r => r.revalidated).length}/${results.length} paths`,
       results
     })

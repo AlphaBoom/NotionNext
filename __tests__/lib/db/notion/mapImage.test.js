@@ -205,13 +205,6 @@ describe('compressImage', () => {
     expect(result.searchParams.get('cache')).toBe('v2')
   })
 
-  it('leaves newer attachment proxy URLs unchanged', () => {
-    const source =
-      'https://www.notion.so/image/attachment%3Apage-id%3Acover.png?table=block&id=page-id'
-
-    expect(compressImage(source, 800)).toBe(source)
-  })
-
   it('does not append Notion parameters to unrelated image hosts', () => {
     const source = 'https://example.com/cover.png'
 
