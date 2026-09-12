@@ -1,4 +1,4 @@
-# PR / main 基础质量门禁：减轻维护者手工验证，仅 Founder 需关注高影响路径 Review
+# PR / main 质量检查；分支保护使用固定的「CI checks」结果。
 name: CI
 
 on:
@@ -6,6 +6,10 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -15,19 +19,51 @@ jobs:
   lint-and-types:
     name: Lint & type-check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      docs: ${{ steps.changes.outputs.docs }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # PR 合并提交及其父提交足以比较；历史不足时保守检查文档。
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Detect documentation changes
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          # 手动运行或没有可比较的历史时，执行文档检查。
+          if [ -z "$BASE_SHA" ] || ! git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            echo "docs=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only --no-renames -z "$BASE_SHA" HEAD > "$RUNNER_TEMP/changed-files"
+          docs=false
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              docs/*|.vitepress/*|package.json|yarn.lock|.npmrc|.nvmrc|.node-version|.yarnrc*|scripts/lib/builtin-themes.mjs|scripts/generate-theme-user-docs.mjs|conf/themeSwitch.manifest.js|themes/*/config.js|.github/workflows/ci.yml)
+                docs=true
+                break
+                ;;
+            esac
+          done < "$RUNNER_TEMP/changed-files"
+          echo "docs=$docs" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: yarn
       - run: yarn install --frozen-lockfile
+      - name: Verify lockfile is unchanged
+        run: git diff --exit-code -- yarn.lock
       - run: yarn lint
       - run: yarn type-check
 
   test:
     name: Unit tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -38,22 +74,16 @@ jobs:
       - run: yarn test --passWithNoTests
       - run: node --test tests/*.test.mjs
 
-  lockfile:
-    name: Lockfile consistency
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
-      - run: yarn deps:check-lockfile
-
   docs-site:
     name: VitePress build
+    needs: lint-and-types
+    if: needs.lint-and-types.outputs.docs == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -62,3 +92,27 @@ jobs:
       - run: yarn docs:site:build
         env:
           VITE_GISCUS_ENABLED: 'false'
+
+  checks:
+    name: CI checks
+    if: always()
+    needs: [lint-and-types, test, docs-site]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check all required results
+        env:
+          LINT_RESULT: ${{ needs.lint-and-types.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          DOCS_RESULT: ${{ needs.docs-site.result }}
+          DOCS_EXPECTED: ${{ needs.lint-and-types.outputs.docs }}
+        run: |
+          echo "Lint/types: $LINT_RESULT; tests: $TEST_RESULT; docs: $DOCS_RESULT (required: $DOCS_EXPECTED)"
+          test "$LINT_RESULT" = success
+          test "$TEST_RESULT" = success
+          if [ "$DOCS_EXPECTED" = true ]; then
+            test "$DOCS_RESULT" = success
+          else
+            test "$DOCS_EXPECTED" = false
+            test "$DOCS_RESULT" = skipped
+          fi
