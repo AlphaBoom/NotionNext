@@ -8,12 +8,20 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: originality-proofs
+  cancel-in-progress: false
+
 jobs:
   update:
     if: vars.ORIGINALITY_PROOF_AUTO_MANIFEST == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -22,14 +30,21 @@ jobs:
       - run: yarn build
         env:
           ORIGINALITY_PROOF_AUTO_MANIFEST: 'true'
-      - name: Commit proof manifest
+      - name: Push proof update branch
         run: |
-          if git diff --quiet -- public/proofs/originality.json; then
+          if [ ! -f public/proofs/originality.json ]; then
+            echo "No originality proof manifest generated."
+            exit 0
+          fi
+          git add -- public/proofs/originality.json
+          if git diff --cached --quiet -- public/proofs/originality.json; then
             echo "No originality proof changes."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/proofs/originality.json
+          BRANCH="chore/update-originality-proofs"
+          git checkout -B "$BRANCH"
           git commit -m "chore: update originality proofs"
-          git push
+          git push --force-with-lease origin "$BRANCH"
+          echo 'Create a pull request from `chore/update-originality-proofs` to `main` to publish the manifest.' >> "$GITHUB_STEP_SUMMARY"
