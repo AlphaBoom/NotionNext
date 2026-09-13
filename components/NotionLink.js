@@ -1,4 +1,7 @@
+import SteamFillIcon from 'remixicon-react/SteamFillIcon'
+
 const EXTERNAL_HTTP_LINK = /^https?:\/\//i
+const STEAM_STORE_LINK = /^https:\/\/store\.steampowered\.com\/app\/\d+(?:\/|[?#]|$)/i
 
 const mergeRelValues = (...values) => {
   const rel = new Set()
@@ -44,15 +47,38 @@ export const shouldOpenNotionLinkInNewTab = (href, target, siteOrigin) => {
   return isExternalHttpLink(href, fallbackOrigin)
 }
 
-const NotionLink = ({ href, target, rel, ...props }) => {
+const NotionLink = ({ href, target, rel, className, children, ...props }) => {
   const shouldOpenInNewTab = shouldOpenNotionLinkInNewTab(href, target)
   const normalizedTarget = shouldOpenInNewTab ? '_blank' : target
   const normalizedRel = shouldOpenInNewTab
     ? mergeRelValues(rel, 'noopener noreferrer')
     : rel
+  const isSteamMention = typeof href === 'string' && STEAM_STORE_LINK.test(href)
+  const linkClassName = isSteamMention
+    ? [className, 'notion-steam-mention'].filter(Boolean).join(' ')
+    : className
 
   return (
-    <a {...props} href={href} target={normalizedTarget} rel={normalizedRel} />
+    <a
+      {...props}
+      className={linkClassName}
+      href={href}
+      target={normalizedTarget}
+      rel={normalizedRel}>
+      {isSteamMention && (
+        <>
+          <SteamFillIcon
+            className='notion-steam-mention-icon'
+            size={16}
+            aria-hidden='true'
+          />
+          <span className='notion-steam-mention-provider' aria-hidden='true'>
+            Steam
+          </span>
+        </>
+      )}
+      {children}
+    </a>
   )
 }
 

@@ -2348,3 +2348,43 @@ html.dark .notion-tabs-tab[aria-selected='true'] {
 html.dark .notion-tabs-panel {
   color: #e5e7eb;
 }
+
+/* Steam store links use a compact mention style without fetching store metadata. */
+.notion a.notion-steam-mention {
+  display: inline;
+  padding: 0.12em 0.3em;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.1);
+  color: inherit;
+  opacity: 1;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.notion a.notion-steam-mention:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+
+.notion a.notion-steam-mention:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.notion .notion-steam-mention-icon {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.22em;
+  vertical-align: -0.12em;
+}
+
+.notion .notion-steam-mention-provider {
+  margin-right: 0.35em;
+  font-size: 0.78em;
+  opacity: 0.65;
+}
+
