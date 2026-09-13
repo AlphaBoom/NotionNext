@@ -2349,83 +2349,92 @@ html.dark .notion-tabs-panel {
   color: #e5e7eb;
 }
 
-/* Steam embeds remain visible and usable without hover or third-party scripts. */
-.notion a.notion-steam-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  margin: 8px 0 16px;
-  padding: 12px;
+/* Steam previews load their artwork only on hover or keyboard focus. */
+.notion a.notion-steam-mention {
+  display: inline;
+  padding: 0.12em 0.3em;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.1);
+  color: inherit;
+  opacity: 1;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.notion a.notion-steam-mention:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+
+.notion a.notion-steam-mention:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+.notion .notion-steam-mention-icon {
+  display: inline-block;
+  width: 0.95em;
+  height: 0.95em;
+  margin-right: 0.25em;
+  vertical-align: -0.12em;
+}
+
+/* Portaled to body so the article's overflow clipping cannot hide the preview. */
+.notion-steam-preview {
+  position: fixed;
+  z-index: 1000;
+  display: block;
+  overflow: hidden;
+  max-height: calc(100vh - 24px);
   border: 1px solid rgba(127, 127, 127, 0.2);
   border-radius: 8px;
-  color: inherit;
-  background: rgba(127, 127, 127, 0.04);
-  text-decoration: none;
-  opacity: 1;
+  background: #fff;
+  color: #26323d;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  line-height: 1.5;
 }
 
-.notion a.notion-steam-card:hover {
-  border-color: rgba(127, 127, 127, 0.45);
-  background: rgba(127, 127, 127, 0.08);
+.dark .notion-steam-preview {
+  background: #20252b;
+  color: #edf0f3;
 }
 
-.notion a.notion-steam-card:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 3px;
-}
-
-.notion-steam-card-art {
+.notion-steam-preview-art {
   position: relative;
   display: flex;
-  flex: 0 0 140px;
   aspect-ratio: 460 / 215;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-  border-radius: 4px;
-  background: rgba(127, 127, 127, 0.12);
+  background: rgba(127, 127, 127, 0.1);
 }
 
-.notion .notion-steam-card-art img {
+.notion-steam-preview-art img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  margin: 0;
   object-fit: cover;
 }
 
-.notion .notion-steam-card-art img[hidden] {
+.notion-steam-preview-art img[hidden] {
   display: none;
 }
 
-.notion-steam-card-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.notion-steam-card-title {
-  font-size: 0.95em;
+.notion-steam-preview-title {
+  display: block;
+  padding: 10px 12px 0;
+  font-size: 14px;
   font-weight: 500;
-  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-.notion-steam-card-provider {
-  font-size: 0.75em;
+.notion-steam-preview-provider {
+  display: block;
+  padding: 3px 12px 10px;
+  font-size: 12px;
   opacity: 0.6;
-}
-
-@media (max-width: 480px) {
-  .notion a.notion-steam-card {
-    gap: 12px;
-    padding: 10px;
-  }
-
-  .notion-steam-card-art {
-    flex-basis: 96px;
-  }
 }

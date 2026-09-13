@@ -403,14 +403,22 @@ const nextConfig = {
         //   }
       ]
     },
-  webpack: (config, { dev, isServer }) => {
-    config.ignoreWarnings = [
-      ...(config.ignoreWarnings || []),
-      {
-        module: /[\\/]next[\\/]dist[\\/]esm[\\/]client[\\/]components[\\/]navigation\.js$/,
-        message: /useContext.*not exported from ['"]react['"]/i
-      }
-    ]
+  webpack: (config, { dev, isServer, nextRuntime }) => {
+    // Next 15 uses server React in middleware, but only installs the server
+    // navigation alias automatically for App Router projects. Clerk 5's server
+    // barrel also imports navigation in this Pages Router app.
+    if (nextRuntime === 'edge') {
+      config.module.rules.push({
+        issuerLayer: 'middleware',
+        resolve: {
+          alias: {
+            [require.resolve('next/navigation')]: require.resolve(
+              'next/dist/esm/api/navigation.react-server'
+            )
+          }
+        }
+      })
+    }
 
     // 动态主题：添加 resolve.alias 配置，将动态路径映射到实际路径
     config.resolve.alias['@'] = path.resolve(__dirname)

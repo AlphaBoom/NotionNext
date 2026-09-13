@@ -1,3 +1,5 @@
+import SteamGameLink, { getSteamAppId } from '@/components/SteamGameLink'
+
 const EXTERNAL_HTTP_LINK = /^https?:\/\//i
 
 const mergeRelValues = (...values) => {
@@ -50,6 +52,21 @@ const NotionLink = ({ href, target, rel, className, children, ...props }) => {
   const normalizedRel = shouldOpenInNewTab
     ? mergeRelValues(rel, 'noopener noreferrer')
     : rel
+  const appId = getSteamAppId(href)
+  if (appId) {
+    return (
+      <SteamGameLink
+        {...props}
+        appId={appId}
+        className={className}
+        href={href}
+        target={normalizedTarget}
+        rel={normalizedRel}
+      >
+        {children}
+      </SteamGameLink>
+    )
+  }
 
   return (
     <a
@@ -57,7 +74,8 @@ const NotionLink = ({ href, target, rel, className, children, ...props }) => {
       className={className}
       href={href}
       target={normalizedTarget}
-      rel={normalizedRel}>
+      rel={normalizedRel}
+    >
       {children}
     </a>
   )
