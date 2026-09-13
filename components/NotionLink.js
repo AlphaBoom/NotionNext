@@ -1,7 +1,4 @@
-import SteamFillIcon from 'remixicon-react/SteamFillIcon'
-
 const EXTERNAL_HTTP_LINK = /^https?:\/\//i
-const STEAM_STORE_LINK = /^https:\/\/store\.steampowered\.com\/app\/\d+(?:\/|[?#]|$)/i
 
 const mergeRelValues = (...values) => {
   const rel = new Set()
@@ -53,30 +50,14 @@ const NotionLink = ({ href, target, rel, className, children, ...props }) => {
   const normalizedRel = shouldOpenInNewTab
     ? mergeRelValues(rel, 'noopener noreferrer')
     : rel
-  const isSteamMention = typeof href === 'string' && STEAM_STORE_LINK.test(href)
-  const linkClassName = isSteamMention
-    ? [className, 'notion-steam-mention'].filter(Boolean).join(' ')
-    : className
 
   return (
     <a
       {...props}
-      className={linkClassName}
+      className={className}
       href={href}
       target={normalizedTarget}
       rel={normalizedRel}>
-      {isSteamMention && (
-        <>
-          <SteamFillIcon
-            className='notion-steam-mention-icon'
-            size={16}
-            aria-hidden='true'
-          />
-          <span className='notion-steam-mention-provider' aria-hidden='true'>
-            Steam
-          </span>
-        </>
-      )}
       {children}
     </a>
   )

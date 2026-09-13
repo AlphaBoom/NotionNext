@@ -2349,42 +2349,83 @@ html.dark .notion-tabs-panel {
   color: #e5e7eb;
 }
 
-/* Steam store links use a compact mention style without fetching store metadata. */
-.notion a.notion-steam-mention {
-  display: inline;
-  padding: 0.12em 0.3em;
-  border: 0;
-  border-radius: 4px;
-  background: rgba(127, 127, 127, 0.1);
+/* Steam embeds remain visible and usable without hover or third-party scripts. */
+.notion a.notion-steam-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin: 8px 0 16px;
+  padding: 12px;
+  border: 1px solid rgba(127, 127, 127, 0.2);
+  border-radius: 8px;
   color: inherit;
-  opacity: 1;
+  background: rgba(127, 127, 127, 0.04);
   text-decoration: none;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
+  opacity: 1;
 }
 
-.notion a.notion-steam-mention:hover {
-  background: rgba(127, 127, 127, 0.2);
+.notion a.notion-steam-card:hover {
+  border-color: rgba(127, 127, 127, 0.45);
+  background: rgba(127, 127, 127, 0.08);
 }
 
-.notion a.notion-steam-mention:focus-visible {
+.notion a.notion-steam-card:focus-visible {
   outline: 2px solid currentColor;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.notion .notion-steam-mention-icon {
-  display: inline-block;
-  width: 0.95em;
-  height: 0.95em;
-  margin-right: 0.22em;
-  vertical-align: -0.12em;
+.notion-steam-card-art {
+  position: relative;
+  display: flex;
+  flex: 0 0 140px;
+  aspect-ratio: 460 / 215;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(127, 127, 127, 0.12);
 }
 
-.notion .notion-steam-mention-provider {
-  margin-right: 0.35em;
-  font-size: 0.78em;
-  opacity: 0.65;
+.notion .notion-steam-card-art img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  object-fit: cover;
 }
 
+.notion .notion-steam-card-art img[hidden] {
+  display: none;
+}
+
+.notion-steam-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.notion-steam-card-title {
+  font-size: 0.95em;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.notion-steam-card-provider {
+  font-size: 0.75em;
+  opacity: 0.6;
+}
+
+@media (max-width: 480px) {
+  .notion a.notion-steam-card {
+    gap: 12px;
+    padding: 10px;
+  }
+
+  .notion-steam-card-art {
+    flex-basis: 96px;
+  }
+}

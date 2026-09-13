@@ -9,6 +9,7 @@ import NotionEmbed, {
   normalizeHtmlArtifactHeight,
   withHtmlArtifactResizeBridge
 } from '@/components/NotionEmbed'
+import { getSteamAppId } from '@/components/SteamGameCard'
 
 jest.mock('react-notion-x', () => ({
   useNotionContext: jest.fn()
@@ -50,6 +51,43 @@ const dispatchFrameMessage = (frame, data, source = frame.contentWindow) => {
 describe('NotionEmbed HTML artifact auto height', () => {
   beforeEach(() => {
     useNotionContext.mockReturnValue({ recordMap: { signed_urls: {} } })
+  })
+
+  it('renders a visible Steam card with a lazy cover and a working image fallback', () => {
+    const { container } = render(
+      <NotionEmbed block={{
+        id: 'steam-game',
+        type: 'embed',
+        properties: {
+          source: [['https://store.steampowered.com/widget/2238900/']],
+          caption: [['星之海洋：'], ['第二个故事 R']]
+        }
+      }} />
+    )
+    const link = screen.getByRole('link', { name: '星之海洋：第二个故事 R Steam ↗' })
+    expect(link).toHaveAttribute('href', 'https://store.steampowered.com/app/2238900/')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(container.querySelector('iframe')).toBeNull()
+    const cover = link.querySelector('img')
+    expect(cover).toHaveAttribute('loading', 'lazy')
+    fireEvent.error(cover)
+    expect(cover).toHaveAttribute('hidden')
+    expect(link).toBeVisible()
+  })
+
+  it('recognizes only genuine Steam app and widget URLs', () => {
+    expect(getSteamAppId('https://store.steampowered.com/app/638970/Yakuza_0/?l=schinese')).toBe('638970')
+    expect(getSteamAppId('https://store.steampowered.com/widget/638970/')).toBe('638970')
+    for (const source of [
+      'https://store.steampowered.com.evil.test/app/638970/',
+      'https://store.steampowered.com@evil.test/app/638970/',
+      'https://evil.test@store.steampowered.com/app/638970/',
+      'https://store.steampowered.com/app/638970bad/',
+      'https://store.steampowered.com/app/0/',
+      'https://store.steampowered.com/bundle/638970/',
+      '/app/638970/',
+      null
+    ]) expect(getSteamAppId(source)).toBeNull()
   })
 
   it('injects the resize bridge and applies reported content height', () => {

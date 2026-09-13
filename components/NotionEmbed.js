@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNotionContext } from 'react-notion-x'
 import NotionTabs from '@/components/NotionTabs'
+import SteamGameCard, { getSteamAppId } from '@/components/SteamGameCard'
+import { getTextContent } from 'notion-utils'
 
 export const HTML_ARTIFACT_RESIZE_MESSAGE = 'notion-next:html-artifact-resize'
 export const HTML_ARTIFACT_MEASURE_MESSAGE = 'notion-next:html-artifact-measure'
@@ -187,6 +189,16 @@ const NotionEmbed = ({ block }) => {
 
   if (isNotionTabs) {
     return <NotionTabs block={block} />
+  }
+
+  const steamAppId = getSteamAppId(source)
+  if (steamAppId && !isHtmlArtifact) {
+    return (
+      <SteamGameCard
+        appId={steamAppId}
+        title={getTextContent(block?.properties?.caption || block?.properties?.title)}
+      />
+    )
   }
 
   if (
