@@ -21,12 +21,6 @@ export const getSteamAppId = href => {
   }
 }
 
-// Newer Steam releases can use a versioned asset directory instead of /header.jpg.
-const HEADER_PATHS = {
-  2499860: '2499860/ea0c655407c078a8994b7e91256c79d90169133a/header.jpg',
-  4225980: '4225980/4d0a1769f70fbdd8d1d84d0ce06c21bb5c2d0790/header.jpg'
-}
-
 const SteamGameLink = ({
   appId,
   children,
@@ -226,7 +220,7 @@ const SteamGameLink = ({
               <span className='notion-steam-preview-art' aria-hidden='true'>
                 <SteamFillIcon size={32} />
                 <Image
-                  src={`https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${HEADER_PATHS[appId] || `${appId}/header.jpg`}`}
+                  src={`/api/steam-cover/${appId}`}
                   alt=''
                   width={460}
                   height={215}

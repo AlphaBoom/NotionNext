@@ -27,7 +27,7 @@ describe('NotionLink', () => {
     expect(preview.parentElement).toBe(document.body)
     expect(preview.querySelector('img')).toHaveAttribute(
       'src',
-      expect.stringContaining('/638970/header.jpg')
+      '/api/steam-cover/638970'
     )
     expect(link).toHaveAttribute('aria-controls', preview.id)
     expect(link).toHaveAttribute('aria-expanded', 'true')
