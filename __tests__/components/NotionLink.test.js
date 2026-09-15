@@ -21,22 +21,24 @@ describe('NotionLink', () => {
     )
     const link = screen.getByRole('link', { name: '如龙0' })
     expect(container.querySelector('img')).toBeNull()
-    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
     fireEvent.mouseEnter(link)
-    const preview = screen.getByRole('tooltip')
+    const preview = screen.getByRole('dialog')
     expect(preview.parentElement).toBe(document.body)
     expect(preview.querySelector('img')).toHaveAttribute(
       'src',
       expect.stringContaining('/638970/header.jpg')
     )
-    expect(link).toHaveAttribute('aria-describedby', preview.id)
+    expect(link).toHaveAttribute('aria-controls', preview.id)
+    expect(link).toHaveAttribute('aria-expanded', 'true')
     fireEvent.mouseLeave(link)
     fireEvent.mouseEnter(preview)
     act(() => jest.advanceTimersByTime(200))
     expect(preview).toBeVisible()
     fireEvent.keyDown(document, { key: 'Escape' })
-    expect(screen.queryByRole('tooltip')).toBeNull()
-    expect(link).not.toHaveAttribute('aria-describedby')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(link).not.toHaveAttribute('aria-controls')
+    expect(link).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('opens from keyboard focus and keeps the preview inside the viewport', () => {
@@ -52,24 +54,91 @@ describe('NotionLink', () => {
       bottom: window.innerHeight - 20
     })
     act(() => link.focus())
-    const preview = screen.getByRole('tooltip')
+    const preview = screen.getByRole('dialog')
     expect(
       Number.parseFloat(preview.style.left) +
         Number.parseFloat(preview.style.width)
     ).toBeLessThan(window.innerWidth)
     expect(Number.parseFloat(preview.style.bottom)).toBeGreaterThan(0)
     fireEvent.scroll(window)
-    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
     act(() => link.blur())
     act(() => link.focus())
-    expect(screen.getByRole('tooltip')).toBeVisible()
+    expect(screen.getByRole('dialog')).toBeVisible()
     act(() => link.blur())
-    expect(screen.queryByRole('tooltip')).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('keeps touch links directly clickable without a hover preview', () => {
+  it('previews on the first touch and lets the next touch open Steam', () => {
+    jest.useFakeTimers()
     window.matchMedia = jest.fn(() => ({ matches: false }))
-    const onClick = jest.fn(event => event.preventDefault())
+    render(
+      <NotionLink href='https://store.steampowered.com/app/638970/'>
+        如龙0
+      </NotionLink>
+    )
+    const link = screen.getByRole('link', { name: '如龙0' })
+    fireEvent.mouseEnter(link)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(fireEvent.click(link, { detail: 1 })).toBe(false)
+    const preview = screen.getByRole('dialog', { name: '如龙0' })
+    expect(preview.querySelector('a')).toHaveAttribute('href', link.href)
+    expect(preview.querySelector('a')).toHaveAttribute(
+      'rel',
+      'noopener noreferrer'
+    )
+    fireEvent.mouseLeave(link)
+    act(() => jest.advanceTimersByTime(200))
+    expect(preview).toBeVisible()
+    expect(fireEvent.click(link, { detail: 1 })).toBe(true)
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(fireEvent.click(link, { detail: 1 })).toBe(false)
+    fireEvent.scroll(window)
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('recognizes a touch on a device that also supports mouse hover', () => {
+    window.matchMedia = jest.fn(() => ({ matches: true }))
+    render(
+      <NotionLink href='https://store.steampowered.com/app/638970/'>
+        如龙0
+      </NotionLink>
+    )
+    const link = screen.getByRole('link', { name: '如龙0' })
+    fireEvent(
+      link,
+      Object.assign(new Event('pointerdown', { bubbles: true }), {
+        pointerType: 'touch'
+      })
+    )
+    fireEvent.mouseEnter(link)
+    expect(fireEvent.click(link, { detail: 1 })).toBe(false)
+    expect(screen.getByRole('dialog')).toBeVisible()
+  })
+
+  it('allows keyboard access to the preview link and returns focus on Escape', () => {
+    jest.useFakeTimers()
+    render(
+      <NotionLink href='https://store.steampowered.com/app/638970/'>
+        如龙0
+      </NotionLink>
+    )
+    const link = screen.getByRole('link', { name: '如龙0' })
+    act(() => link.focus())
+    const preview = screen.getByRole('dialog')
+    act(() => preview.querySelector('a').focus())
+    fireEvent.mouseLeave(link)
+    act(() => jest.advanceTimersByTime(200))
+    expect(preview).toBeVisible()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(link).toHaveFocus()
+  })
+
+  it('preserves desktop, keyboard, modified clicks, and caller cancellation', () => {
+    window.matchMedia = jest.fn(() => ({ matches: true }))
+    const onClick = jest.fn()
     render(
       <NotionLink
         href='https://store.steampowered.com/app/638970/'
@@ -79,15 +148,15 @@ describe('NotionLink', () => {
       </NotionLink>
     )
     const link = screen.getByRole('link', { name: '如龙0' })
-    fireEvent.mouseEnter(link)
-    expect(screen.queryByRole('tooltip')).toBeNull()
-    fireEvent.click(link)
-    expect(onClick).toHaveBeenCalledTimes(1)
-    expect(link).toHaveAttribute(
-      'href',
-      'https://store.steampowered.com/app/638970/'
-    )
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(fireEvent.click(link, { detail: 1 })).toBe(true)
+    window.matchMedia = jest.fn(() => ({ matches: false }))
+    expect(fireEvent.click(link, { detail: 0 })).toBe(true)
+    expect(fireEvent.click(link, { detail: 1, ctrlKey: true })).toBe(true)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    onClick.mockImplementation(event => event.preventDefault())
+    expect(fireEvent.click(link, { detail: 1 })).toBe(false)
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(onClick).toHaveBeenCalledTimes(4)
   })
 
   it('only enhances genuine Steam app links', () => {

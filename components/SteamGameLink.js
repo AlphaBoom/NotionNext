@@ -34,10 +34,15 @@ const SteamGameLink = ({
   onMouseLeave,
   onFocus,
   onBlur,
+  onClick,
+  onPointerDown,
   'aria-describedby': describedBy,
   ...props
 }) => {
   const anchorRef = useRef(null)
+  const previewRef = useRef(null)
+  const pointerType = useRef(null)
+  const touchPreview = useRef(false)
   const closeTimer = useRef(null)
   const previewHovered = useRef(false)
   const previewId = useId()
@@ -46,12 +51,18 @@ const SteamGameLink = ({
   const cancelClose = () => clearTimeout(closeTimer.current)
   const close = () => {
     cancelClose()
+    touchPreview.current = false
     setPosition(null)
   }
   const scheduleClose = () => {
     cancelClose()
     closeTimer.current = setTimeout(() => {
-      if (!previewHovered.current) setPosition(null)
+      if (
+        !touchPreview.current &&
+        !previewHovered.current &&
+        !previewRef.current?.contains(document.activeElement)
+      )
+        setPosition(null)
     }, 180)
   }
   const open = () => {
@@ -76,16 +87,30 @@ const SteamGameLink = ({
     const dismiss = () => {
       clearTimeout(closeTimer.current)
       previewHovered.current = false
+      touchPreview.current = false
       setPosition(null)
     }
     const onKeyDown = event => {
-      if (event.key === 'Escape') dismiss()
+      if (event.key === 'Escape') {
+        if (previewRef.current?.contains(document.activeElement))
+          anchorRef.current?.focus()
+        dismiss()
+      }
+    }
+    const onOutsidePress = event => {
+      if (
+        !anchorRef.current?.contains(event.target) &&
+        !previewRef.current?.contains(event.target)
+      )
+        dismiss()
     }
     document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('pointerdown', onOutsidePress)
     window.addEventListener('scroll', dismiss, true)
     window.addEventListener('resize', dismiss)
     return () => {
       document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('pointerdown', onOutsidePress)
       window.removeEventListener('scroll', dismiss, true)
       window.removeEventListener('resize', dismiss)
     }
@@ -99,10 +124,40 @@ const SteamGameLink = ({
         className={[className, 'notion-steam-mention']
           .filter(Boolean)
           .join(' ')}
-        aria-describedby={
-          [describedBy, isOpen && previewId].filter(Boolean).join(' ') ||
-          undefined
-        }
+        aria-describedby={describedBy}
+        aria-haspopup='dialog'
+        aria-expanded={isOpen}
+        aria-controls={isOpen ? previewId : undefined}
+        onPointerDown={event => {
+          onPointerDown?.(event)
+          pointerType.current = event.pointerType
+        }}
+        onClick={event => {
+          onClick?.(event)
+          const isTouch =
+            pointerType.current === 'touch' ||
+            pointerType.current === 'pen' ||
+            (!pointerType.current &&
+              event.detail > 0 &&
+              !window.matchMedia('(hover: hover)').matches)
+          pointerType.current = null
+          if (
+            event.defaultPrevented ||
+            event.detail === 0 ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey ||
+            !isTouch
+          )
+            return
+          if (!touchPreview.current) {
+            event.preventDefault()
+            touchPreview.current = true
+            open()
+          }
+        }}
         onMouseEnter={event => {
           onMouseEnter?.(event)
           if (
@@ -125,7 +180,7 @@ const SteamGameLink = ({
         }}
         onBlur={event => {
           onBlur?.(event)
-          close()
+          if (!previewRef.current?.contains(event.relatedTarget)) close()
         }}
       >
         <SteamFillIcon
@@ -137,11 +192,21 @@ const SteamGameLink = ({
       </a>
       {isOpen &&
         createPortal(
-          <span
+          <div
+            ref={previewRef}
             id={previewId}
-            role='tooltip'
+            role='dialog'
+            aria-labelledby={`${previewId}-title`}
             className='notion-steam-preview'
             style={position}
+            onFocus={cancelClose}
+            onBlur={event => {
+              if (
+                !event.currentTarget.contains(event.relatedTarget) &&
+                !anchorRef.current?.contains(event.relatedTarget)
+              )
+                close()
+            }}
             onMouseEnter={() => {
               previewHovered.current = true
               cancelClose()
@@ -151,23 +216,35 @@ const SteamGameLink = ({
               scheduleClose()
             }}
           >
-            <span className='notion-steam-preview-art' aria-hidden='true'>
-              <SteamFillIcon size={32} />
-              <Image
-                src={`https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${HEADER_PATHS[appId] || `${appId}/header.jpg`}`}
-                alt=''
-                width={460}
-                height={215}
-                unoptimized
-                decoding='async'
-                onError={event => {
-                  event.currentTarget.hidden = true
-                }}
-              />
-            </span>
-            <span className='notion-steam-preview-title'>{children}</span>
-            <span className='notion-steam-preview-provider'>Steam ↗</span>
-          </span>,
+            <a
+              className='notion-steam-preview-link'
+              href={props.href}
+              target={props.target}
+              rel={props.rel}
+            >
+              <span className='notion-steam-preview-art' aria-hidden='true'>
+                <SteamFillIcon size={32} />
+                <Image
+                  src={`https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${HEADER_PATHS[appId] || `${appId}/header.jpg`}`}
+                  alt=''
+                  width={460}
+                  height={215}
+                  unoptimized
+                  decoding='async'
+                  onError={event => {
+                    event.currentTarget.hidden = true
+                  }}
+                />
+              </span>
+              <span
+                id={`${previewId}-title`}
+                className='notion-steam-preview-title'
+              >
+                {children}
+              </span>
+              <span className='notion-steam-preview-provider'>Steam ↗</span>
+            </a>
+          </div>,
           document.body
         )}
     </>
