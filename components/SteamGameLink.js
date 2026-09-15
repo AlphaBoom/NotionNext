@@ -42,6 +42,8 @@ const SteamGameLink = ({
   const previewHovered = useRef(false)
   const previewId = useId()
   const [position, setPosition] = useState(null)
+  const [fallbackAppId, setFallbackAppId] = useState(null)
+  const useFallbackCover = fallbackAppId === appId
 
   const cancelClose = () => clearTimeout(closeTimer.current)
   const close = () => {
@@ -220,14 +222,25 @@ const SteamGameLink = ({
               <span className='notion-steam-preview-art' aria-hidden='true'>
                 <SteamFillIcon size={32} />
                 <Image
-                  src={`/api/steam-cover/${appId}`}
+                  src={
+                    useFallbackCover
+                      ? `/api/steam-cover/${appId}`
+                      : `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`
+                  }
                   alt=''
                   width={460}
                   height={215}
                   unoptimized
                   decoding='async'
+                  onLoad={event => {
+                    event.currentTarget.hidden = false
+                  }}
                   onError={event => {
-                    event.currentTarget.hidden = true
+                    if (!useFallbackCover) {
+                      setFallbackAppId(appId)
+                    } else {
+                      event.currentTarget.hidden = true
+                    }
                   }}
                 />
               </span>
