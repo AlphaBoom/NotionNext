@@ -21,11 +21,6 @@ export const getSteamAppId = href => {
   }
 }
 
-// Newer Steam releases can use a versioned asset directory instead of /header.jpg.
-const HEADER_PATHS = {
-  2499860: '2499860/ea0c655407c078a8994b7e91256c79d90169133a/header.jpg'
-}
-
 const SteamGameLink = ({
   appId,
   children,
@@ -47,6 +42,8 @@ const SteamGameLink = ({
   const previewHovered = useRef(false)
   const previewId = useId()
   const [position, setPosition] = useState(null)
+  const [fallbackAppId, setFallbackAppId] = useState(null)
+  const useFallbackCover = fallbackAppId === appId
 
   const cancelClose = () => clearTimeout(closeTimer.current)
   const close = () => {
@@ -225,14 +222,25 @@ const SteamGameLink = ({
               <span className='notion-steam-preview-art' aria-hidden='true'>
                 <SteamFillIcon size={32} />
                 <Image
-                  src={`https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${HEADER_PATHS[appId] || `${appId}/header.jpg`}`}
+                  src={
+                    useFallbackCover
+                      ? `/api/steam-cover/${appId}`
+                      : `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appId}/header.jpg`
+                  }
                   alt=''
                   width={460}
                   height={215}
                   unoptimized
                   decoding='async'
+                  onLoad={event => {
+                    event.currentTarget.hidden = false
+                  }}
                   onError={event => {
-                    event.currentTarget.hidden = true
+                    if (!useFallbackCover) {
+                      setFallbackAppId(appId)
+                    } else {
+                      event.currentTarget.hidden = true
+                    }
                   }}
                 />
               </span>

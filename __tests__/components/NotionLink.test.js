@@ -27,7 +27,7 @@ describe('NotionLink', () => {
     expect(preview.parentElement).toBe(document.body)
     expect(preview.querySelector('img')).toHaveAttribute(
       'src',
-      expect.stringContaining('/638970/header.jpg')
+      'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/638970/header.jpg'
     )
     expect(link).toHaveAttribute('aria-controls', preview.id)
     expect(link).toHaveAttribute('aria-expanded', 'true')
@@ -39,6 +39,39 @@ describe('NotionLink', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(link).not.toHaveAttribute('aria-controls')
     expect(link).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('falls back to Steam metadata only after a cover error and stops after a second failure', () => {
+    window.matchMedia = jest.fn(() => ({ matches: true }))
+    render(
+      <NotionLink href='https://store.steampowered.com/app/4225980/'>
+        空之轨迹 the 2nd
+      </NotionLink>
+    )
+    const link = screen.getByRole('link', { name: '空之轨迹 the 2nd' })
+    fireEvent.mouseEnter(link)
+    let cover = screen.getByRole('dialog').querySelector('img')
+    expect(cover).toHaveAttribute(
+      'src',
+      'https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/4225980/header.jpg'
+    )
+    fireEvent.error(cover)
+    expect(cover).toHaveAttribute('src', '/api/steam-cover/4225980')
+    expect(cover).not.toHaveAttribute('hidden')
+    fireEvent.load(cover)
+
+    // Reopening a preview should not retry the already broken guessed URL.
+    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.mouseEnter(link)
+    cover = screen.getByRole('dialog').querySelector('img')
+    expect(cover).toHaveAttribute('src', '/api/steam-cover/4225980')
+    fireEvent.error(cover)
+    expect(cover).toHaveAttribute('hidden')
+    expect(cover).toHaveAttribute('src', '/api/steam-cover/4225980')
+    expect(screen.getByRole('dialog').querySelector('a')).toHaveAttribute(
+      'href',
+      link.href
+    )
   })
 
   it('opens from keyboard focus and keeps the preview inside the viewport', () => {
