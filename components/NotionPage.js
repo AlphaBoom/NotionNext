@@ -4,12 +4,13 @@ import { installAttachmentImageFallback } from '@/lib/db/notion/attachmentImageF
 import { siteConfig } from '@/lib/config'
 import { compressImage, mapImgUrl } from '@/lib/db/notion/mapImage'
 import NotionEmbed from '@/components/NotionEmbed'
-import NotionLink from '@/components/NotionLink'
+import NotionLink, { NotionArticleLinkContext } from '@/components/NotionLink'
+import { mapArticlePageUrl, normalizeSectionHash } from '@/lib/db/notion/sectionLinks'
 import { isBrowser, loadExternalResource } from '@/lib/utils'
 import mediumZoom from '@fisch0920/medium-zoom'
 import 'katex/dist/katex.min.css'
 import dynamic from 'next/dynamic'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { NotionRenderer } from 'react-notion-x'
 import OriginalityProof from './OriginalityProof'
 
@@ -27,6 +28,16 @@ const NotionPage = ({ post, className }) => {
 
   const articleRef = useRef(null)
   const zoomRef = useRef(null)
+  const articleLinks = useMemo(() => ({
+    pageId: post?.id,
+    blockMap: post?.blockMap,
+    pageHref: post?.href,
+    siteOrigin: BLOG.LINK
+  }), [post?.id, post?.blockMap, post?.href])
+  const mapPageUrl = useCallback(
+    id => mapArticlePageUrl(id, articleLinks),
+    [articleLinks]
+  )
   useEffect(() => {
     if (articleRef.current) {
       const cleanBookmarks = installBookmarkImageFallback(articleRef.current, BLOG.NOTION_HOST)
@@ -41,8 +52,8 @@ const NotionPage = ({ post, className }) => {
   // 页面首次打开时执行的勾子
   useEffect(() => {
     // 检测当前的url并自动滚动到对应目标
-    autoScrollToHash()
-  }, [])
+    return autoScrollToHash()
+  }, [post?.id])
 
   // 页面文章发生变化时会执行的勾子
   useEffect(() => {
@@ -126,31 +137,34 @@ const NotionPage = ({ post, className }) => {
   // console.log('NotionPage render with post:', post);
 
   return (
-    <div
-      ref={articleRef}
-      id='notion-article'
-      className={`mx-auto overflow-x-clip overflow-y-visible ${className || ''}`}>
-      <NotionRenderer
-        recordMap={post?.blockMap}
-        mapPageUrl={mapPageUrl}
-        mapImageUrl={mapImgUrl}
-        components={{
-          Code,
-          Collection,
-          Embed: NotionEmbed,
-          Equation,
-          Link: NotionLink,
-          Modal,
-          Pdf,
-          Quote: NotionQuote,
-          Tweet
-        }}
-      />
+    <NotionArticleLinkContext.Provider value={articleLinks}>
+      <div
+        ref={articleRef}
+        id='notion-article'
+        className={`mx-auto overflow-x-clip overflow-y-visible ${className || ''}`}>
+        <NotionRenderer
+          recordMap={post?.blockMap}
+          mapPageUrl={mapPageUrl}
+          mapImageUrl={mapImgUrl}
+          components={{
+            Code,
+            Collection,
+            Embed: NotionEmbed,
+            Equation,
+            Link: NotionLink,
+            PageLink: NotionLink,
+            Modal,
+            Pdf,
+            Quote: NotionQuote,
+            Tweet
+          }}
+        />
 
-      <AdEmbed />
-      <OriginalityProof proof={post?.originalityProof} />
-      {hasCodeBlock(post?.blockMap) && <PrismMac />}
-    </div>
+        <AdEmbed />
+        <OriginalityProof proof={post?.originalityProof} />
+        {hasCodeBlock(post?.blockMap) && <PrismMac />}
+      </div>
+    </NotionArticleLinkContext.Provider>
   )
 }
 
@@ -201,35 +215,18 @@ const processGalleryImg = zoom => {
  * 根据url参数自动滚动到锚位置
  */
 const autoScrollToHash = () => {
-  setTimeout(() => {
+  const timer = setTimeout(() => {
     // 跳转到指定标题
-    const hash = window?.location?.hash
+    const hash = normalizeSectionHash(window.location.hash)
     const needToJumpToTitle = hash && hash.length > 0
     if (needToJumpToTitle) {
-      console.log('jump to hash', hash)
       const tocNode = document.getElementById(hash.substring(1))
       if (tocNode && tocNode?.className?.indexOf('notion') > -1) {
-        tocNode.scrollIntoView({ block: 'start', behavior: 'smooth' })
+        tocNode.scrollIntoView({ block: 'start', behavior: 'auto' })
       }
     }
   }, 180)
-}
-
-/**
- * 将id映射成博文内部链接。
- * @param {*} id
- * @returns
- */
-const mapPageUrl = id => {
-  // return 'https://www.notion.so/' + id.replace(/-/g, '')
-  id = id.replace(/-/g, '')
-  if ([
-    'f21f69678d6445b1805c09af356d59d5',
-    'd2d28bd552f546a6b5e99e0914543504'
-  ].includes(id)) {
-    return '#' + id
-  }
-  return '/' + id
+  return () => clearTimeout(timer)
 }
 
 /**

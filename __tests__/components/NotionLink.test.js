@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import NotionLink, {
+  NotionArticleLinkContext,
   shouldOpenNotionLinkInNewTab
 } from '@/components/NotionLink'
 import { getSteamAppId } from '@/components/SteamGameLink'
@@ -298,5 +299,33 @@ describe('shouldOpenNotionLinkInNewTab', () => {
         'https://blog.example.com'
       )
     ).toBe(false)
+  })
+})
+
+describe('article section links', () => {
+  const id = '3dd41bc4e39b8073a594f90c420c5f30'
+  const hash = '#3dd41bc4e39b80a4aa3cc22d13c145ec'
+
+  it('renders a native same-page anchor even when Notion requests a new tab', () => {
+    const onClick = jest.fn()
+    render(
+      <NotionArticleLinkContext.Provider value={{ pageId: id }}>
+        <NotionLink
+          href={`https://app.notion.com/p/${id}${hash}`}
+          target='_blank'
+          onClick={onClick}
+        >
+          辨别AI生成文字
+        </NotionLink>
+      </NotionArticleLinkContext.Provider>
+    )
+    const link = screen.getByRole('link', { name: '辨别AI生成文字' })
+    expect(link).toHaveAttribute('href', hash)
+    expect(link).not.toHaveAttribute('target')
+    expect(link).toHaveClass('notion-section-link')
+    expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(fireEvent.click(link)).toBe(true)
+    expect(fireEvent.click(link, { ctrlKey: true })).toBe(true)
+    expect(onClick).toHaveBeenCalledTimes(2)
   })
 })
