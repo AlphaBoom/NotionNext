@@ -142,7 +142,7 @@ describe('convertInnerUrl', () => {
     )
   })
 
-  it('strips hash fragment before extracting Notion ID', () => {
+  it('retains the hash fragment when resolving a Notion page ID', () => {
     document.body.innerHTML = `
       <div id="notion-article">
         <a class="notion-link" href="https://www.notion.so/4aea95fb3fd5fcf81846aaaaaaaaaaaa#section" target="_blank">Links</a>
@@ -164,7 +164,52 @@ describe('convertInnerUrl', () => {
 
     expect(document.querySelector('a.notion-link')).toHaveAttribute(
       'href',
-      '/links'
+      '/links#section'
     )
+  })
+})
+
+describe('section navigation', () => {
+  const id = '3dd41bc4e39b8073a594f90c420c5f30'
+  const hash = '#3dd41bc4e39b80a4aa3cc22d13c145ec'
+  const allPages = [{ id, href: '/article/20260917' }]
+
+  beforeEach(() => {
+    window.history.replaceState({}, '', 'http://localhost/article/20260917')
+  })
+
+  it('keeps same-article sections hash-only through repeated conversions', () => {
+    document.body.innerHTML = `<div id="notion-article"><a class="notion-link" href="https://app.notion.com/p/${id}?pvs=24${hash}" target="_blank">Section</a></div>`
+    convertInnerUrl({ allPages })
+    convertInnerUrl({ allPages })
+    const link = document.querySelector('a')
+    expect(link).toHaveAttribute('href', hash)
+    expect(link).not.toHaveAttribute('target')
+  })
+
+  it('preserves a native block fragment instead of mapping the current page again', () => {
+    document.body.innerHTML = `<div id="notion-article"><a class="notion-link" href="${hash}" target="_blank">Section</a></div>`
+    convertInnerUrl({ allPages })
+    expect(document.querySelector('a')).toHaveAttribute('href', hash)
+    expect(document.querySelector('a')).not.toHaveAttribute('target')
+  })
+
+  it('preserves cross-article fragments and the language prefix', () => {
+    window.history.replaceState({}, '', 'http://localhost/en/another-post')
+    document.body.innerHTML = `<div id="notion-article"><a class="notion-link" href="https://www.notion.so/AI-${id}${hash}" target="_blank">Section</a></div>`
+    convertInnerUrl({ allPages, lang: 'en' })
+    expect(document.querySelector('a')).toHaveAttribute(
+      'href',
+      '/en/article/20260917' + hash
+    )
+    expect(document.querySelector('a')).not.toHaveAttribute('target')
+  })
+
+  it('leaves external sites alone even if their path contains a known page UUID', () => {
+    const href = `https://example.com/${id}${hash}`
+    document.body.innerHTML = `<div id="notion-article"><a class="notion-link" href="${href}" target="_blank">External</a></div>`
+    convertInnerUrl({ allPages })
+    expect(document.querySelector('a')).toHaveAttribute('href', href)
+    expect(document.querySelector('a')).toHaveAttribute('target', '_blank')
   })
 })

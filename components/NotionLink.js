@@ -1,4 +1,8 @@
 import SteamGameLink, { getSteamAppId } from '@/components/SteamGameLink'
+import { getArticleSectionHref } from '@/lib/db/notion/sectionLinks'
+import { createContext, useContext } from 'react'
+
+export const NotionArticleLinkContext = createContext({})
 
 const EXTERNAL_HTTP_LINK = /^https?:\/\//i
 
@@ -47,6 +51,27 @@ export const shouldOpenNotionLinkInNewTab = (href, target, siteOrigin) => {
 }
 
 const NotionLink = ({ href, target, rel, className, children, ...props }) => {
+  const article = useContext(NotionArticleLinkContext)
+  const sectionHref = getArticleSectionHref(href, article)
+  if (sectionHref) {
+    return (
+      <a
+        {...props}
+        className={[className, 'notion-section-link'].filter(Boolean).join(' ')}
+        href={sectionHref}
+        title={props.title || '跳转到本文此处'}
+      >
+        <svg
+          className='notion-section-link-icon'
+          viewBox='0 0 16 16'
+          aria-hidden='true'
+        >
+          <path d='M6 2 4 14M12 2l-2 12M2 6h12M1 10h12' />
+        </svg>
+        {children}
+      </a>
+    )
+  }
   const shouldOpenInNewTab = shouldOpenNotionLinkInNewTab(href, target)
   const normalizedTarget = shouldOpenInNewTab ? '_blank' : target
   const normalizedRel = shouldOpenInNewTab

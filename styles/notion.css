@@ -2449,3 +2449,58 @@ html.dark .notion-tabs-panel {
   font-size: 12px;
   opacity: 0.6;
 }
+
+/* References to a section stay in the reading flow, including on narrow screens. */
+.notion a.notion-section-link {
+  display: inline;
+  padding: 0.08em 0.3em;
+  border-radius: 0.3em;
+  background: var(--bg-color-0);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.notion a.notion-section-link:hover {
+  background: var(--bg-color-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.notion a.notion-section-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.notion .notion-section-link-icon {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-right: 0.2em;
+  vertical-align: -0.02em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.notion .notion-section-link .notion-page-title {
+  display: inline;
+  white-space: normal;
+}
+
+.notion .notion-section-link .notion-page-icon-inline {
+  display: none;
+}
+
+.notion-header-anchor:target ~ .notion-h-title {
+  border-radius: 0.2em;
+  background: var(--notion-yellow_background);
+  box-shadow: 0 0 0 0.18em var(--notion-yellow_background);
+}
+
+html.dark .notion-header-anchor:target ~ .notion-h-title {
+  background: rgba(223, 171, 1, 0.18);
+  box-shadow: 0 0 0 0.18em rgba(223, 171, 1, 0.18);
+}
