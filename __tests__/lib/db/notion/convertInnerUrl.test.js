@@ -212,4 +212,10 @@ describe('section navigation', () => {
     expect(document.querySelector('a')).toHaveAttribute('href', href)
     expect(document.querySelector('a')).toHaveAttribute('target', '_blank')
   })
+
+  it('continues resolving references after a malformed external URL', () => {
+    document.body.innerHTML = `<div id="notion-article"><a class="notion-link" href="https://[">Broken</a><a class="notion-link" href="https://app.notion.com/p/${id}${hash}">Section</a></div>`
+    convertInnerUrl({ allPages })
+    expect(document.querySelectorAll('a')[1]).toHaveAttribute('href', hash)
+  })
 })
