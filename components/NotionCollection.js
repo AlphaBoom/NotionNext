@@ -5,6 +5,13 @@ import { Collection } from 'react-notion-x/build/third-party/collection'
 
 export default function NotionCollection(props) {
   const { block, ctx } = props
+  if (block?.type === 'page' && block.parent_table === 'collection') {
+    return (
+      <div className='notion-database-entry'>
+        <Collection {...props} />
+      </div>
+    )
+  }
   if (['collection_view', 'collection_view_page'].includes(block?.type)) {
     const collectionId = collectionIdFor(block, ctx?.recordMap)
     const collection = unwrapRecord(ctx?.recordMap?.collection?.[collectionId])

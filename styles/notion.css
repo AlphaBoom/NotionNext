@@ -2140,6 +2140,10 @@ tbody tr {
   display: none !important;
 }
 
+.notion-database-entry .notion-collection-page-properties {
+  display: block !important;
+}
+
 /* Mermaid 外层 pre：与 html.dark 对齐，避免 Tailwind dark: 跟系统偏好不同步 */
 pre.notion-code.language-mermaid,
 pre.notion-code[class*='language-mermaid'] {
