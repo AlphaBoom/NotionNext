@@ -162,6 +162,7 @@ export default function HomeIntro({ siteInfo, categoryOptions = [] }) {
                 <h1>
                   <SmartLink
                     href='/about'
+                    analytics={{ event: 'navigation_click', placement: 'profile' }}
                     className='medium-author-link'
                     aria-label={`关于 ${siteConfig('AUTHOR')}`}
                   >

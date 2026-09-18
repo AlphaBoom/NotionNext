@@ -36,7 +36,8 @@ const BlogPostCard = ({ post, priority = false, searchKeyword }) => {
           <TwikooCommentCount post={post} />
         </div>
         <h2>
-          <SmartLink href={post.href} className='medium-post-title-link'>
+          <SmartLink href={post.href} className='medium-post-title-link'
+            analytics={{ event: 'select_content', content_type: 'article', content_id: post.id, placement: 'post_card_title' }}>
             {siteConfig('POST_TITLE_ICON') && (
               <NotionIcon icon={post.pageIcon} />
             )}
@@ -65,6 +66,7 @@ const BlogPostCard = ({ post, priority = false, searchKeyword }) => {
         <SmartLink
           href={post.href}
           className='medium-post-cover'
+          analytics={{ event: 'select_content', content_type: 'article', content_id: post.id, placement: 'post_card_cover' }}
           tabIndex={-1}
           aria-hidden='true'
         >

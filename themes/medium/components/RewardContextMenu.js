@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/router'
 import SmartLink from '@/components/SmartLink'
+import { trackInteraction } from '@/lib/plugins/interactionAnalytics'
 
 const DESKTOP = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 const NATIVE_TARGETS =
@@ -15,6 +16,15 @@ export default function RewardContextMenu({ active, onToggle }) {
   const menu = useRef(null)
   const previousFocus = useRef(null)
   const router = useRouter()
+  const copyPageLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      trackInteraction('copy_link', { placement: 'context_menu' })
+      setNotice('已复制页面地址')
+    } catch {
+      setNotice('复制失败，请用浏览器菜单复制')
+    }
+  }
 
   useEffect(() => {
     setPosition(null)
@@ -196,6 +206,7 @@ export default function RewardContextMenu({ active, onToggle }) {
             <SmartLink
               role='menuitem'
               href='/search'
+              analytics={{ event: 'navigation_click', placement: 'context_menu' }}
               onClick={() => setPosition(null)}
             >
               搜索文章
@@ -203,6 +214,7 @@ export default function RewardContextMenu({ active, onToggle }) {
             <SmartLink
               role='menuitem'
               href='/archive'
+              analytics={{ event: 'navigation_click', placement: 'context_menu' }}
               onClick={() => setPosition(null)}
             >
               文章归档
@@ -210,6 +222,7 @@ export default function RewardContextMenu({ active, onToggle }) {
             <SmartLink
               role='menuitem'
               href='/category'
+              analytics={{ event: 'navigation_click', placement: 'context_menu' }}
               onClick={() => setPosition(null)}
             >
               分类
@@ -217,6 +230,7 @@ export default function RewardContextMenu({ active, onToggle }) {
             <SmartLink
               role='menuitem'
               href='/tag'
+              analytics={{ event: 'navigation_click', placement: 'context_menu' }}
               onClick={() => setPosition(null)}
             >
               标签
@@ -225,14 +239,7 @@ export default function RewardContextMenu({ active, onToggle }) {
           <button
             type='button'
             role='menuitem'
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(window.location.href)
-                setNotice('已复制页面地址')
-              } catch {
-                setNotice('复制失败，请用浏览器菜单复制')
-              }
-            }}
+            onClick={() => { void copyPageLink() }}
           >
             复制页面地址 <span aria-hidden='true'>⧉</span>
           </button>

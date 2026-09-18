@@ -23,10 +23,10 @@ export const MenuItemDrop = ({ link }) => {
         </button>
         <ul id={menuId} className='medium-submenu' hidden={!open}>
           {link.subMenus.filter(item => item.show !== false).map((item, index) => (
-            <li key={item.id || index}><SmartLink href={item.href} target={item.target || link.target}>{item.title || item.name}</SmartLink></li>
+            <li key={item.id || index}><SmartLink href={item.href} target={item.target || link.target} analytics={{ event: 'navigation_click', placement: 'header_submenu' }}>{item.title || item.name}</SmartLink></li>
           ))}
         </ul>
-      </> : <SmartLink href={link.href} target={link.target} aria-current={selected ? 'page' : undefined}>{link.name}</SmartLink>}
+      </> : <SmartLink href={link.href} target={link.target} analytics={{ event: 'navigation_click', placement: 'header' }} aria-current={selected ? 'page' : undefined}>{link.name}</SmartLink>}
     </li>
   )
 }

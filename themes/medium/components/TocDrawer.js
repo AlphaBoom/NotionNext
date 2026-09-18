@@ -30,7 +30,7 @@ export default function TocDrawer({ post }) {
         <i className='fas fa-list-ul' aria-hidden='true' />{tocVisible ? '关闭目录' : '目录'}
       </button>
       {tocVisible && <section id='medium-toc-panel' className='medium-toc-panel' aria-label='文章目录'>
-        <Catalog key={post.id} toc={post.toc} onNavigate={() => changeTocVisible(false)} />
+        <Catalog key={post.id} toc={post.toc} placement='mobile_toc' onNavigate={() => changeTocVisible(false)} />
       </section>}
     </div>
   )
