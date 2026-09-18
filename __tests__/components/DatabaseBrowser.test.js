@@ -1,35 +1,18 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import DatabaseBrowser from '@/components/database/DatabaseBrowser'
-import { mergeResult } from '@/components/database/useDatabase'
-import { withRowMetadata } from '@/lib/notion/database/rowMetadata'
 import { NotionContextProvider } from 'react-notion-x'
 
+jest.mock('@/blog.config', () => ({
+  NOTION_PUBLIC_HOST: 'https://alphaboom.notion.site'
+}))
 jest.mock('react-notion-x', () => ({
   NotionContextProvider: jest.fn(({ children }) => children)
 }))
 jest.mock('react-notion-x/build/third-party/collection', () => ({
   Property: ({ data }) => <span>{data?.[0]?.[0]}</span>
 }))
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: ({ href, prefetch, children, ...rest }) => (
-    <a
-      href={href}
-      {...rest}
-      onClick={event => {
-        event.preventDefault()
-        rest.onClick?.(event)
-      }}
-    >
-      {children}
-    </a>
-  )
-}))
-let mockRouter
-jest.mock('next/router', () => ({ useRouter: () => mockRouter }))
 const blockId = '11111111-1111-1111-1111-111111111111'
 const viewId = '22222222-2222-2222-2222-222222222222'
-const otherView = '33333333-3333-3333-3333-333333333333'
 const collection = {
   id: 'collection',
   name: [['测试数据库']],
@@ -38,354 +21,260 @@ const collection = {
     number: { name: '数值', type: 'number' }
   }
 }
+const view = { id: viewId, type: 'table', name: '默认表格' }
 const block = {
   id: blockId,
   type: 'collection_view_page',
   collection_id: 'collection',
-  view_ids: [viewId, otherView]
+  view_ids: [viewId]
 }
 const ctx = {
   recordMap: {
     block: {},
     collection: { collection: { value: collection } },
-    collection_view: {
-      [viewId]: { value: { id: viewId, name: '表格', type: 'table' } },
-      [otherView]: { value: { id: otherView, name: '画廊', type: 'gallery' } }
-    }
+    collection_view: { [viewId]: { value: view } }
   },
   mapPageUrl: id => `/${id}`
 }
-const result = (ids, more = false) => ({
-  blockIds: ids,
+const rowId = i => `${String(i).padStart(8, '0')}-0000-0000-0000-000000000000`
+const preview = (count = 100, hasMore = true) => ({
+  supported: true,
+  collection,
+  view,
+  hasMore,
+  omitted: false,
+  blockIds: Array.from({ length: count }, (_, i) => rowId(i)),
   recordMap: {
     block: Object.fromEntries(
-      ids.map(id => [
-        id,
+      Array.from({ length: count }, (_, i) => [
+        rowId(i),
         {
           value: {
-            id,
+            id: rowId(i),
             type: 'page',
-            properties: { title: [[id]], number: [['1']] }
+            properties: {
+              title: [[`条目 ${String(i).padStart(3, '0')}`]],
+              number: [['42']]
+            },
+            format: { page_cover: 'https://example.com/cover.png' }
           }
         }
       ])
     )
-  },
-  hasMore: more,
-  nextCursor: more ? 'cursor' : null,
-  total: null
+  }
 })
-const response = value => ({ ok: true, json: () => Promise.resolve(value) })
-const deferred = () => {
-  let resolve
-  const promise = new Promise(r => {
-    resolve = r
-  })
-  return { resolve, promise }
-}
-const mount = () =>
-  render(<DatabaseBrowser block={block} collection={collection} ctx={ctx} />)
-
-it('preserves loaded row properties and covers when later rows reference them, including after return', async () => {
-  const first = result(['earlier-row'], true)
-  const earlier = first.recordMap.block['earlier-row']
-  earlier.value.properties.number = [['42']]
-  earlier.value.format = { page_cover: 'https://example.com/cover.png' }
-  const next = result(['later-row'])
-  next.recordMap.block['later-row'].value.properties.relation = [
-    ['‣', [['p', 'earlier-row']]]
-  ]
-  next.recordMap = withRowMetadata(next.recordMap.block, {
-    block: { ...first.recordMap.block, ...next.recordMap.block }
-  })
-  expect(
-    next.recordMap.block['earlier-row'].value.properties.number
-  ).toBeUndefined()
-  fetch
-    .mockResolvedValueOnce(response(first))
-    .mockResolvedValueOnce(response(next))
-  const props = {
-    block: { ...block, id: 'abababab-1111-1111-1111-111111111111' },
-    collection,
-    ctx
-  }
-  const rendered = render(<DatabaseBrowser {...props} />)
-  await screen.findByText('42')
-  fireEvent.click(screen.getByRole('button', { name: '加载更多' }))
-  await screen.findByText('later-row')
-  expect(screen.getByText('42')).toBeInTheDocument()
-  expect(
-    NotionContextProvider.mock.calls.at(-1)[0].recordMap.block['earlier-row']
-  ).toEqual(earlier)
-  fireEvent.click(screen.getByRole('link', { name: '打开 earlier-row' }))
-  rendered.unmount()
-  render(<DatabaseBrowser {...props} />)
-  await screen.findByText('later-row')
-  expect(screen.getByText('42')).toBeInTheDocument()
-  expect(fetch).toHaveBeenCalledTimes(2)
-  expect(
-    NotionContextProvider.mock.calls.at(-1)[0].recordMap.block['earlier-row']
-  ).toEqual(earlier)
-})
-
-it('replaces old records with actual incoming rows so removed fields do not survive', () => {
-  const first = result(['existing-row'])
-  first.recordMap.block.related = {
-    value: { id: 'related', properties: { title: [['Related']] } }
-  }
-  const next = result(['existing-row', 'related'])
-  delete next.recordMap.block['existing-row'].value.properties.number
-  const merged = mergeResult(first, next)
-  expect(merged.blockIds).toEqual(['existing-row', 'related'])
-  expect(merged.recordMap.block['existing-row']).toEqual(
-    next.recordMap.block['existing-row']
-  )
-  expect(merged.recordMap.block.related).toEqual(next.recordMap.block.related)
-  expect(first.recordMap.block['existing-row'].value.properties.number).toEqual(
-    [['1']]
-  )
-})
-
-it('keeps referenced metadata from previous pages and merges it into the renderer context', async () => {
-  const first = result(['metadata-one'], true)
-  first.recordMap.notion_user = {
-    alice: { value: { id: 'alice', given_name: 'Alice' } }
-  }
-  first.recordMap.block.related = {
-    value: { id: 'related', properties: { title: [['Related']] } }
-  }
-  first.recordMap.collection = {
-    related: { value: { id: 'related', name: [['Related database']] } }
-  }
-  first.recordMap.signed_urls = { related: 'https://example.com/icon.png' }
-  const next = result(['metadata-two'])
-  next.recordMap.notion_user = {
-    bob: { value: { id: 'bob', given_name: 'Bob' } }
-  }
-  fetch
-    .mockResolvedValueOnce(response(first))
-    .mockResolvedValueOnce(response(next))
+const response = result => ({ ok: true, json: () => Promise.resolve(result) })
+const mount = props =>
   render(
     <DatabaseBrowser
-      block={{ ...block, id: 'dddddddd-1111-1111-1111-111111111111' }}
+      block={block}
+      collection={collection}
+      ctx={ctx}
+      {...props}
+    />
+  )
+beforeEach(() => {
+  global.IntersectionObserver = undefined
+  global.fetch = jest.fn()
+  window.history.replaceState({}, '', '/')
+})
+
+it('shows 20 at a time up to 100, while local search and expansion make no further requests', async () => {
+  const data = preview()
+  data.recordMap.notion_user = {
+    alice: { value: { id: 'alice', given_name: 'Alice' } }
+  }
+  fetch.mockResolvedValueOnce(response(data))
+  mount()
+  await screen.findByText('已显示 20 / 100 条预览')
+  expect(screen.getAllByRole('row')).toHaveLength(21)
+  fireEvent.click(screen.getByRole('button', { name: '展开更多预览' }))
+  expect(screen.getByText('已显示 40 / 100 条预览')).toBeInTheDocument()
+  expect(screen.getAllByText('42')).toHaveLength(40)
+  const provider = NotionContextProvider.mock.calls.at(-1)[0]
+  expect(provider.recordMap.block[rowId(0)].value.format.page_cover).toBe(
+    'https://example.com/cover.png'
+  )
+  expect(provider.recordMap.notion_user.alice.value.given_name).toBe('Alice')
+  expect(provider.mapPageUrl(rowId(0))).toBe(
+    'https://alphaboom.notion.site/00000000000000000000000000000000'
+  )
+  fireEvent.change(screen.getByRole('searchbox', { name: '搜索预览条目' }), {
+    target: { value: '条目 095' }
+  })
+  expect(screen.getByText('条目 095')).toBeInTheDocument()
+  expect(screen.getByText('预览中匹配 1 条 · 已显示 1 条')).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox'), {
+    target: { value: '不存在的条目' }
+  })
+  expect(
+    screen.getByText('预览中没有匹配条目，可前往 Notion 搜索完整数据库。')
+  ).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '清除搜索' }))
+  for (let i = 0; i < 4; i++)
+    fireEvent.click(screen.getByRole('button', { name: '展开更多预览' }))
+  expect(screen.getAllByRole('row')).toHaveLength(101)
+  expect(screen.queryByRole('button', { name: '展开更多预览' })).toBeNull()
+  expect(
+    screen.getByText('此处展示 100 条预览，更多内容请前往 Notion。')
+  ).toBeInTheDocument()
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(fetch).toHaveBeenCalledWith(
+    `/api/notion-database?blockId=${blockId.replace(/-/g, '')}`,
+    expect.objectContaining({ method: 'GET', credentials: 'omit' })
+  )
+  expect(fetch.mock.calls[0][1].body).toBeUndefined()
+  expect(screen.queryByText('筛选与排序')).toBeNull()
+  expect(screen.queryByText('默认表格')).toBeNull()
+  expect(
+    screen.getByRole('link', { name: '在 Notion 中打开 条目 000（新标签页）' })
+  ).toHaveAttribute('target', '_blank')
+  expect(
+    screen.getByRole('link', { name: '在 Notion 中查看完整数据库 ↗' })
+  ).toHaveAttribute(
+    'href',
+    `https://alphaboom.notion.site/${blockId.replace(/-/g, '')}?v=${viewId.replace(/-/g, '')}`
+  )
+})
+
+it.each([0, 8, 100])(
+  'handles an entire small view with %i rows without claiming it is truncated',
+  async count => {
+    fetch.mockResolvedValueOnce(response(preview(count, false)))
+    mount()
+    await screen.findByText(`已显示 ${Math.min(count, 20)} / ${count} 条预览`)
+    expect(
+      screen.queryByRole('link', { name: '在 Notion 中查看完整数据库 ↗' })
+    ).toBeNull()
+    expect(
+      screen.getByRole('link', { name: '在 Notion 中打开 ↗' })
+    ).toBeInTheDocument()
+    if (!count)
+      expect(
+        screen.getByText('暂无可显示的预览条目，可前往 Notion 查看。')
+      ).toBeInTheDocument()
+  }
+)
+
+it('keeps the public link visible when the collection heading is hidden and skips unsupported views', () => {
+  const local = {
+    ...ctx,
+    recordMap: {
+      ...ctx.recordMap,
+      collection_view: { [viewId]: { value: { ...view, type: 'calendar' } } }
+    }
+  }
+  mount({
+    block: { ...block, format: { hide_inline_collection_name: true } },
+    ctx: local
+  })
+  expect(
+    screen.getByRole('link', { name: '在 Notion 中打开 ↗' })
+  ).toBeInTheDocument()
+  expect(screen.queryByRole('searchbox')).toBeNull()
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(fetch).not.toHaveBeenCalled()
+})
+
+it('renders a gallery preview with public detail links', async () => {
+  const data = preview(1, false)
+  data.view = {
+    ...view,
+    type: 'gallery',
+    format: { gallery_cover: { type: 'page_cover' } }
+  }
+  fetch.mockResolvedValueOnce(response(data))
+  mount()
+  await screen.findByRole('img', { name: '条目 000' })
+  for (const link of screen.getAllByRole('link', {
+    name: '在 Notion 中打开 条目 000（新标签页）'
+  })) {
+    expect(link.href).toBe(
+      'https://alphaboom.notion.site/00000000000000000000000000000000'
+    )
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  }
+})
+
+it('ignores legacy query URLs instead of re-enabling remote search or view switching', async () => {
+  window.history.replaceState(
+    {},
+    '',
+    `/?v=other&db_${blockId.replace(/-/g, '')}=${encodeURIComponent(JSON.stringify({ search: 'remote', cursor: 'forged', viewId: 'other' }))}`
+  )
+  fetch.mockResolvedValueOnce(response(preview(1, false)))
+  mount()
+  await screen.findByText('条目 000')
+  expect(fetch.mock.calls[0][0]).toBe(
+    `/api/notion-database?blockId=${blockId.replace(/-/g, '')}`
+  )
+  expect(screen.getByRole('searchbox')).toHaveValue('')
+})
+
+it('keeps the Notion exit available on failure and retries the same fixed GET', async () => {
+  fetch
+    .mockResolvedValueOnce({
+      ok: false,
+      json: () => Promise.resolve({ code: 'RATE_LIMITED' })
+    })
+    .mockResolvedValueOnce(response(preview(1, false)))
+  mount()
+  await screen.findByRole('alert')
+  expect(
+    screen.getByRole('link', { name: '在 Notion 中打开 ↗' })
+  ).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: '重试' }))
+  await screen.findByText('条目 000')
+  expect(fetch.mock.calls[0][0]).toBe(fetch.mock.calls[1][0])
+})
+
+it('aborts an old request and ignores its response after switching databases', async () => {
+  let resolve
+  fetch
+    .mockReturnValueOnce(
+      new Promise(r => {
+        resolve = r
+      })
+    )
+    .mockResolvedValueOnce(response(preview(1, false)))
+  const rendered = mount()
+  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  const signal = fetch.mock.calls[0][1].signal
+  rendered.rerender(
+    <DatabaseBrowser
+      block={{ ...block, id: 'aaaaaaaa-1111-1111-1111-111111111111' }}
       collection={collection}
       ctx={ctx}
     />
   )
-  await screen.findByText('metadata-one')
-  expect(JSON.parse(fetch.mock.calls[0][1].body).timeZone).toBe(
-    Intl.DateTimeFormat().resolvedOptions().timeZone
-  )
-  fireEvent.click(screen.getByRole('button', { name: '加载更多' }))
-  await screen.findByText('metadata-two')
-  const map = NotionContextProvider.mock.calls.at(-1)[0].recordMap
-  expect(Object.keys(map.notion_user).sort()).toEqual(['alice', 'bob'])
-  expect(map.block.related).toEqual(first.recordMap.block.related)
-  expect(map.collection.related).toEqual(first.recordMap.collection.related)
-  expect(map.signed_urls.related).toBe('https://example.com/icon.png')
-  expect(screen.getAllByRole('row')).toHaveLength(3) // Reference metadata is not another row.
-})
-
-it('does not request or show result controls for a shared unsupported view', async () => {
-  mockRouter.query = { v: otherView }
-  const localContext = {
-    ...ctx,
-    recordMap: {
-      ...ctx.recordMap,
-      collection_view: {
-        ...ctx.recordMap.collection_view,
-        [otherView]: {
-          value: { id: otherView, name: '日历', type: 'calendar' }
-        }
-      }
-    }
-  }
-  fetch.mockResolvedValue(response(result(['supported-row'])))
-  render(
-    <DatabaseBrowser
-      block={{ ...block, id: 'eeeeeeee-1111-1111-1111-111111111111' }}
-      collection={collection}
-      ctx={localContext}
-    />
-  )
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: '日历' })).toHaveAttribute(
-      'aria-pressed',
-      'true'
-    )
-  )
-  expect(fetch).not.toHaveBeenCalled()
-  expect(screen.queryByRole('status')).toBeNull()
-  expect(screen.queryByRole('searchbox')).toBeNull()
-  expect(screen.queryByText(/已加载/)).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: '表格' }))
-  await screen.findByText('supported-row')
-  fireEvent.click(screen.getByRole('button', { name: '日历' }))
-  expect(fetch).toHaveBeenCalledTimes(1)
-  expect(screen.queryByRole('status')).toBeNull()
-  expect(screen.queryByText(/已加载/)).toBeNull()
-})
-
-it('aborts an in-flight table request when switching to an unsupported view', async () => {
-  const pending = deferred()
-  fetch.mockReturnValue(pending.promise)
-  const localContext = {
-    ...ctx,
-    recordMap: {
-      ...ctx.recordMap,
-      collection_view: {
-        ...ctx.recordMap.collection_view,
-        [otherView]: {
-          value: { id: otherView, name: '时间轴', type: 'timeline' }
-        }
-      }
-    }
-  }
-  render(
-    <DatabaseBrowser
-      block={{ ...block, id: 'ffffffff-1111-1111-1111-111111111111' }}
-      collection={collection}
-      ctx={localContext}
-    />
-  )
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
-  const signal = fetch.mock.calls[0][1].signal
-  fireEvent.click(screen.getByRole('button', { name: '时间轴' }))
-  expect(signal.aborted).toBe(true)
+  await screen.findByText('已显示 1 / 1 条预览')
   await act(() => {
-    pending.resolve(response(result(['invisible-row'], true)))
+    resolve(response(preview(100, true)))
     return Promise.resolve()
   })
-  expect(screen.queryByText('invisible-row')).toBeNull()
-  expect(screen.queryByRole('button', { name: '加载更多' })).toBeNull()
-  expect(screen.queryByRole('status')).toBeNull()
-  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(signal.aborted).toBe(true)
+  expect(screen.getByText('已显示 1 / 1 条预览')).toBeInTheDocument()
+  rendered.unmount()
+  expect(fetch.mock.calls[1][1].signal.aborted).toBe(true)
 })
 
-beforeEach(() => {
-  global.IntersectionObserver = undefined
-  sessionStorage.clear()
-  mockRouter = {
-    isReady: true,
-    query: { unique: Math.random() },
-    pathname: '/[prefix]',
-    events: { on: jest.fn(), off: jest.fn() },
-    replace: jest.fn().mockResolvedValue(true)
+it('does not fetch an offscreen preview until it nears the viewport', async () => {
+  let intersect
+  const disconnect = jest.fn()
+  global.IntersectionObserver = class {
+    constructor(callback) {
+      intersect = callback
+    }
+    observe() {}
+    disconnect() {
+      disconnect()
+    }
   }
-  window.scrollTo = jest.fn()
-  global.fetch = jest.fn()
-})
-
-it('requests subsequent pages on demand, deduplicates rows and disables prefetch links', async () => {
-  fetch
-    .mockResolvedValueOnce(response(result(['row-one'], true)))
-    .mockResolvedValueOnce(response(result(['row-one', 'row-two'])))
+  fetch.mockResolvedValueOnce(response(preview(1, false)))
   mount()
-  await screen.findByText('row-one')
+  expect(fetch).not.toHaveBeenCalled()
+  act(() => intersect([{ isIntersecting: true }]))
+  await screen.findByText('条目 000')
   expect(fetch).toHaveBeenCalledTimes(1)
-  fireEvent.click(screen.getByRole('button', { name: '加载更多' }))
-  await screen.findByText('row-two')
-  expect(screen.getAllByText('row-one')).toHaveLength(1)
-  expect(JSON.parse(fetch.mock.calls[1][1].body).cursor).toBe('cursor')
-  expect(screen.getByText('已加载 2 条 · 已全部加载')).toBeInTheDocument()
-})
-
-it('ignores a late response after a view switch and cancels the old request', async () => {
-  // Give this query a distinct ID so another test's in-memory restoration cannot match.
-  const localBlock = { ...block, id: 'aaaaaaaa-1111-1111-1111-111111111111' }
-  const first = deferred()
-  fetch
-    .mockReturnValueOnce(first.promise)
-    .mockResolvedValueOnce(response(result(['new-view'])))
-  render(
-    <DatabaseBrowser block={localBlock} collection={collection} ctx={ctx} />
-  )
-  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
-  const signal = fetch.mock.calls[0][1].signal
-  fireEvent.click(screen.getByRole('button', { name: '画廊' }))
-  await screen.findByText('new-view')
-  await act(() => {
-    first.resolve(response(result(['stale-view'])))
-    return Promise.resolve()
-  })
-  expect(screen.queryByText('stale-view')).not.toBeInTheDocument()
-  expect(signal.aborted).toBe(true)
-  expect(mockRouter.replace).toHaveBeenCalledWith(
-    expect.objectContaining({
-      query: expect.objectContaining({
-        [`db_${localBlock.id.replace(/-/g, '')}`]:
-          expect.stringContaining(otherView)
-      })
-    }),
-    undefined,
-    { shallow: true, scroll: false }
-  )
-})
-
-it('shows expiration recovery and restarts without the expired cursor', async () => {
-  const localBlock = { ...block, id: 'bbbbbbbb-1111-1111-1111-111111111111' }
-  fetch
-    .mockResolvedValueOnce(response(result(['before'], true)))
-    .mockResolvedValueOnce({
-      ok: false,
-      json: () => Promise.resolve({ code: 'CURSOR_EXPIRED' })
-    })
-    .mockResolvedValueOnce(response(result(['fresh'])))
-  render(
-    <DatabaseBrowser block={localBlock} collection={collection} ctx={ctx} />
-  )
-  await screen.findByText('before')
-  fireEvent.click(screen.getByRole('button', { name: '加载更多' }))
-  fireEvent.click(await screen.findByRole('button', { name: '刷新结果' }))
-  await screen.findByText('fresh')
-  expect(JSON.parse(fetch.mock.calls[2][1].body).cursor).toBeUndefined()
-  expect(screen.queryByText('before')).not.toBeInTheDocument()
-})
-
-it('restores loaded pages and position when returning to the same URL without refetching', async () => {
-  const localBlock = { ...block, id: 'cccccccc-1111-1111-1111-111111111111' }
-  fetch.mockResolvedValueOnce(response(result(['remember-me'])))
-  const first = render(
-    <DatabaseBrowser block={localBlock} collection={collection} ctx={ctx} />
-  )
-  await screen.findByText('remember-me')
-  Object.defineProperty(window, 'scrollY', { configurable: true, value: 450 })
-  fireEvent.click(screen.getByRole('link', { name: '打开 remember-me' }))
-  first.unmount()
-  render(
-    <DatabaseBrowser block={localBlock} collection={collection} ctx={ctx} />
-  )
-  await screen.findByText('remember-me')
-  expect(fetch).toHaveBeenCalledTimes(1)
-  await waitFor(() =>
-    expect(window.scrollTo).toHaveBeenCalledWith({
-      top: 450,
-      behavior: 'instant'
-    })
-  )
-})
-
-it('applies numeric filters before requesting a new first page and handles empty results', async () => {
-  const localBlock = { ...block, id: 'dddddddd-1111-1111-1111-111111111111' }
-  fetch
-    .mockResolvedValueOnce(response(result(['initial'], true)))
-    .mockResolvedValueOnce(response(result([])))
-  render(
-    <DatabaseBrowser block={localBlock} collection={collection} ctx={ctx} />
-  )
-  await screen.findByText('initial')
-  fireEvent.click(screen.getByRole('button', { name: '筛选与排序' }))
-  fireEvent.click(screen.getByRole('button', { name: '＋ 添加筛选' }))
-  fireEvent.change(screen.getByLabelText('筛选字段 1'), {
-    target: { value: 'number' }
-  })
-  fireEvent.change(screen.getByLabelText('筛选值 1'), {
-    target: { value: '8' }
-  })
-  fireEvent.click(screen.getByRole('button', { name: '应用' }))
-  await screen.findByText(/没有符合条件的条目/)
-  expect(JSON.parse(fetch.mock.calls[1][1].body)).toMatchObject({
-    filters: [{ property: 'number', operator: 'equals', value: 8 }]
-  })
-  expect(JSON.parse(fetch.mock.calls[1][1].body).cursor).toBeUndefined()
+  expect(disconnect).toHaveBeenCalled()
 })

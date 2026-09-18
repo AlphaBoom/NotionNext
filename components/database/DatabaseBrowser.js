@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Link from 'next/link'
 import { NotionContextProvider } from 'react-notion-x'
 import { Property } from 'react-notion-x/build/third-party/collection'
 import {
-  compactId,
+  DATABASE_PREVIEW_LIMIT,
+  DATABASE_DISPLAY_STEP,
+  isSupportedView,
   mergeRecordMaps,
   textContent,
   unwrapRecord,
   visibleProperties
 } from '@/lib/notion/database/model'
 import { galleryVisibilityClassName } from '@/lib/notion/galleryVisibilityClassName'
-import DatabaseControls from './DatabaseControls'
+import { publicNotionUrl } from '@/lib/notion/database/publicUrl'
 import DatabaseTable from './DatabaseTable'
 import useDatabase from './useDatabase'
 import styles from './DatabaseBrowser.module.css'
@@ -45,20 +46,20 @@ function Cell({ row, field, collection }) {
   )
 }
 
-function DatabaseRows({ rows, collection, view, ctx, onNavigate }) {
+function DatabaseRows({ rows, collection, view, ctx }) {
   const fields = visibleProperties(collection, view)
-  const href = row => ctx.mapPageUrl?.(row.id) || `/${compactId(row.id)}`
+  const href = row => publicNotionUrl(row.id)
   const title = row => textContent(row.properties?.title) || '无标题'
   const rowLink = (row, children, className) => (
-    <Link
+    <a
       href={href(row)}
-      prefetch={false}
-      onClick={onNavigate}
-      aria-label={`打开 ${title(row)}`}
+      target='_blank'
+      rel='noopener noreferrer'
+      aria-label={`在 Notion 中打开 ${title(row)}（新标签页）`}
       className={className}
     >
       {children}
-    </Link>
+    </a>
   )
   if (view.type === 'table')
     return (
@@ -133,7 +134,7 @@ function DatabaseRows({ rows, collection, view, ctx, onNavigate }) {
         {[...groups].map(([name, items]) => (
           <section key={name}>
             <h4>
-              {name} <small>已加载 {items.length}</small>
+              {name} <small>预览 {items.length}</small>
             </h4>
             {items.map(card)}
           </section>
@@ -151,9 +152,25 @@ function DatabaseRows({ rows, collection, view, ctx, onNavigate }) {
   )
 }
 
+// Record references inside properties also go to public Notion, not blog routes.
+function PublicPageLink({ children, ...props }) {
+  return (
+    <a {...props} target='_blank' rel='noopener noreferrer'>
+      {children}
+    </a>
+  )
+}
+const mapPreviewPageUrl = id => publicNotionUrl(id)
+
 export default function DatabaseBrowser({ block, ctx, collection }) {
   const rootRef = useRef(null)
   const [visible, setVisible] = useState(false)
+  const [search, setSearch] = useState('')
+  const [displayCount, setDisplayCount] = useState(DATABASE_DISPLAY_STEP)
+  useEffect(() => {
+    setSearch('')
+    setDisplayCount(DATABASE_DISPLAY_STEP)
+  }, [block.id])
   useEffect(() => {
     if (typeof IntersectionObserver === 'undefined') {
       setVisible(true)
@@ -171,145 +188,160 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
     if (rootRef.current) observer.observe(rootRef.current)
     return () => observer.disconnect()
   }, [])
-  const views = block.view_ids
-    .map(id => unwrapRecord(ctx.recordMap.collection_view?.[id]))
-    .filter(Boolean)
-  const db = useDatabase(block, collection, visible, views)
-  const { view, supported } = db
-  const map = useMemo(
-    () => mergeRecordMaps(ctx.recordMap, db.result?.recordMap),
-    [ctx.recordMap, db.result]
+  const initialView = unwrapRecord(
+    ctx.recordMap.collection_view?.[block.view_ids?.[0]]
+  )
+  const db = useDatabase(
+    block.id,
+    visible && isSupportedView(initialView?.type)
+  )
+  const view = db.result?.view || initialView
+  const previewCollection = db.result?.collection || collection
+  const supported = isSupportedView(view?.type)
+  const map = useMemo(() => {
+    const merged = mergeRecordMaps(ctx.recordMap, db.result?.recordMap)
+    merged.collection[previewCollection.id] = { value: previewCollection }
+    return merged
+  }, [ctx.recordMap, db.result, previewCollection])
+  const previewComponents = useMemo(
+    () => ({ ...ctx.components, PageLink: PublicPageLink }),
+    [ctx.components]
   )
   const rows = (db.result?.blockIds || [])
+    .slice(0, DATABASE_PREVIEW_LIMIT)
     .map(id => unwrapRecord(db.result.recordMap.block[id]))
     .filter(Boolean)
-  const sourceUrl = `https://www.notion.so/${compactId(block.id)}?v=${compactId(db.query.viewId)}`
+  const term = search.trim().normalize('NFKC').toLocaleLowerCase()
+  const matches = term
+    ? rows.filter(row =>
+        textContent(row.properties?.title)
+          .normalize('NFKC')
+          .toLocaleLowerCase()
+          .includes(term)
+      )
+    : rows
+  const displayed = matches.slice(0, displayCount)
+  const sourceUrl = publicNotionUrl(block.id, view?.id)
   const hideHeading =
     block.format?.hide_inline_collection_name ||
     view?.format?.hide_linked_collection_name
   return (
-    <NotionContextProvider {...ctx} recordMap={map}>
+    <NotionContextProvider
+      {...ctx}
+      recordMap={map}
+      mapPageUrl={mapPreviewPageUrl}
+      components={previewComponents}
+    >
       <section
         ref={rootRef}
         className={styles.root}
-        aria-label={textContent(collection.name) || '数据库'}
+        aria-label={textContent(previewCollection.name) || '数据库预览'}
       >
-        {!hideHeading && (
-          <div className='database-heading'>
-            <h3>{textContent(collection.name) || '数据库'}</h3>
-            <a href={sourceUrl} target='_blank' rel='noreferrer'>
-              在 Notion 中查看 ↗
-            </a>
+        <div className='database-heading'>
+          {!hideHeading && (
+            <h3>{textContent(previewCollection.name) || '数据库'}</h3>
+          )}
+          <a href={sourceUrl} target='_blank' rel='noopener noreferrer'>
+            在 Notion 中打开 ↗
+          </a>
+        </div>
+        <p className='database-preview-note'>
+          此处仅提供最多 {DATABASE_PREVIEW_LIMIT}{' '}
+          条预览，完整搜索、筛选和条目详情请前往 Notion。
+        </p>
+        {!supported && <p>此视图请在 Notion 中查看。</p>}
+        {supported && db.result && (
+          <div className='database-toolbar'>
+            <label className='database-search'>
+              <span className='sr-only'>搜索预览条目</span>
+              <input
+                type='search'
+                placeholder='搜索预览条目…'
+                value={search}
+                maxLength={200}
+                onChange={event => {
+                  setSearch(event.target.value)
+                  setDisplayCount(DATABASE_DISPLAY_STEP)
+                }}
+              />
+            </label>
+            {search && (
+              <button
+                type='button'
+                onClick={() => {
+                  setSearch('')
+                  setDisplayCount(DATABASE_DISPLAY_STEP)
+                }}
+              >
+                清除搜索
+              </button>
+            )}
           </div>
         )}
-        <div className='database-views' role='group' aria-label='数据库视图'>
-          {views.map(item => (
-            <button
-              key={item.id}
-              type='button'
-              aria-pressed={item.id === view?.id}
-              onClick={() =>
-                db.updateQuery({
-                  viewId: item.id,
-                  search: '',
-                  filters: [],
-                  sorts: []
-                })
-              }
-            >
-              {item.name || '默认视图'}
-            </button>
-          ))}
-        </div>
-        {supported && (
-          <DatabaseControls
-            query={db.query}
-            schema={collection.schema}
-            onChange={db.updateQuery}
-            id={`database-${compactId(block.id)}`}
-          />
-        )}
-        {!supported && (
-          <p>
-            这个视图请
-            <a href={sourceUrl} target='_blank' rel='noreferrer'>
-              在 Notion 中查看
-            </a>
-            。
-          </p>
-        )}
-        {supported && rows.length > 0 && (
+        {supported && displayed.length > 0 && (
           <DatabaseRows
-            rows={rows}
-            collection={collection}
+            rows={displayed}
+            collection={previewCollection}
             view={view}
             ctx={ctx}
-            onNavigate={db.remember}
           />
         )}
-        {supported && db.busy && !rows.length && (
+        {supported && db.busy && (
           <div className='database-placeholder' role='status'>
-            正在加载条目…
+            正在加载数据库预览…
           </div>
         )}
-        {supported && !db.busy && !db.error && db.result && !rows.length && (
+        {supported && !db.busy && !db.error && db.result && !matches.length && (
           <div className='database-placeholder'>
-            {db.result.hasMore
-              ? '这一批没有可显示的条目，可继续加载。'
-              : '没有符合条件的条目。'}
-            {(db.query.search || db.query.filters.length > 0) &&
-              '可以调整筛选条件或搜索词。'}
+            {term
+              ? '预览中没有匹配条目，可前往 Notion 搜索完整数据库。'
+              : '暂无可显示的预览条目，可前往 Notion 查看。'}
           </div>
         )}
         {supported && db.error && (
           <div className='database-error' role='alert'>
             <p>
-              {db.error === 'CURSOR_EXPIRED'
-                ? '数据库内容已更新或这次浏览已过期，请刷新结果后继续。'
-                : db.error === 'RATE_LIMITED'
-                  ? '请求较多，请稍后重试。'
-                  : '数据库暂时无法加载。'}
+              {db.error === 'RATE_LIMITED'
+                ? '请求较多，请稍后重试，或直接前往 Notion。'
+                : '预览暂时无法加载，可直接前往 Notion 查看。'}
             </p>
             <button
               type='button'
               onClick={() => {
-                void (db.error === 'CURSOR_EXPIRED' ? db.refresh() : db.retry())
+                void db.retry()
               }}
               disabled={db.busy}
             >
-              {db.error === 'CURSOR_EXPIRED' ? '刷新结果' : '重试'}
+              重试
             </button>
-            <a href={sourceUrl} target='_blank' rel='noreferrer'>
-              在 Notion 中查看 ↗
-            </a>
           </div>
-        )}
-        {supported && db.result?.incomplete && (
-          <p role='status'>
-            本次加载已达到上限，请添加筛选条件缩小范围，或在 Notion 中查看。
-          </p>
         )}
         {supported && db.result && (
           <footer className='database-footer'>
             <span aria-live='polite'>
-              已加载 {rows.length} 条
-              {db.result.total != null ? ` / 共 ${db.result.total} 条` : ''}
-              {!db.result.hasMore && !db.result.incomplete
-                ? ' · 已全部加载'
-                : ''}
+              {term
+                ? `预览中匹配 ${matches.length} 条 · 已显示 ${displayed.length} 条`
+                : `已显示 ${displayed.length} / ${rows.length} 条预览`}
             </span>
-            {db.result.hasMore && !db.error && (
+            {displayed.length < matches.length && (
               <button
                 type='button'
-                onClick={() => {
-                  void db.loadMore()
-                }}
-                disabled={db.busy}
+                onClick={() =>
+                  setDisplayCount(count => count + DATABASE_DISPLAY_STEP)
+                }
               >
-                {db.busy ? '加载中…' : '加载更多'}
+                展开更多预览
               </button>
             )}
           </footer>
+        )}
+        {supported && db.result && (db.result.hasMore || db.result.omitted) && (
+          <aside className='database-preview-more'>
+            <p>此处展示 {rows.length} 条预览，更多内容请前往 Notion。</p>
+            <a href={sourceUrl} target='_blank' rel='noopener noreferrer'>
+              在 Notion 中查看完整数据库 ↗
+            </a>
+          </aside>
         )}
       </section>
     </NotionContextProvider>
