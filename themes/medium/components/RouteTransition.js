@@ -14,9 +14,13 @@ function routeKey(href, router) {
 
 function destinationTitle(url, router) {
   const key = routeKey(url, router)
-  const link = Array.from(document.querySelectorAll('a[href]')).find(anchor =>
-    anchor.origin === window.location.origin && routeKey(anchor.href, router) === key
-  )
+  const link = Array.from(document.querySelectorAll('a[href]')).find(anchor => {
+    const href = anchor.getAttribute('href')?.trim()
+    // On popstate the address has already changed, so a relative #skip-link
+    // resolves against the destination even though the old DOM is still shown.
+    return href && !href.startsWith('#') &&
+      anchor.origin === window.location.origin && routeKey(anchor.href, router) === key
+  })
   return (link?.textContent || link?.getAttribute('aria-label') || '').trim()
 }
 

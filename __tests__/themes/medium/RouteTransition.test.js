@@ -128,6 +128,20 @@ it('matches locale-prefixed destinations and handles back/forward without a visi
   expect(screen.getByRole('status')).toHaveTextContent('正在加载搜索结果')
 })
 
+it('does not use a skip-link as the destination title when popstate changes the address first', () => {
+  mockRouter.asPath = skills
+  const originalUrl = window.location.href
+  window.history.replaceState({}, '', '/database')
+  try {
+    render(<Page><a href='#content'>跳至内容</a></Page>)
+    act(() => mockRouter.events.emit('routeChangeStart', '/database', {}))
+    expect(screen.getByRole('heading', { name: '正在打开页面' })).toBeVisible()
+    expect(screen.queryByRole('heading', { name: '跳至内容' })).toBeNull()
+  } finally {
+    window.history.replaceState({}, '', originalUrl)
+  }
+})
+
 it.each([
   { target: '_blank' }, { target: 'preview' }, { download: '' },
   { href: '#section' }, { href: 'https://example.com/skills' },
