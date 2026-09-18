@@ -1,5 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import DatabaseBrowser from '@/components/database/DatabaseBrowser'
+import { mergeResult } from '@/components/database/useDatabase'
+import { withRowMetadata } from '@/lib/notion/database/rowMetadata'
 import { NotionContextProvider } from 'react-notion-x'
 
 jest.mock('react-notion-x', () => ({
@@ -83,6 +85,66 @@ const deferred = () => {
 }
 const mount = () =>
   render(<DatabaseBrowser block={block} collection={collection} ctx={ctx} />)
+
+it('preserves loaded row properties and covers when later rows reference them, including after return', async () => {
+  const first = result(['earlier-row'], true)
+  const earlier = first.recordMap.block['earlier-row']
+  earlier.value.properties.number = [['42']]
+  earlier.value.format = { page_cover: 'https://example.com/cover.png' }
+  const next = result(['later-row'])
+  next.recordMap.block['later-row'].value.properties.relation = [
+    ['‣', [['p', 'earlier-row']]]
+  ]
+  next.recordMap = withRowMetadata(next.recordMap.block, {
+    block: { ...first.recordMap.block, ...next.recordMap.block }
+  })
+  expect(
+    next.recordMap.block['earlier-row'].value.properties.number
+  ).toBeUndefined()
+  fetch
+    .mockResolvedValueOnce(response(first))
+    .mockResolvedValueOnce(response(next))
+  const props = {
+    block: { ...block, id: 'abababab-1111-1111-1111-111111111111' },
+    collection,
+    ctx
+  }
+  const rendered = render(<DatabaseBrowser {...props} />)
+  await screen.findByText('42')
+  fireEvent.click(screen.getByRole('button', { name: '加载更多' }))
+  await screen.findByText('later-row')
+  expect(screen.getByText('42')).toBeInTheDocument()
+  expect(
+    NotionContextProvider.mock.calls.at(-1)[0].recordMap.block['earlier-row']
+  ).toEqual(earlier)
+  fireEvent.click(screen.getByRole('link', { name: '打开 earlier-row' }))
+  rendered.unmount()
+  render(<DatabaseBrowser {...props} />)
+  await screen.findByText('later-row')
+  expect(screen.getByText('42')).toBeInTheDocument()
+  expect(fetch).toHaveBeenCalledTimes(2)
+  expect(
+    NotionContextProvider.mock.calls.at(-1)[0].recordMap.block['earlier-row']
+  ).toEqual(earlier)
+})
+
+it('replaces old records with actual incoming rows so removed fields do not survive', () => {
+  const first = result(['existing-row'])
+  first.recordMap.block.related = {
+    value: { id: 'related', properties: { title: [['Related']] } }
+  }
+  const next = result(['existing-row', 'related'])
+  delete next.recordMap.block['existing-row'].value.properties.number
+  const merged = mergeResult(first, next)
+  expect(merged.blockIds).toEqual(['existing-row', 'related'])
+  expect(merged.recordMap.block['existing-row']).toEqual(
+    next.recordMap.block['existing-row']
+  )
+  expect(merged.recordMap.block.related).toEqual(next.recordMap.block.related)
+  expect(first.recordMap.block['existing-row'].value.properties.number).toEqual(
+    [['1']]
+  )
+})
 
 it('keeps referenced metadata from previous pages and merges it into the renderer context', async () => {
   const first = result(['metadata-one'], true)

@@ -7,15 +7,23 @@ import {
   normalizeQuery
 } from '@/lib/notion/database/model'
 
-const STORAGE_PREFIX = 'notion-db-public-v3:'
+const STORAGE_PREFIX = 'notion-db-public-v4:'
 const MAX_AGE = 5 * 60_000
 const snapshots = new Map()
 
 export function mergeResult(previous, next) {
+  const recordMap = mergeRecordMaps(previous?.recordMap, next.recordMap)
+  const incomingRows = new Set(next.blockIds)
+  // A later batch can reference earlier rows using title/icon-only records.
+  // Only an actual incoming row may replace an already loaded row's properties.
+  for (const id of previous?.blockIds || []) {
+    if (!incomingRows.has(id))
+      recordMap.block[id] = previous.recordMap.block[id]
+  }
   return {
     ...next,
     blockIds: [...new Set([...(previous?.blockIds || []), ...next.blockIds])],
-    recordMap: mergeRecordMaps(previous?.recordMap, next.recordMap)
+    recordMap
   }
 }
 function readSnapshot(key) {
