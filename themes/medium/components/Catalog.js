@@ -1,7 +1,8 @@
 import { uuidToId } from 'notion-utils'
 import { useEffect, useMemo, useState } from 'react'
+import { trackInteraction } from '@/lib/plugins/interactionAnalytics'
 
-export default function Catalog({ toc = [], onNavigate }) {
+export default function Catalog({ toc = [], onNavigate, placement = 'desktop_toc' }) {
   const [activeId, setActiveId] = useState(null)
   const [showAll, setShowAll] = useState(false)
   const items = useMemo(() => {
@@ -51,7 +52,9 @@ export default function Catalog({ toc = [], onNavigate }) {
         <ol>
           {items.map(item => (
             <li key={item.id} hidden={!showAll && item.level > 0 && item.group !== activeGroup}>
-              <a href={`#${item.id}`} aria-current={activeId === item.id ? 'location' : undefined} style={{ paddingLeft: 12 + item.level * 12 }} onClick={() => {
+              <a href={`#${item.id}`} aria-current={activeId === item.id ? 'location' : undefined} style={{ paddingLeft: 12 + item.level * 12 }} onAuxClick={event => {
+                if (event.button === 1) trackInteraction('toc_click', { section_id: item.id, placement })
+              }} onClick={() => {
                 // Headings inside a Notion toggle must be revealed before following their anchor.
                 let parent = document.getElementById(item.id)?.parentElement
                 while (parent) {
@@ -59,6 +62,7 @@ export default function Catalog({ toc = [], onNavigate }) {
                   parent = parent.parentElement
                 }
                 setActiveId(item.id)
+                trackInteraction('toc_click', { section_id: item.id, placement })
                 onNavigate?.()
               }}>{item.text}</a>
             </li>

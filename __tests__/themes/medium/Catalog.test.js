@@ -1,5 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import Catalog from '@/themes/medium/components/Catalog'
+import { trackInteraction } from '@/lib/plugins/interactionAnalytics'
+
+jest.mock('@/lib/plugins/interactionAnalytics', () => ({ trackInteraction: jest.fn() }))
 
 // Fixtures already use compact IDs. Keep navigation real without loading
 // notion-utils' ESM dependency graph into this CommonJS Jest suite.
@@ -41,6 +44,8 @@ describe('Medium reading directory', () => {
     fireEvent.click(screen.getByRole('link', { name: '第一章细节' }))
     container.querySelectorAll('details').forEach(toggle => expect(toggle.open).toBe(true))
     expect(onNavigate).toHaveBeenCalledTimes(1)
+    expect(trackInteraction).toHaveBeenCalledTimes(1)
+    expect(trackInteraction).toHaveBeenCalledWith('toc_click', { section_id: toc[1].id, placement: 'desktop_toc' })
   })
 
   it('switches the directory when another article is opened', () => {

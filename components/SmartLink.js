@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { siteConfig } from '@/lib/config'
+import { trackInteraction } from '@/lib/plugins/interactionAnalytics'
 
 // 过滤 <a> 标签不能识别的 props
 const filterDOMProps = props => {
@@ -31,8 +32,25 @@ const filterLinkProps = props => {
   return rest
 }
 
-const SmartLink = ({ href, children, ...rest }) => {
+const SmartLink = ({ href, children, analytics, onClick, onAuxClick, ...rest }) => {
   const LINK = siteConfig('LINK')
+  const track = event => {
+    if (event.defaultPrevented) return
+    trackInteraction(analytics.event, {
+      ...analytics,
+      link_url: event.currentTarget.href
+    })
+  }
+  const clickProps = analytics ? {
+    onClick: event => {
+      onClick?.(event)
+      if (event.button === 0) track(event)
+    },
+    onAuxClick: event => {
+      onAuxClick?.(event)
+      if (event.button === 1) track(event)
+    }
+  } : { onClick, onAuxClick }
 
   // 获取 URL 字符串用于判断是否是外链
   let urlString = ''
@@ -100,7 +118,8 @@ const SmartLink = ({ href, children, ...rest }) => {
         href={externalUrl}
         target='_blank'
         rel='noopener noreferrer'
-        {...filterDOMProps(rest)}>
+        {...filterDOMProps(rest)}
+        {...clickProps}>
         {children}
       </a>
     )
@@ -113,7 +132,7 @@ const SmartLink = ({ href, children, ...rest }) => {
       : mergePreservedQueryForObjectHref(href)
 
   return (
-    <Link href={mergedHref} {...filterLinkProps(rest)}>
+    <Link href={mergedHref} {...filterLinkProps(rest)} {...clickProps}>
       {children}
     </Link>
   )

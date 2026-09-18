@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { trackInteraction } from '@/lib/plugins/interactionAnalytics'
 
 const QrCode = dynamic(() => import('@/components/QrCode'), { ssr: false })
 const BASE_BUTTON_CLASS =
@@ -81,10 +82,15 @@ const ShareButtons = ({ post }) => {
   const { locale } = useGlobal()
   const [qrCodeShow, setQrCodeShow] = useState(false)
 
-  const copyUrl = () => {
-    const decodedUrl = decodeURIComponent(shareUrl)
-    navigator?.clipboard?.writeText(decodedUrl)
-    alert(locale.COMMON.URL_COPIED + ' \n' + decodedUrl)
+  const copyUrl = async () => {
+    try {
+      const decodedUrl = decodeURIComponent(shareUrl)
+      await navigator.clipboard.writeText(decodedUrl)
+      trackInteraction('copy_link', { content_id: post?.id, placement: 'share_bar' })
+      alert(locale.COMMON.URL_COPIED + ' \n' + decodedUrl)
+    } catch {
+      alert(locale.COMMON.URL_COPY_FAILED || '复制失败，请手动复制地址栏中的链接。')
+    }
   }
 
   const openPopover = () => {
@@ -93,17 +99,22 @@ const ShareButtons = ({ post }) => {
   const closePopover = () => {
     setQrCodeShow(false)
   }
-  const openRedirectShare = base => {
+  const trackShare = method => trackInteraction('share_click', {
+    content_id: post?.id, method, placement: 'share_bar'
+  })
+  const openRedirectShare = (base, service) => {
     if (!shareUrl || typeof window === 'undefined') return
     window.open(
       `${base}${encodeURIComponent(shareUrl)}`,
       '_blank',
       'noopener,noreferrer'
     )
+    trackShare(service)
   }
-  const openShareWindow = url => {
+  const openShareWindow = (url, service) => {
     if (!url || typeof window === 'undefined') return
     window.open(url, '_blank', 'noopener,noreferrer,width=760,height=640')
+    trackShare(service)
   }
 
   const buildShareUrl = service => {
@@ -173,7 +184,7 @@ const ShareButtons = ({ post }) => {
       <button
         aria-label={service}
         key={service}
-        onClick={() => openShareWindow(shareLink)}
+        onClick={() => openShareWindow(shareLink, service)}
         className={`${BASE_BUTTON_CLASS} ${bgClass}`}
         title={service}>
         <i className={`${iconClass} ${ICON_CLASS}`} />
@@ -218,7 +229,8 @@ const ShareButtons = ({ post }) => {
                 key={singleService}
                 onClick={() =>
                   openShareWindow(
-                    `http://connect.qq.com/widget/shareqq/index.html?url=${shareUrl}&sharesource=qzone&title=${title}&desc=${body}`
+                    `http://connect.qq.com/widget/shareqq/index.html?url=${shareUrl}&sharesource=qzone&title=${title}&desc=${body}`,
+                    'qq'
                   )
                 }
                 className={`${BASE_BUTTON_CLASS} bg-blue-600`}
@@ -229,6 +241,7 @@ const ShareButtons = ({ post }) => {
           case 'wechat':
             return (
               <button
+                onClick={() => { openPopover(); trackShare('wechat') }}
                 onMouseEnter={openPopover}
                 onMouseLeave={closePopover}
                 aria-label={singleService}
@@ -258,7 +271,7 @@ const ShareButtons = ({ post }) => {
               <button
                 aria-label={singleService}
                 key={singleService}
-                onClick={copyUrl}
+                onClick={() => { void copyUrl() }}
                 className={`${BASE_BUTTON_CLASS} bg-yellow-500`}
                 title={singleService}>
                 <i className={`fas fa-link ${ICON_CLASS}`} />
@@ -269,7 +282,7 @@ const ShareButtons = ({ post }) => {
               <button
                 aria-label={singleService}
                 key={singleService}
-                onClick={() => openRedirectShare('https://link.csdn.net/?target=')}
+                onClick={() => openRedirectShare('https://link.csdn.net/?target=', 'csdn')}
                 className='cursor-pointer rounded-full mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500'
                 title={singleService}>
                 <div
@@ -292,7 +305,7 @@ const ShareButtons = ({ post }) => {
               <button
                 aria-label={singleService}
                 key={singleService}
-                onClick={() => openRedirectShare('https://link.juejin.cn/?target=')}
+                onClick={() => openRedirectShare('https://link.juejin.cn/?target=', 'juejin')}
                 className='cursor-pointer rounded-full mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
                 title={singleService}>
                 <div
