@@ -72,6 +72,17 @@ describe('Notion page metadata', () => {
     })).toBe(false)
   })
 
+  it('does not read blocks or load ancestors for a known publishing page', async () => {
+    const readBlocks = jest.fn(() => { throw new Error('Article blockMap should not be inspected') })
+    const map = Object.defineProperty({}, 'block', { get: readBlocks })
+    const loadBlock = jest.fn()
+    expect(await isDatabaseEntryPage({
+      pageId: 'article', recordMap: map, publishingPageIds, loadBlock
+    })).toBe(false)
+    expect(readBlocks).not.toHaveBeenCalled()
+    expect(loadBlock).not.toHaveBeenCalled()
+  })
+
   it('does not index pages with incomplete or cyclic ancestry', async () => {
     expect(await isDatabaseEntryPage({ pageId: 'missing', recordMap, publishingPageIds })).toBe(true)
     expect(await isDatabaseEntryPage({
