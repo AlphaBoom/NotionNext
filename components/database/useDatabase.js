@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
 import { compactId, normalizeQuery } from '@/lib/notion/database/model'
 
-const STORAGE_PREFIX = 'notion-db-v1:'
+const STORAGE_PREFIX = 'notion-db-public-v2:'
 const MAX_AGE = 5 * 60_000
 const snapshots = new Map()
 

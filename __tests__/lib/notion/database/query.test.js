@@ -1,17 +1,15 @@
 /** @jest-environment node */
-import {
-  combineFilters,
-  dataSourceQuery,
-  normalizeQuery
-} from '@/lib/notion/database/model'
+import { normalizeQuery, publicViewQuery } from '@/lib/notion/database/model'
 import {
   createDatabaseService,
   decodeCursor,
   encodeCursor,
-  loadPublicDatabase
+  loadPublicDatabase,
+  publicRequest
 } from '@/lib/notion/database/server'
 import { hydrateDatabaseMetadata } from '@/lib/notion/database/hydrateMetadata'
 import { prunePageScope } from '@/lib/notion/database/pageScope'
+import { createHash } from 'crypto'
 
 jest.mock('notion-client', () => ({ NotionAPI: jest.fn(() => ({})) }))
 jest.mock('@/blog.config', () => ({
@@ -20,7 +18,6 @@ jest.mock('@/blog.config', () => ({
 const blockId = '11111111-1111-1111-1111-111111111111'
 const viewId = '22222222-2222-2222-2222-222222222222'
 const sourceId = '33333333-3333-3333-3333-333333333333'
-const queryId = '44444444-4444-4444-4444-444444444444'
 const rootId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 const schema = {
   title: { name: '名称', type: 'title' },
@@ -32,7 +29,7 @@ const schema = {
 const metadata = {
   block: { id: blockId, view_ids: [viewId] },
   collection: { id: sourceId, schema },
-  views: {}
+  views: { [viewId]: { id: viewId, type: 'table', query2: {} } }
 }
 const rowId = i => `${String(i).padStart(8, '0')}-0000-0000-0000-000000000000`
 const row = id => ({
@@ -43,39 +40,88 @@ const row = id => ({
       parent_id: sourceId,
       parent_table: 'collection',
       properties: { title: [['条目']] },
-      content: ['secret-body'],
+      content: ['unrequested-body'],
       format: { page_cover: 'https://example.com/cover.png' }
     },
     role: 'reader'
   }
 })
-const client = () => ({
-  getBlocks: jest.fn(async ids => ({
+const publicResult = (count, more, total = count) => {
+  const ids = Array.from({ length: count }, (_, i) => rowId(i))
+  return {
+    result: {
+      sizeHint: 99999,
+      reducerResults: {
+        collection_group_results: {
+          type: 'results',
+          blockIds: ids,
+          hasMore: more
+        },
+        database_total: {
+          type: 'aggregation',
+          aggregationResult: { type: 'number', value: total }
+        }
+      }
+    },
     recordMap: { block: Object.fromEntries(ids.map(id => [id, row(id)])) }
-  }))
-})
-const service = (request, c = client()) =>
+  }
+}
+const service = (request, c = { getBlocks: jest.fn() }) =>
   createDatabaseService({
     request,
     client: c,
-    loadMetadata: async () => metadata,
-    token: () => 'test-token',
+    loadMetadata: () => metadata,
     memo: (_, load) => load()
   })
 const input = { blockId, viewId }
+const digest = value =>
+  createHash('sha256').update(JSON.stringify(value)).digest('hex')
 
-describe('database queries', () => {
-  it('preserves nested saved rules and quick filters before applying visitor conditions', () => {
+describe('anonymous public database queries', () => {
+  it('uses the public numeric equality operators rather than silently matching no rows', () => {
+    for (const operator of ['equals', 'does_not_equal']) {
+      const query = normalizeQuery(
+        {
+          viewId,
+          filters: [{ property: 'n', operator, value: 13 }]
+        },
+        schema,
+        [viewId]
+      )
+      expect(publicViewQuery({}, query, schema).filter.filters[0]).toEqual({
+        property: 'n',
+        filter: {
+          operator: `number_${operator}`,
+          value: { type: 'exact', value: 13 }
+        }
+      })
+    }
+  })
+
+  it('preserves nested saved rules and quick filters while adding native visitor conditions', () => {
     const saved = {
-      or: [
-        { property: '类型', select: { equals: 'A' } },
-        { property: '类型', select: { equals: 'B' } }
+      operator: 'or',
+      filters: [
+        {
+          property: 's',
+          filter: { operator: 'enum_is', value: { type: 'exact', value: 'A' } }
+        },
+        {
+          property: 's',
+          filter: { operator: 'enum_is', value: { type: 'exact', value: 'B' } }
+        }
       ]
     }
+    const quick = {
+      property: 'check',
+      filter: { operator: 'checkbox_is', value: { type: 'exact', value: true } }
+    }
     const view = {
-      filter: saved,
-      quick_filters: { 启用: { checkbox: { equals: true } } },
-      sorts: [{ property: '名称', direction: 'ascending' }]
+      query2: {
+        filter: saved,
+        sort: [{ property: 'title', direction: 'ascending' }]
+      },
+      format: { property_filters: [{ filter: quick }] }
     }
     const query = normalizeQuery(
       {
@@ -87,16 +133,23 @@ describe('database queries', () => {
       [viewId]
     )
     const before = JSON.stringify(view)
-    expect(dataSourceQuery(view, query, schema)).toEqual({
+    expect(publicViewQuery(view, query, schema)).toEqual({
       filter: {
-        and: [
+        operator: 'and',
+        filters: [
           saved,
-          { property: '启用', checkbox: { equals: true } },
-          { property: '数值', number: { greater_than: 10 } },
-          { property: '名称', title: { contains: '测试' } }
+          quick,
+          {
+            property: 'n',
+            filter: {
+              operator: 'number_greater_than',
+              value: { type: 'exact', value: 10 }
+            }
+          }
         ]
       },
-      sorts: view.sorts
+      sort: view.query2.sort,
+      searchQuery: '测试'
     })
     expect(JSON.stringify(view)).toBe(before)
   })
@@ -109,39 +162,19 @@ describe('database queries', () => {
     { sorts: [{ property: 'n', direction: 'wrong' }] },
     { search: 'x'.repeat(201) },
     { viewId: sourceId }
-  ])(
-    'rejects malformed conditions without upstream requests: %j',
-    async patch => {
-      const request = jest.fn()
-      await expect(
-        service(request)({ ...input, ...patch })
-      ).rejects.toMatchObject({ status: 400 })
-      expect(request).not.toHaveBeenCalled()
-    }
-  )
+  ])('rejects malformed conditions before querying Notion: %j', async patch => {
+    const request = jest.fn()
+    await expect(
+      service(request)({ ...input, ...patch })
+    ).rejects.toMatchObject({ status: 400 })
+    expect(request).not.toHaveBeenCalled()
+  })
 
-  it('paginates all 1576 rows in bounded batches without re-reading earlier rows or their bodies', async () => {
-    const c = client()
-    const request = jest.fn(async (path, body) => {
-      const start = path.includes('?')
-        ? Number(
-            new URL(`https://example.com/${path}`).searchParams.get(
-              'start_cursor'
-            )
-          )
-        : 0
-      expect(body?.page_size || 30).toBe(30)
-      const end = Math.min(1576, start + 30)
-      return {
-        id: queryId,
-        results: Array.from({ length: end - start }, (_, i) => ({
-          object: 'page',
-          id: rowId(start + i)
-        })),
-        has_more: end < 1576,
-        next_cursor: end < 1576 ? String(end) : null,
-        total_count: 1576
-      }
+  it('extends the public prefix on demand past 999 and returns only 30 new rows without bodies', async () => {
+    const c = { getBlocks: jest.fn() }
+    const request = jest.fn(body => {
+      const limit = body.loader.reducers.collection_group_results.limit
+      return publicResult(Math.min(1576, limit), limit < 1576, 1576)
     })
     const query = service(request, c)
     let cursor
@@ -149,105 +182,126 @@ describe('database queries', () => {
     do {
       const response = await query({ ...input, cursor })
       expect(response.blockIds.length).toBeLessThanOrEqual(30)
-      expect(JSON.stringify(response)).not.toContain('secret-body')
+      expect(JSON.stringify(response)).not.toContain('unrequested-body')
       ids.push(...response.blockIds)
       cursor = response.nextCursor
     } while (cursor)
     expect(new Set(ids).size).toBe(1576)
     expect(ids).toHaveLength(1576)
-    expect(c.getBlocks).toHaveBeenCalledTimes(53)
     expect(request).toHaveBeenCalledTimes(53)
+    expect(
+      request.mock.calls.map(
+        ([body]) => body.loader.reducers.collection_group_results.limit
+      )
+    ).toEqual(Array.from({ length: 53 }, (_, i) => (i + 1) * 30))
+    expect(c.getBlocks).not.toHaveBeenCalled()
   })
 
-  it('binds signed cursors to their database, view and conditions and rejects tampering/expiration', () => {
+  it('bounds continuation hints and binds them to query and expiry without any secret', () => {
     const data = {
       fingerprint: 'one',
-      expires: Date.now() + 1000,
-      next: 'next'
+      offset: 30,
+      prefix: digest(['row']),
+      expires: Date.now() + 1000
     }
-    const token = encodeCursor(data, 'secret')
-    expect(decodeCursor(token, 'secret', 'one')).toEqual(data)
-    expect(() => decodeCursor(token, 'secret', 'two')).toThrow('Query changed')
-    expect(() => decodeCursor(`${token}x`, 'secret', 'one')).toThrow(
-      'Invalid cursor'
+    expect(decodeCursor(encodeCursor(data), 'one')).toEqual(data)
+    expect(() => decodeCursor(encodeCursor(data), 'two')).toThrow(
+      'Query changed'
     )
+    for (const offset of [-30, 0, 15, 31, 10000, 999999])
+      expect(() =>
+        decodeCursor(encodeCursor({ ...data, offset }), 'one')
+      ).toThrow('Invalid cursor')
     expect(() =>
-      decodeCursor(
-        encodeCursor({ ...data, expires: 1 }, 'secret'),
-        'secret',
-        'one'
-      )
+      decodeCursor(encodeCursor({ ...data, expires: 1 }), 'one')
     ).toThrow('Query expired')
+    expect(() => decodeCursor('not-json', 'one')).toThrow('Invalid cursor')
   })
 
-  it('keeps visitor rules ephemeral and uses source pagination, without editing any saved view', async () => {
-    const view = {
-      data_source_id: sourceId,
-      filter: { property: '类型', select: { equals: 'A' } },
-      sorts: []
-    }
-    const request = jest.fn(async path =>
-      path === `views/${viewId}`
-        ? view
-        : { results: [{ object: 'page', id: rowId(1) }], has_more: false }
-    )
-    await service(request)({
+  it('sends search, filters and sorts to the public view, counts matches rather than sizeHint', async () => {
+    const request = jest.fn(() => publicResult(1, false))
+    const result = await service(request)({
       ...input,
       search: 'x',
+      filters: [{ property: 's', operator: 'equals', value: 'A' }],
       sorts: [{ property: 'n', direction: 'descending' }]
     })
-    expect(request).toHaveBeenLastCalledWith(
-      `data_sources/${sourceId}/query`,
+    expect(request).toHaveBeenCalledWith(
       expect.objectContaining({
-        page_size: 30,
-        sorts: [{ property: '数值', direction: 'descending' }],
-        filter: {
-          and: [view.filter, { property: '名称', title: { contains: 'x' } }]
-        }
-      }),
-      'test-token'
+        collection: { id: sourceId },
+        collectionView: { id: viewId },
+        loader: expect.objectContaining({
+          searchQuery: 'x',
+          sort: [{ property: 'n', direction: 'descending' }],
+          filter: {
+            operator: 'and',
+            filters: [
+              {
+                property: 's',
+                filter: {
+                  operator: 'enum_is',
+                  value: { type: 'exact', value: 'A' }
+                }
+              }
+            ]
+          }
+        })
+      })
     )
-    expect(request).toHaveBeenCalledTimes(2)
+    expect(result.total).toBe(1)
+    expect(request).toHaveBeenCalledTimes(1)
   })
 
-  it('never returns inaccessible rows or unrelated records from the hydration response', async () => {
+  it('never returns denied, foreign or unrelated records and hydrates only absent batch rows', async () => {
+    const data = publicResult(3, false)
+    data.recordMap.block[rowId(0)] = {
+      value: { value: row(rowId(0)).value.value, role: 'none' }
+    }
+    data.recordMap.block[rowId(1)].value.value.parent_id = rootId
+    delete data.recordMap.block[rowId(2)]
+    data.recordMap.block[rowId(99)] = row(rowId(99))
     const c = {
-      getBlocks: jest.fn(async () => ({
-        recordMap: {
-          block: { [rowId(1)]: { role: 'none' }, [rowId(99)]: row(rowId(99)) }
-        }
+      getBlocks: jest.fn(() => ({
+        recordMap: { block: { [rowId(2)]: row(rowId(2)) } }
       }))
     }
-    const request = jest.fn(async () => ({
-      id: queryId,
-      results: [{ object: 'page', id: rowId(1) }],
-      has_more: false
-    }))
-    expect((await service(request, c)(input)).recordMap.block).toEqual({})
+    const result = await service(() => data, c)(input)
+    expect(result.blockIds).toEqual([rowId(2)])
+    expect(Object.keys(result.recordMap.block)).toEqual([rowId(2)])
+    expect(c.getBlocks).toHaveBeenCalledWith([rowId(2)])
+    expect(result.total).toBeNull()
   })
 
-  it('returns a recoverable expiration error and rejects a non-advancing page', async () => {
+  it('requires refresh if any previously loaded prefix row moved, even if the boundary is unchanged', async () => {
+    const changed = publicResult(60, true)
+    const ids = changed.result.reducerResults.collection_group_results.blockIds
+    ;[ids[0], ids[1]] = [ids[1], ids[0]]
     const request = jest
       .fn()
-      .mockResolvedValueOnce({
-        id: queryId,
-        results: [],
-        has_more: true,
-        next_cursor: 'next'
-      })
-      .mockRejectedValueOnce({ status: 404 })
+      .mockResolvedValueOnce(publicResult(30, true))
+      .mockResolvedValueOnce(changed)
     const query = service(request)
     const first = await query(input)
     await expect(
       query({ ...input, cursor: first.nextCursor })
     ).rejects.toMatchObject({ code: 'CURSOR_EXPIRED', status: 410 })
-    const broken = service(async () => ({
-      id: queryId,
-      results: [],
-      has_more: true,
-      next_cursor: null
-    }))
-    await expect(broken(input)).rejects.toMatchObject({ status: 502 })
+  })
+
+  it('marks upstream truncation honestly instead of claiming all rows loaded or retrying forever', async () => {
+    const result = await service(() => publicResult(20, true, 1000))(input)
+    expect(result).toMatchObject({
+      incomplete: true,
+      hasMore: false,
+      nextCursor: null,
+      total: 1000
+    })
+  })
+
+  it('uses the public web endpoint without authorization headers or token configuration', async () => {
+    const c = { fetch: jest.fn(() => publicResult(0, false)) }
+    const body = { collection: { id: sourceId } }
+    await publicRequest(body, c)
+    expect(c.fetch).toHaveBeenCalledWith({ endpoint: 'queryCollection', body })
   })
 })
 
@@ -255,7 +309,7 @@ describe('public scope', () => {
   it('follows collection parents using the right record table and rejects unrelated databases', async () => {
     const parentCollection = '55555555-5555-5555-5555-555555555555'
     const c = {
-      getPageRaw: jest.fn(async () => ({
+      getPageRaw: jest.fn(() => ({
         recordMap: {
           block: {
             [blockId]: {
@@ -275,7 +329,7 @@ describe('public scope', () => {
           }
         }
       })),
-      fetch: jest.fn(async () => ({
+      fetch: jest.fn(() => ({
         recordMap: {
           collection: {
             [parentCollection]: {
@@ -345,15 +399,6 @@ describe('public scope', () => {
     expect(pruned.collection_query).toEqual({})
     expect(Object.keys(pruned.collection_view)).toEqual(['view'])
     expect(Object.keys(original.block)).toHaveLength(6)
-  })
-})
-
-it('combines OR-of-AND saved rules with visitor conditions within two query levels', () => {
-  const a = { property: 'a', checkbox: { equals: true } }
-  const b = { property: 'b', checkbox: { equals: true } }
-  const c = { property: 'c', checkbox: { equals: true } }
-  expect(combineFilters([{ or: [{ and: [a, b] }, a] }, c])).toEqual({
-    or: [{ and: [a, b, c] }, { and: [a, c] }]
   })
 })
 

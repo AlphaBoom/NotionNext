@@ -304,7 +304,7 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
           <div className='database-error' role='alert'>
             <p>
               {db.error === 'CURSOR_EXPIRED'
-                ? '这次浏览的结果已过期，请刷新结果后继续。'
+                ? '数据库内容已更新或这次浏览已过期，请刷新结果后继续。'
                 : db.error === 'RATE_LIMITED'
                   ? '请求较多，请稍后重试。'
                   : '数据库暂时无法加载。'}
@@ -325,7 +325,7 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
         )}
         {db.result?.incomplete && (
           <p role='status'>
-            Notion 限制了本次查询的结果数量，请添加筛选条件缩小范围。
+            本次加载已达到上限，请添加筛选条件缩小范围，或在 Notion 中查看。
           </p>
         )}
         {db.result && (
