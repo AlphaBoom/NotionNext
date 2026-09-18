@@ -1,6 +1,15 @@
 /** @jest-environment node */
 import { getNotionPageTitle, isDatabaseEntryPage } from '@/lib/db/notion/pageMetadata'
 
+// notion-utils is ESM-only; match the dependency boundary used by the other Notion tests.
+jest.mock('notion-utils', () => ({
+  getTextContent: text => text.map(segment => segment[0]).join(''),
+  idToUuid: id => id.replace(
+    /^(.{8})(.{4})(.{4})(.{4})(.{12})$/,
+    '$1-$2-$3-$4-$5'
+  )
+}))
+
 const entry = value => ({ value })
 const publishingPageIds = ['article', 'directory']
 const recordMap = {
