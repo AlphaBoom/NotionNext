@@ -2140,7 +2140,8 @@ tbody tr {
   display: none !important;
 }
 
-.notion-database-entry .notion-collection-page-properties {
+.notion-database-entry .notion-collection-page-properties,
+.notion-database-entry .notion-collection-row {
   display: block !important;
 }
 
