@@ -442,6 +442,14 @@ const Style = () => (
 
     /* Motion is limited to deliberate interaction and navigation. */
     #theme-medium .medium-route-content { animation: medium-page-enter 360ms cubic-bezier(.2,.7,.2,1) both; }
+    #theme-medium .medium-route-content[hidden] { display: none; }
+    #theme-medium .medium-route-loading { max-width: var(--reading-width); min-height: 65vh; margin: 0 auto; padding: 32px 0; }
+    #theme-medium .medium-route-loading h1 { margin: 0 0 18px; font-size: clamp(24px, 4vw, 34px); font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; outline: none; }
+    #theme-medium .medium-route-loading p { color: var(--muted); font-size: 14px; }
+    #theme-medium .medium-route-skeleton { display: grid; gap: 22px; margin-top: 40px; }
+    #theme-medium .medium-route-skeleton span { height: 18px; border-radius: 4px; background: var(--wash); }
+    #theme-medium .medium-route-skeleton span:last-child { width: 65%; }
+    #theme-medium:has(.medium-route-loading) :is(.medium-desktop-toc, .medium-mobile-toc) { visibility: hidden; }
     #theme-medium .medium-route-progress { position: fixed; inset: 0 0 auto; height: 2px; z-index: 100; pointer-events: none; overflow: hidden; }
     #theme-medium .medium-route-progress::after { content: ''; display: block; width: 100%; height: 100%; background: var(--accent); transform-origin: left; animation: medium-route-progress 8s cubic-bezier(.1,.8,.1,1) both; }
     #theme-medium :is(.medium-post h2 a, .medium-back-link, .medium-topics a, .medium-author-link, .notion-link) { background-image: linear-gradient(var(--accent), var(--accent)); background-position: 0 100%; background-size: 0% 1px; background-repeat: no-repeat; transition: background-size 240ms ease, color 180ms ease; box-decoration-break: clone; }

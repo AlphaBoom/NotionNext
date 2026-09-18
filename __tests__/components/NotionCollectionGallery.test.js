@@ -6,6 +6,8 @@ import { execFileSync } from 'child_process'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
+jest.mock('@/components/database/DatabaseBrowser', () => () => null)
+
 jest.mock('react-notion-x/build/third-party/collection', () => {
   const React = require('react')
 

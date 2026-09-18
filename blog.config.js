@@ -45,6 +45,8 @@ const BLOG = {
   CONTACT_ZHISHIXINGQIU: process.env.NEXT_PUBLIC_CONTACT_ZHISHIXINGQIU || '', // 知识星球
   CONTACT_WEHCHAT_PUBLIC: process.env.NEXT_PUBLIC_CONTACT_WEHCHAT_PUBLIC || '', // 微信公众号 格式：https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=【xxxxxx】==#wechat_redirect
 
+  NOTION_PUBLIC_HOST: process.env.NEXT_PUBLIC_NOTION_PUBLIC_HOST || 'https://alphaboom.notion.site', // 数据库预览和条目的公开页面入口
+  NOTION_DATABASE_TIMEZONE: process.env.NOTION_DATABASE_TIMEZONE || 'Asia/Tokyo', // 默认视图统一使用站点时区，便于共享缓存
   NOTION_HOST: process.env.NEXT_PUBLIC_NOTION_HOST || 'https://www.notion.so', // Notion域名，您可以选择用自己的域名进行反向代理，如果不懂得什么是反向代理，请勿修改此项
 
   BLOG_FAVICON: process.env.NEXT_PUBLIC_FAVICON || '/favicon.ico', // blog favicon 配置, 默认使用 /public/favicon.ico，支持在线图片，如 https://img.imesong.com/favicon.png

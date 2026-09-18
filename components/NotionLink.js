@@ -1,5 +1,6 @@
 import SteamGameLink, { getSteamAppId } from '@/components/SteamGameLink'
 import { getArticleSectionHref } from '@/lib/db/notion/sectionLinks'
+import Link from 'next/link'
 import { createContext, useContext } from 'react'
 
 export const NotionArticleLinkContext = createContext({})
@@ -90,6 +91,18 @@ const NotionLink = ({ href, target, rel, className, children, ...props }) => {
       >
         {children}
       </SteamGameLink>
+    )
+  }
+
+  // Native anchors wait for the entire destination document before replacing
+  // the current page. Local page links must participate in route transitions.
+  // Keep downloads, custom targets and non-page protocols as native links.
+  const localPage = typeof href === 'string' && /^\/(?!\/)/.test(href)
+  if (localPage && (!target || target === '_self') && props.download == null) {
+    return (
+      <Link {...props} href={href} prefetch={false} className={className} rel={rel}>
+        {children}
+      </Link>
     )
   }
 
