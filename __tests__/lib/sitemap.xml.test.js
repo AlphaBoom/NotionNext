@@ -26,7 +26,8 @@ describe('generateSitemapXml', () => {
       allPages: [
         {
           slug: '/hello-world',
-          publishDay: '2026-02-20'
+          publishDay: '2026-02-20',
+          lastEditedDate: '2026-09-16T05:01:02.216Z'
         },
         {
           slug: 'https://external.com/landing',
@@ -43,6 +44,7 @@ describe('generateSitemapXml', () => {
 
     const xml = writeSpy.mock.calls[0][1]
     expect(xml).toContain('<loc>https://example.com/hello-world</loc>')
+    expect(xml).toContain('<lastmod>2026-09-16T05:01:02.216Z</lastmod>')
     expect(xml).toContain('<loc>https://example.com/internal/page</loc>')
     expect(xml).not.toContain('<loc>https://external.com/landing</loc>')
     expect(xml).not.toContain('https://example.com/https://external.com/landing')

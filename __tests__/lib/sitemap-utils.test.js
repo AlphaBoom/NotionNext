@@ -1,6 +1,7 @@
 import {
   buildSitemapLoc,
   createSiteUrl,
+  getSitemapLastmod,
   normalizeSitemapBaseUrl,
   normalizeSitemapLocale,
   normalizeSiteUrl,
@@ -8,6 +9,23 @@ import {
 } from '@/lib/sitemap-utils'
 
 describe('sitemap-utils', () => {
+  describe('getSitemapLastmod', () => {
+    it('uses the edit timestamp rather than publication day, including same-day edits', () => {
+      expect(getSitemapLastmod({
+        publishDay: '2026-09-13',
+        lastEditedDate: '2026-09-16T05:01:02.216Z'
+      }, '2026-09-18')).toBe('2026-09-16T05:01:02.216Z')
+    })
+
+    it('falls back through valid edit/publication dates, without treating null as 1970', () => {
+      expect(getSitemapLastmod({ lastEditedTime: null, lastEditedDate: 'invalid', lastEditedDay: '2026-09-16' }, '2026-09-18'))
+        .toBe('2026-09-16T00:00:00.000Z')
+      expect(getSitemapLastmod({ publishDay: '2026-09-13' }, '2026-09-18'))
+        .toBe('2026-09-13T00:00:00.000Z')
+      expect(getSitemapLastmod({}, '2026-09-18')).toBe('2026-09-18')
+    })
+  })
+
   describe('normalizeSitemapBaseUrl', () => {
     it('trims and removes trailing slashes', () => {
       expect(normalizeSitemapBaseUrl(' https://example.com/// ')).toBe(
