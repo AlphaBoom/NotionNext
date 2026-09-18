@@ -4,6 +4,7 @@ import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import {
   buildSitemapLoc,
+  getSitemapLastmod,
   normalizeSitemapBaseUrl,
   normalizeSitemapLocale,
   toSitemapDateString
@@ -122,7 +123,7 @@ function generateLocalesSitemap(link, allPages, locale) {
 
         return {
           loc,
-          lastmod: toSitemapDateString(post?.publishDay, dateNow),
+          lastmod: getSitemapLastmod(post, dateNow),
           changefreq: 'daily',
           priority: '0.7'
         }

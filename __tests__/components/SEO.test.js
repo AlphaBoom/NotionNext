@@ -1,4 +1,29 @@
-import { generateStructuredData } from '@/components/SEO'
+import { render } from '@testing-library/react'
+import SEO, { generateStructuredData } from '@/components/SEO'
+import { useRouter } from 'next/router'
+
+jest.mock('next/router', () => ({ useRouter: jest.fn() }))
+jest.mock('@/lib/global', () => ({ useGlobal: () => ({ locale: {} }) }))
+jest.mock('@/lib/config', () => ({
+  siteConfig: (key, fallback) => ({
+    LINK: 'https://example.com', TITLE: 'Example Blog', AUTHOR: 'Author'
+  })[key] ?? fallback
+}))
+
+it('renders one noindex tag for an entry and restores indexing when navigating to an article', () => {
+  useRouter.mockReturnValue({ route: '/[prefix]', query: {} })
+  const siteInfo = { title: 'Example Blog', description: 'Blog', pageCover: '/cover.png' }
+  const { container, rerender } = render(<SEO siteInfo={siteInfo} post={{
+    title: 'Database entry', slug: 'entry', type: 'page', noIndex: true
+  }} />)
+  expect(container.querySelectorAll('meta[name="robots"]')).toHaveLength(1)
+  expect(container.querySelector('meta[name="robots"]')).toHaveAttribute('content', 'noindex, follow')
+  rerender(<SEO siteInfo={siteInfo} post={{
+    title: 'Article', slug: 'article/example', type: 'Post', noIndex: false
+  }} />)
+  expect(container.querySelectorAll('meta[name="robots"]')).toHaveLength(1)
+  expect(container.querySelector('meta[name="robots"]').content).toContain('follow, index')
+})
 
 describe('SEO structured data', () => {
   const siteInfo = {
