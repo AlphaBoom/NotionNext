@@ -7,6 +7,10 @@
   font-weight: 400;
   --db-border: rgba(128, 128, 128, 0.24);
   --db-surface: rgba(128, 128, 128, 0.06);
+  --db-background: var(--paper, #fff);
+}
+:global(.dark) .root {
+  --db-background: var(--paper, #1f2937);
 }
 .root :global(.database-heading) {
   display: flex;
@@ -53,6 +57,10 @@
 .root input:focus-visible,
 .root select:focus-visible,
 .root a:focus-visible {
+  outline: 2px solid #6c83b5;
+  outline-offset: 3px;
+}
+.root :global(.database-table-scroll:focus-visible) {
   outline: 2px solid #6c83b5;
   outline-offset: 3px;
 }
@@ -119,15 +127,68 @@
   font-size: 0.8rem;
 }
 .root :global(.database-table-scroll) {
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--db-border);
   border-radius: 8px;
 }
 .root :global(.database-table) {
-  border-collapse: collapse;
-  width: 100%;
+  display: table;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
   margin: 0;
+}
+/* The legacy global simple-table rules use block sections and 100%-wide rows.
+   Restore a single native table grid so colgroup widths create real overflow. */
+.root :global(.database-table thead) {
+  display: table-header-group;
+  width: auto;
+}
+.root :global(.database-table tbody) {
+  display: table-row-group;
+}
+.root :global(.database-table tr) {
+  display: table-row;
+  width: auto;
+  table-layout: auto;
+}
+.root :global(.database-table th),
+.root :global(.database-table td) {
+  display: table-cell;
+}
+.root :global(.database-table-tools) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+  font-size: 0.8rem;
+}
+.root :global(.database-table-tools p) {
+  margin: 0;
+  opacity: 0.75;
+}
+.root :global(.database-table-tools > div) {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+.root :global(.database-table-tools button) {
+  min-height: 36px;
+  min-width: 36px;
+}
+.root :global(.database-table-tools button[aria-pressed='true']) {
+  background: var(--db-surface);
+}
+.root :global(.database-table-tools button:disabled) {
+  cursor: default;
 }
 .root :global(.database-table th),
 .root :global(.database-table td) {
@@ -137,22 +198,40 @@
   padding: 0.6rem 0.75rem;
   text-align: left;
   vertical-align: top;
-  max-width: 500px;
+  line-height: 1.65;
 }
 .root :global(.database-table th) {
   font-size: 0.825rem;
   font-weight: 600;
   background: var(--db-surface);
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .root :global(.database-table td) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.root :global(.database-cell-value) {
+  min-width: 0;
+}
+.root :global(.database-wrap .notion-page-title-text) {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+}
+.root :global(.database-nowrap .database-cell-value) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.root :global(.database-table td.database-wrap) {
-  white-space: normal;
-  overflow-wrap: anywhere;
+@media (min-width: 601px) {
+  .root :global(.database-title-cell) {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--db-background);
+    box-shadow: 1px 0 0 var(--db-border);
+  }
 }
 .root :global(.database-table td a) {
   text-decoration: underline;
@@ -273,7 +352,20 @@
 }
 @media (max-width: 600px) {
   .root {
-    font-size: 0.85rem;
+    font-size: 0.925rem;
+  }
+  .root :global(.database-search) {
+    flex-basis: 100%;
+  }
+  .root :global(.database-search input) {
+    font-size: 16px;
+  }
+  .root :global(.database-table-tools p) {
+    flex-basis: 100%;
+  }
+  .root :global(.database-table-tools button) {
+    min-height: 40px;
+    min-width: 40px;
   }
   .root :global(.database-toolbar button) {
     padding: 0.5rem;

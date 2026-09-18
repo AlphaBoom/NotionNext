@@ -272,6 +272,137 @@ describe('anonymous public database queries', () => {
     expect(result.total).toBeNull()
   })
 
+  it('keeps only referenced public profile and relation metadata, including hydrated records', async () => {
+    const data = publicResult(1, false)
+    delete data.recordMap.block[rowId(0)]
+    const selected = row(rowId(0))
+    selected.value.value.properties.people = [
+      [
+        '‣',
+        [
+          ['u', 'alice'],
+          ['‣', ['u', 'bob']]
+        ]
+      ]
+    ]
+    selected.value.value.properties.related = [
+      [
+        '‣',
+        [
+          ['p', rowId(9)],
+          ['p', rowId(10)],
+          ['‣', ['p', rowId(11)]]
+        ]
+      ]
+    ]
+    const related = row(rowId(9))
+    related.value.value.properties = {
+      title: [['关联页面']],
+      secret: [['do not return']]
+    }
+    const hydrated = {
+      recordMap: {
+        block: {
+          [rowId(0)]: selected,
+          [rowId(9)]: related,
+          [rowId(10)]: { role: 'none', value: row(rowId(10)).value.value },
+          [rowId(11)]: {
+            value: {
+              id: rowId(11),
+              type: 'collection_view_page',
+              collection_id: sourceId
+            }
+          },
+          [rowId(99)]: row(rowId(99))
+        },
+        notion_user: {
+          alice: {
+            value: {
+              id: 'alice',
+              given_name: 'Alice',
+              family_name: 'A',
+              profile_photo: '/avatar.png',
+              email: 'private@example.com'
+            }
+          },
+          bob: {
+            value: { value: { id: 'bob', given_name: 'Bob' }, role: 'reader' }
+          },
+          unrelated: { value: { id: 'unrelated', given_name: 'Unrelated' } }
+        },
+        collection: {
+          [sourceId]: {
+            value: {
+              id: sourceId,
+              name: [['关联数据库']],
+              icon: '📚',
+              schema: { private: {} }
+            }
+          }
+        },
+        signed_urls: {
+          [rowId(9)]: 'https://example.com/icon.png',
+          [rowId(99)]: 'unrelated-url'
+        },
+        collection_query: { secret: 'unrequested query' }
+      }
+    }
+    const result = await service(() => data, {
+      getBlocks: jest.fn(() => hydrated)
+    })(input)
+    expect(result.blockIds).toEqual([rowId(0)])
+    expect(Object.keys(result.recordMap.block).sort()).toEqual(
+      [rowId(0), rowId(9), rowId(11)].sort()
+    )
+    expect(result.recordMap.block[rowId(9)].value.properties).toEqual({
+      title: [['关联页面']]
+    })
+    expect(Object.keys(result.recordMap.notion_user).sort()).toEqual([
+      'alice',
+      'bob'
+    ])
+    expect(result.recordMap.notion_user.alice.value.profile_photo).toBe(
+      '/avatar.png'
+    )
+    expect(result.recordMap.collection[sourceId].value).toEqual({
+      id: sourceId,
+      name: [['关联数据库']],
+      icon: '📚'
+    })
+    expect(result.recordMap.signed_urls).toEqual({
+      [rowId(9)]: 'https://example.com/icon.png'
+    })
+    expect(JSON.stringify(result)).not.toMatch(
+      /unrequested-body|do not return|private@example|unrequested query|unrelated-url/
+    )
+  })
+
+  it('uses a validated visitor timezone and isolates both cached queries and continuation hints', async () => {
+    const request = jest.fn(() => publicResult(30, true))
+    const memo = jest.fn((key, load) => load())
+    const query = createDatabaseService({
+      request,
+      loadMetadata: () => metadata,
+      memo
+    })
+    const first = await query({ ...input, timeZone: 'America/Los_Angeles' })
+    expect(request.mock.calls[0][0].loader.userTimeZone).toBe(
+      'America/Los_Angeles'
+    )
+    await query({ ...input, timeZone: 'Asia/Tokyo' })
+    expect(request.mock.calls[1][0].loader.userTimeZone).toBe('Asia/Tokyo')
+    expect(memo.mock.calls[0][0]).not.toBe(memo.mock.calls[1][0])
+    await expect(
+      query({ ...input, timeZone: 'Asia/Tokyo', cursor: first.nextCursor })
+    ).rejects.toMatchObject({ code: 'CURSOR_EXPIRED' })
+    await expect(
+      query({ ...input, timeZone: 'Not/A_Timezone' })
+    ).rejects.toMatchObject({ status: 400 })
+    expect(request).toHaveBeenCalledTimes(2)
+    await query(input)
+    expect(request.mock.calls[2][0].loader.userTimeZone).toBe('UTC')
+  })
+
   it('requires refresh if any previously loaded prefix row moved, even if the boundary is unchanged', async () => {
     const changed = publicResult(60, true)
     const ids = changed.result.reducerResults.collection_group_results.blockIds

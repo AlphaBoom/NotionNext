@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
-import { compactId, normalizeQuery } from '@/lib/notion/database/model'
+import {
+  compactId,
+  isSupportedView,
+  mergeRecordMaps,
+  normalizeQuery
+} from '@/lib/notion/database/model'
 
-const STORAGE_PREFIX = 'notion-db-public-v2:'
+const STORAGE_PREFIX = 'notion-db-public-v3:'
 const MAX_AGE = 5 * 60_000
 const snapshots = new Map()
 
@@ -10,9 +15,7 @@ export function mergeResult(previous, next) {
   return {
     ...next,
     blockIds: [...new Set([...(previous?.blockIds || []), ...next.blockIds])],
-    recordMap: {
-      block: { ...previous?.recordMap?.block, ...next.recordMap.block }
-    }
+    recordMap: mergeRecordMaps(previous?.recordMap, next.recordMap)
   }
 }
 function readSnapshot(key) {
@@ -49,7 +52,12 @@ function writeSnapshot(key, result) {
   }
 }
 
-export default function useDatabase(block, collection, enabled = true) {
+export default function useDatabase(
+  block,
+  collection,
+  enabled = true,
+  views = []
+) {
   const router = useRouter()
   const param = `db_${compactId(block.id)}`
   const defaultQuery = useMemo(
@@ -57,6 +65,18 @@ export default function useDatabase(block, collection, enabled = true) {
     [collection.schema, block.view_ids]
   )
   const [query, setQuery] = useState(defaultQuery)
+  const view =
+    views.find(item => compactId(item.id) === compactId(query.viewId)) ||
+    views[0]
+  const supported = isSupportedView(view?.type)
+  const canLoad = enabled && supported
+  const timeZone = useMemo(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    } catch {
+      return 'UTC'
+    }
+  }, [])
   const [ready, setReady] = useState(false)
   const [state, setState] = useState({
     key: '',
@@ -64,7 +84,7 @@ export default function useDatabase(block, collection, enabled = true) {
     busy: false,
     error: null
   })
-  const key = JSON.stringify([block.id, query])
+  const key = JSON.stringify([block.id, query, timeZone])
   const controller = useRef(null)
   const generation = useRef(0)
   const stateRef = useRef(state)
@@ -110,6 +130,7 @@ export default function useDatabase(block, collection, enabled = true) {
 
   const load = useCallback(
     async (append = false) => {
+      if (!ready || !canLoad) return
       const current = stateRef.current
       if (
         append &&
@@ -130,6 +151,7 @@ export default function useDatabase(block, collection, enabled = true) {
           signal: abort.signal,
           body: JSON.stringify({
             blockId: block.id,
+            timeZone,
             ...query,
             ...(append ? { cursor: previous.nextCursor } : {})
           })
@@ -163,11 +185,11 @@ export default function useDatabase(block, collection, enabled = true) {
         })
       }
     },
-    [key, block.id, query]
+    [key, block.id, query, timeZone, ready, canLoad]
   )
 
   useEffect(() => {
-    if (!ready || !enabled) return
+    if (!ready || !canLoad) return
     const restored = readSnapshot(key)
     if (restored) {
       setState({ key, result: restored.result, busy: false, error: null })
@@ -184,7 +206,7 @@ export default function useDatabase(block, collection, enabled = true) {
     return () => {
       controller.current?.abort()
     }
-  }, [ready, enabled, key, load])
+  }, [ready, canLoad, key, load])
 
   const remember = useCallback(() => {
     const current = stateRef.current
@@ -225,7 +247,9 @@ export default function useDatabase(block, collection, enabled = true) {
     state.key === key ? state : { result: null, busy: true, error: null }
   return {
     ...current,
-    busy: !ready || !enabled || current.busy,
+    busy: canLoad && (!ready || current.busy),
+    view,
+    supported,
     query,
     updateQuery,
     loadMore: () => load(true),

@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import DatabaseBrowser from '@/components/database/DatabaseBrowser'
+import { NotionContextProvider } from 'react-notion-x'
 
 jest.mock('react-notion-x', () => ({
-  NotionContextProvider: ({ children }) => children
+  NotionContextProvider: jest.fn(({ children }) => children)
 }))
 jest.mock('react-notion-x/build/third-party/collection', () => ({
   Property: ({ data }) => <span>{data?.[0]?.[0]}</span>
@@ -72,7 +73,7 @@ const result = (ids, more = false) => ({
   nextCursor: more ? 'cursor' : null,
   total: null
 })
-const response = value => ({ ok: true, json: async () => value })
+const response = value => ({ ok: true, json: () => Promise.resolve(value) })
 const deferred = () => {
   let resolve
   const promise = new Promise(r => {
@@ -82,6 +83,122 @@ const deferred = () => {
 }
 const mount = () =>
   render(<DatabaseBrowser block={block} collection={collection} ctx={ctx} />)
+
+it('keeps referenced metadata from previous pages and merges it into the renderer context', async () => {
+  const first = result(['metadata-one'], true)
+  first.recordMap.notion_user = {
+    alice: { value: { id: 'alice', given_name: 'Alice' } }
+  }
+  first.recordMap.block.related = {
+    value: { id: 'related', properties: { title: [['Related']] } }
+  }
+  first.recordMap.collection = {
+    related: { value: { id: 'related', name: [['Related database']] } }
+  }
+  first.recordMap.signed_urls = { related: 'https://example.com/icon.png' }
+  const next = result(['metadata-two'])
+  next.recordMap.notion_user = {
+    bob: { value: { id: 'bob', given_name: 'Bob' } }
+  }
+  fetch
+    .mockResolvedValueOnce(response(first))
+    .mockResolvedValueOnce(response(next))
+  render(
+    <DatabaseBrowser
+      block={{ ...block, id: 'dddddddd-1111-1111-1111-111111111111' }}
+      collection={collection}
+      ctx={ctx}
+    />
+  )
+  await screen.findByText('metadata-one')
+  expect(JSON.parse(fetch.mock.calls[0][1].body).timeZone).toBe(
+    Intl.DateTimeFormat().resolvedOptions().timeZone
+  )
+  fireEvent.click(screen.getByRole('button', { name: '加载更多' }))
+  await screen.findByText('metadata-two')
+  const map = NotionContextProvider.mock.calls.at(-1)[0].recordMap
+  expect(Object.keys(map.notion_user).sort()).toEqual(['alice', 'bob'])
+  expect(map.block.related).toEqual(first.recordMap.block.related)
+  expect(map.collection.related).toEqual(first.recordMap.collection.related)
+  expect(map.signed_urls.related).toBe('https://example.com/icon.png')
+  expect(screen.getAllByRole('row')).toHaveLength(3) // Reference metadata is not another row.
+})
+
+it('does not request or show result controls for a shared unsupported view', async () => {
+  mockRouter.query = { v: otherView }
+  const localContext = {
+    ...ctx,
+    recordMap: {
+      ...ctx.recordMap,
+      collection_view: {
+        ...ctx.recordMap.collection_view,
+        [otherView]: {
+          value: { id: otherView, name: '日历', type: 'calendar' }
+        }
+      }
+    }
+  }
+  fetch.mockResolvedValue(response(result(['supported-row'])))
+  render(
+    <DatabaseBrowser
+      block={{ ...block, id: 'eeeeeeee-1111-1111-1111-111111111111' }}
+      collection={collection}
+      ctx={localContext}
+    />
+  )
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: '日历' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
+  )
+  expect(fetch).not.toHaveBeenCalled()
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(screen.queryByRole('searchbox')).toBeNull()
+  expect(screen.queryByText(/已加载/)).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: '表格' }))
+  await screen.findByText('supported-row')
+  fireEvent.click(screen.getByRole('button', { name: '日历' }))
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(screen.queryByText(/已加载/)).toBeNull()
+})
+
+it('aborts an in-flight table request when switching to an unsupported view', async () => {
+  const pending = deferred()
+  fetch.mockReturnValue(pending.promise)
+  const localContext = {
+    ...ctx,
+    recordMap: {
+      ...ctx.recordMap,
+      collection_view: {
+        ...ctx.recordMap.collection_view,
+        [otherView]: {
+          value: { id: otherView, name: '时间轴', type: 'timeline' }
+        }
+      }
+    }
+  }
+  render(
+    <DatabaseBrowser
+      block={{ ...block, id: 'ffffffff-1111-1111-1111-111111111111' }}
+      collection={collection}
+      ctx={localContext}
+    />
+  )
+  await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  const signal = fetch.mock.calls[0][1].signal
+  fireEvent.click(screen.getByRole('button', { name: '时间轴' }))
+  expect(signal.aborted).toBe(true)
+  await act(() => {
+    pending.resolve(response(result(['invisible-row'], true)))
+    return Promise.resolve()
+  })
+  expect(screen.queryByText('invisible-row')).toBeNull()
+  expect(screen.queryByRole('button', { name: '加载更多' })).toBeNull()
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(fetch).toHaveBeenCalledTimes(1)
+})
 
 beforeEach(() => {
   global.IntersectionObserver = undefined
@@ -125,7 +242,10 @@ it('ignores a late response after a view switch and cancels the old request', as
   const signal = fetch.mock.calls[0][1].signal
   fireEvent.click(screen.getByRole('button', { name: '画廊' }))
   await screen.findByText('new-view')
-  await act(async () => first.resolve(response(result(['stale-view']))))
+  await act(() => {
+    first.resolve(response(result(['stale-view'])))
+    return Promise.resolve()
+  })
   expect(screen.queryByText('stale-view')).not.toBeInTheDocument()
   expect(signal.aborted).toBe(true)
   expect(mockRouter.replace).toHaveBeenCalledWith(
@@ -146,7 +266,7 @@ it('shows expiration recovery and restarts without the expired cursor', async ()
     .mockResolvedValueOnce(response(result(['before'], true)))
     .mockResolvedValueOnce({
       ok: false,
-      json: async () => ({ code: 'CURSOR_EXPIRED' })
+      json: () => Promise.resolve({ code: 'CURSOR_EXPIRED' })
     })
     .mockResolvedValueOnce(response(result(['fresh'])))
   render(

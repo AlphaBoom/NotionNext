@@ -4,12 +4,14 @@ import { NotionContextProvider } from 'react-notion-x'
 import { Property } from 'react-notion-x/build/third-party/collection'
 import {
   compactId,
+  mergeRecordMaps,
   textContent,
   unwrapRecord,
   visibleProperties
 } from '@/lib/notion/database/model'
 import { galleryVisibilityClassName } from '@/lib/notion/galleryVisibilityClassName'
 import DatabaseControls from './DatabaseControls'
+import DatabaseTable from './DatabaseTable'
 import useDatabase from './useDatabase'
 import styles from './DatabaseBrowser.module.css'
 
@@ -60,55 +62,20 @@ function DatabaseRows({ rows, collection, view, ctx, onNavigate }) {
   )
   if (view.type === 'table')
     return (
-      <div
-        className='database-table-scroll'
-        role='region'
-        aria-label='数据库表格，可横向滚动'
-        tabIndex={0}
-      >
-        <table className='database-table'>
-          <thead>
-            <tr>
-              {fields.map(field => (
-                <th
-                  key={field.id}
-                  scope='col'
-                  style={{
-                    minWidth: Math.min(500, Math.max(100, field.width || 160))
-                  }}
-                >
-                  {field.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(row => (
-              <tr key={row.id}>
-                {fields.map(field => (
-                  <td
-                    key={field.id}
-                    className={
-                      (field.wrap ?? view.format?.table_wrap)
-                        ? 'database-wrap'
-                        : ''
-                    }
-                  >
-                    {field.type === 'title' ? (
-                      rowLink(
-                        row,
-                        <Cell row={row} field={field} collection={collection} />
-                      )
-                    ) : (
-                      <Cell row={row} field={field} collection={collection} />
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <DatabaseTable
+        rows={rows}
+        fields={fields}
+        renderCell={(row, field) =>
+          field.type === 'title' ? (
+            rowLink(
+              row,
+              <Cell row={row} field={field} collection={collection} />
+            )
+          ) : (
+            <Cell row={row} field={field} collection={collection} />
+          )
+        }
+      />
     )
 
   const card = row => {
@@ -204,25 +171,19 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
     if (rootRef.current) observer.observe(rootRef.current)
     return () => observer.disconnect()
   }, [])
-  const db = useDatabase(block, collection, visible)
   const views = block.view_ids
     .map(id => unwrapRecord(ctx.recordMap.collection_view?.[id]))
     .filter(Boolean)
-  const view =
-    views.find(view => compactId(view.id) === compactId(db.query.viewId)) ||
-    views[0]
+  const db = useDatabase(block, collection, visible, views)
+  const { view, supported } = db
   const map = useMemo(
-    () => ({
-      ...ctx.recordMap,
-      block: { ...ctx.recordMap.block, ...db.result?.recordMap.block }
-    }),
+    () => mergeRecordMaps(ctx.recordMap, db.result?.recordMap),
     [ctx.recordMap, db.result]
   )
   const rows = (db.result?.blockIds || [])
     .map(id => unwrapRecord(db.result.recordMap.block[id]))
     .filter(Boolean)
   const sourceUrl = `https://www.notion.so/${compactId(block.id)}?v=${compactId(db.query.viewId)}`
-  const supported = ['table', 'gallery', 'list', 'board'].includes(view?.type)
   const hideHeading =
     block.format?.hide_inline_collection_name ||
     view?.format?.hide_linked_collection_name
@@ -286,12 +247,12 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
             onNavigate={db.remember}
           />
         )}
-        {db.busy && !rows.length && (
+        {supported && db.busy && !rows.length && (
           <div className='database-placeholder' role='status'>
             正在加载条目…
           </div>
         )}
-        {!db.busy && !db.error && db.result && !rows.length && (
+        {supported && !db.busy && !db.error && db.result && !rows.length && (
           <div className='database-placeholder'>
             {db.result.hasMore
               ? '这一批没有可显示的条目，可继续加载。'
@@ -300,7 +261,7 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
               '可以调整筛选条件或搜索词。'}
           </div>
         )}
-        {db.error && (
+        {supported && db.error && (
           <div className='database-error' role='alert'>
             <p>
               {db.error === 'CURSOR_EXPIRED'
@@ -323,12 +284,12 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
             </a>
           </div>
         )}
-        {db.result?.incomplete && (
+        {supported && db.result?.incomplete && (
           <p role='status'>
             本次加载已达到上限，请添加筛选条件缩小范围，或在 Notion 中查看。
           </p>
         )}
-        {db.result && (
+        {supported && db.result && (
           <footer className='database-footer'>
             <span aria-live='polite'>
               已加载 {rows.length} 条
