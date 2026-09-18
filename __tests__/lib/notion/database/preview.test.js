@@ -163,6 +163,54 @@ describe('fixed public database previews', () => {
     expect(JSON.stringify(view)).toBe(before)
   })
 
+  it.each([
+    { query2: { sort: [{ property: 'n', direction: 'descending' }] } },
+    { query2: { sorts: [{ property: 'n', direction: 'descending' }] } },
+    { format: { collection_sort: [{ property_id: 'n', sort: 'descending' }] } }
+  ])(
+    'sends persisted sorting to Notion before selecting the preview: %j',
+    async saved => {
+      const request = jest.fn(() => publicResult(1, false))
+      const view = { id: viewId, type: 'table', ...saved }
+      await createDatabasePreview({
+        request,
+        loadMetadata: () => ({ ...metadata, views: { [viewId]: view } })
+      })(input)
+      expect(request.mock.calls[0][0].loader.sort).toEqual([
+        { property: 'n', direction: 'descending' }
+      ])
+    }
+  )
+
+  it.each(['or', 'and'])(
+    'preserves the saved %s join and nested filter operators',
+    async operator => {
+      const quick = ['A', 'B'].map(value => ({
+        property: 's',
+        filter: { operator: 'enum_is', value: { type: 'exact', value } }
+      }))
+      const nested = { operator: 'and', filters: [quick[0]] }
+      const view = {
+        id: viewId,
+        type: 'table',
+        filter_operator: operator,
+        format: { property_filters: quick.map(filter => ({ filter })) },
+        query2: { filter: nested }
+      }
+      const before = JSON.stringify(view)
+      const request = jest.fn(() => publicResult(1, false))
+      await createDatabasePreview({
+        request,
+        loadMetadata: () => ({ ...metadata, views: { [viewId]: view } })
+      })(input)
+      expect(request.mock.calls[0][0].loader.filter).toEqual({
+        operator,
+        filters: [nested, ...quick]
+      })
+      expect(JSON.stringify(view)).toBe(before)
+    }
+  )
+
   it('shares in-flight and cached previews, then refreshes metadata and data after expiry', async () => {
     let time = 1000
     const request = jest.fn(() => publicResult(100, true))

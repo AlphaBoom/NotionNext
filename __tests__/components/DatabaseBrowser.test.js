@@ -86,10 +86,13 @@ it('shows 20 at a time up to 100, while local search and expansion make no furth
   }
   fetch.mockResolvedValueOnce(response(data))
   mount()
-  await screen.findByText('已显示 20 / 100 条预览')
+  await screen.findByText('已显示 20 条预览')
   expect(screen.getAllByRole('row')).toHaveLength(21)
+  expect(
+    screen.queryByRole('link', { name: '在 Notion 中查看完整数据库 ↗' })
+  ).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: '展开更多预览' }))
-  expect(screen.getByText('已显示 40 / 100 条预览')).toBeInTheDocument()
+  expect(screen.getByText('已显示 40 条预览')).toBeInTheDocument()
   expect(screen.getAllByText('42')).toHaveLength(40)
   const provider = NotionContextProvider.mock.calls.at(-1)[0]
   expect(provider.recordMap.block[rowId(0)].value.format.page_cover).toBe(
@@ -111,13 +114,26 @@ it('shows 20 at a time up to 100, while local search and expansion make no furth
     screen.getByText('预览中没有匹配条目，可前往 Notion 搜索完整数据库。')
   ).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: '清除搜索' }))
-  for (let i = 0; i < 4; i++)
+  for (let i = 0; i < 4; i++) {
+    expect(
+      screen.queryByRole('link', { name: '在 Notion 中查看完整数据库 ↗' })
+    ).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: '展开更多预览' }))
+  }
   expect(screen.getAllByRole('row')).toHaveLength(101)
   expect(screen.queryByRole('button', { name: '展开更多预览' })).toBeNull()
   expect(
-    screen.getByText('此处展示 100 条预览，更多内容请前往 Notion。')
+    screen.getByText('已达 100 条预览上限，更多内容请前往 Notion。')
   ).toBeInTheDocument()
+  fireEvent.change(screen.getByRole('searchbox'), {
+    target: { value: '条目 095' }
+  })
+  expect(
+    screen.queryByRole('link', { name: '在 Notion 中查看完整数据库 ↗' })
+  ).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: '清除搜索' }))
+  for (let i = 0; i < 4; i++)
+    fireEvent.click(screen.getByRole('button', { name: '展开更多预览' }))
   expect(fetch).toHaveBeenCalledTimes(1)
   expect(fetch).toHaveBeenCalledWith(
     `/api/notion-database?blockId=${blockId.replace(/-/g, '')}`,
@@ -142,7 +158,7 @@ it.each([0, 8, 100])(
   async count => {
     fetch.mockResolvedValueOnce(response(preview(count, false)))
     mount()
-    await screen.findByText(`已显示 ${Math.min(count, 20)} / ${count} 条预览`)
+    await screen.findByText(`已显示 ${Math.min(count, 20)} 条预览`)
     expect(
       screen.queryByRole('link', { name: '在 Notion 中查看完整数据库 ↗' })
     ).toBeNull()
@@ -247,13 +263,13 @@ it('aborts an old request and ignores its response after switching databases', a
       ctx={ctx}
     />
   )
-  await screen.findByText('已显示 1 / 1 条预览')
+  await screen.findByText('已显示 1 条预览')
   await act(() => {
     resolve(response(preview(100, true)))
     return Promise.resolve()
   })
   expect(signal.aborted).toBe(true)
-  expect(screen.getByText('已显示 1 / 1 条预览')).toBeInTheDocument()
+  expect(screen.getByText('已显示 1 条预览')).toBeInTheDocument()
   rendered.unmount()
   expect(fetch.mock.calls[1][1].signal.aborted).toBe(true)
 })

@@ -321,7 +321,7 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
             <span aria-live='polite'>
               {term
                 ? `预览中匹配 ${matches.length} 条 · 已显示 ${displayed.length} 条`
-                : `已显示 ${displayed.length} / ${rows.length} 条预览`}
+                : `已显示 ${displayed.length} 条预览`}
             </span>
             {displayed.length < matches.length && (
               <button
@@ -335,14 +335,20 @@ export default function DatabaseBrowser({ block, ctx, collection }) {
             )}
           </footer>
         )}
-        {supported && db.result && (db.result.hasMore || db.result.omitted) && (
-          <aside className='database-preview-more'>
-            <p>此处展示 {rows.length} 条预览，更多内容请前往 Notion。</p>
-            <a href={sourceUrl} target='_blank' rel='noopener noreferrer'>
-              在 Notion 中查看完整数据库 ↗
-            </a>
-          </aside>
-        )}
+        {supported &&
+          db.result &&
+          displayed.length >= DATABASE_PREVIEW_LIMIT &&
+          (db.result.hasMore || db.result.omitted) && (
+            <aside className='database-preview-more'>
+              <p>
+                已达 {DATABASE_PREVIEW_LIMIT} 条预览上限，更多内容请前往
+                Notion。
+              </p>
+              <a href={sourceUrl} target='_blank' rel='noopener noreferrer'>
+                在 Notion 中查看完整数据库 ↗
+              </a>
+            </aside>
+          )}
       </section>
     </NotionContextProvider>
   )
