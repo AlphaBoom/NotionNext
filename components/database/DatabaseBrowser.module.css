@@ -1,0 +1,284 @@
+.root {
+  width: 100%;
+  min-width: 0;
+  margin: 1.25rem 0;
+  color: inherit;
+  font-size: 0.925rem;
+  font-weight: 400;
+  --db-border: rgba(128, 128, 128, 0.24);
+  --db-surface: rgba(128, 128, 128, 0.06);
+}
+.root :global(.database-heading) {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.root :global(.database-heading h3) {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.root :global(.database-heading a),
+.root :global(.database-error a) {
+  font-size: 0.8rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.root button,
+.root input,
+.root select {
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--db-border);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  font: inherit;
+  line-height: 1.4;
+}
+.root button {
+  cursor: pointer;
+  white-space: nowrap;
+}
+.root button:hover {
+  background: var(--db-surface);
+}
+.root button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.root button:focus-visible,
+.root input:focus-visible,
+.root select:focus-visible,
+.root a:focus-visible {
+  outline: 2px solid #6c83b5;
+  outline-offset: 3px;
+}
+.root select option {
+  color: CanvasText;
+  background: Canvas;
+}
+.root :global(.database-views) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--db-border);
+}
+.root :global(.database-views button) {
+  border-color: transparent;
+}
+.root :global(.database-views button[aria-pressed='true']) {
+  background: var(--db-surface);
+  border-color: var(--db-border);
+  font-weight: 600;
+}
+.root :global(.database-controls) {
+  margin: 0.75rem 0;
+}
+.root :global(.database-toolbar) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.root :global(.database-search) {
+  flex: 1 1 160px;
+}
+.root :global(.database-search input) {
+  width: 100%;
+  min-width: 0;
+}
+.root :global(.database-conditions) {
+  border: 1px solid var(--db-border);
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-top: 0.65rem;
+  background: var(--db-surface);
+}
+.root :global(.database-condition) {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin: 0.6rem 0;
+}
+.root :global(.database-condition input),
+.root :global(.database-condition select) {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1 1 110px;
+}
+.root :global(.database-conditions > button) {
+  margin: 0.35rem 0.45rem 0.1rem 0;
+}
+.root :global(.database-hint) {
+  opacity: 0.7;
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+}
+.root :global(.database-table-scroll) {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--db-border);
+  border-radius: 8px;
+}
+.root :global(.database-table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0;
+}
+.root :global(.database-table th),
+.root :global(.database-table td) {
+  border: 0;
+  border-bottom: 1px solid var(--db-border);
+  border-right: 1px solid var(--db-border);
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  max-width: 500px;
+}
+.root :global(.database-table th) {
+  font-size: 0.825rem;
+  font-weight: 600;
+  background: var(--db-surface);
+  white-space: nowrap;
+}
+.root :global(.database-table td) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.root :global(.database-table td.database-wrap) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.root :global(.database-table td a) {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.root :global(.database-table tr:last-child td) {
+  border-bottom: 0;
+}
+.root :global(.database-cards) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
+  gap: 1rem;
+}
+.root :global(.database-cards[data-size='small']) {
+  grid-template-columns: repeat(auto-fill, minmax(min(145px, 100%), 1fr));
+}
+.root :global(.database-cards[data-size='large']) {
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+.root :global(.database-card) {
+  border: 1px solid var(--db-border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--db-surface);
+}
+.root :global(.database-card-title) {
+  display: block;
+  padding: 0.75rem;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.root :global(.database-cover-link) {
+  display: block;
+}
+.root :global(.database-cover) {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  margin: 0;
+}
+.root :global(.database-cover.contain) {
+  object-fit: contain;
+}
+.root :global(.database-card dl) {
+  padding: 0 0.75rem 0.75rem;
+  margin: 0;
+  font-size: 0.8rem;
+}
+.root :global(.database-card dl > div) {
+  margin: 0.35rem 0;
+}
+.root :global(.database-card dt) {
+  opacity: 0.65;
+}
+.root :global(.database-card dd) {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.root :global(.database-list) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.root :global(.database-list .database-card) {
+  background: none;
+}
+.root :global(.database-board) {
+  display: flex;
+  overflow: auto;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+}
+.root :global(.database-board > section) {
+  flex: 0 0 230px;
+}
+.root :global(.database-board h4) {
+  margin: 0.5rem 0;
+}
+.root :global(.database-board small) {
+  opacity: 0.6;
+  font-weight: 400;
+}
+.root :global(.database-board .database-card) {
+  margin-bottom: 0.65rem;
+}
+.root :global(.database-placeholder) {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--db-border);
+  border-radius: 8px;
+  padding: 1rem;
+  opacity: 0.7;
+}
+.root :global(.database-error) {
+  padding: 1rem;
+  border: 1px solid var(--db-border);
+  border-radius: 8px;
+}
+.root :global(.database-error p) {
+  margin: 0 0 0.75rem;
+}
+.root :global(.database-error button) {
+  margin-right: 1rem;
+}
+.root :global(.database-footer) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.825rem;
+}
+.root :global(.database-footer span) {
+  opacity: 0.7;
+}
+@media (max-width: 600px) {
+  .root {
+    font-size: 0.85rem;
+  }
+  .root :global(.database-toolbar button) {
+    padding: 0.5rem;
+  }
+  .root :global(.database-footer) {
+    flex-wrap: wrap;
+  }
+}
