@@ -24,7 +24,7 @@ Medium 主题在文章列表、搜索结果、归档、上一篇/下一篇及文
 
 尚未发布的文章将 `status` 留空。`Invisible` 是隐藏发布，可通过链接访问，不是草稿。通过 AI 创建文章时应同时填写对应的 `writingMode`，在内容确认后再设为 `Published`。
 
-验证：`node --test tests/writingMode.test.mjs`，并检查文章列表、详情、归档及三种订阅格式。
+验证：`node --test tests/node/writingMode.test.mjs`，并检查文章列表、详情、归档及三种订阅格式。
 
 ## 手动维护的 AI 摘要
 

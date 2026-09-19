@@ -1,6 +1,6 @@
-import { galleryVisibilityClassName } from '@/lib/notion/galleryVisibilityClassName'
+import { galleryVisibilityClassName } from '@/lib/db/notion/galleryVisibilityClassName'
 import DatabaseBrowser from '@/components/database/DatabaseBrowser'
-import { collectionIdFor, unwrapRecord } from '@/lib/notion/database/model'
+import { collectionIdFor, unwrapRecord } from '@/lib/db/notion/database/model'
 import { Collection } from 'react-notion-x/build/third-party/collection'
 
 export default function NotionCollection(props) {

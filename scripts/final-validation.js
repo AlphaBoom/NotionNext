@@ -97,9 +97,9 @@ function validateOptimizationTasks() {
       name: '文档和测试完善',
       checks: [
         { file: 'jest.config.js', desc: 'Jest 配置' },
-        { file: 'jest.setup.js', desc: 'Jest 设置文件' },
-        { file: '__tests__/components/LazyImage.test.js', desc: '组件测试示例' },
-        { file: '__tests__/lib/utils/validation.test.js', desc: '工具函数测试' },
+        { file: 'tests/setup/setup.js', desc: 'Jest 设置文件' },
+        { file: 'tests/unit/components/LazyImage.test.js', desc: '组件测试示例' },
+        { file: 'tests/unit/lib/utils/validation.test.js', desc: '工具函数测试' },
         { file: 'DEPLOYMENT.md', desc: '部署指南' },
         { file: '.github/workflows/ci.yml', desc: 'CI/CD 配置' },
         { file: 'lighthouserc.js', desc: 'Lighthouse 配置' }

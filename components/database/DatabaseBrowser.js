@@ -9,9 +9,9 @@ import {
   textContent,
   unwrapRecord,
   visibleProperties
-} from '@/lib/notion/database/model'
-import { galleryVisibilityClassName } from '@/lib/notion/galleryVisibilityClassName'
-import { publicNotionUrl } from '@/lib/notion/database/publicUrl'
+} from '@/lib/db/notion/database/model'
+import { galleryVisibilityClassName } from '@/lib/db/notion/galleryVisibilityClassName'
+import { publicNotionUrl } from '@/lib/db/notion/database/publicUrl'
 import DatabaseTable from './DatabaseTable'
 import useDatabase from './useDatabase'
 import styles from './DatabaseBrowser.module.css'
