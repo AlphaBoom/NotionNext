@@ -4,7 +4,7 @@ import Document, { Head, Html, Main, NextScript } from 'next/document'
 import {
   rewardBootScript,
   rewardBootStyle
-} from '@/themes/medium/lib/rewardBoot'
+} from '@/themes/medium/reward/lib/rewardBoot'
 
 const isLocalFontAwesome = BLOG.FONT_AWESOME?.startsWith(
   '/vendor/fontawesome/'

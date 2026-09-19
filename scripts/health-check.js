@@ -153,10 +153,10 @@ function checkTests() {
   log('\n🧪 检查测试文件...', 'blue')
   
   const testFiles = [
-    { path: '__tests__/components/LazyImage.test.js', name: 'LazyImage 组件测试' },
-    { path: '__tests__/lib/utils/validation.test.js', name: '验证工具测试' },
-    { path: 'jest.setup.js', name: 'Jest 设置文件' },
-    { path: 'jest.env.js', name: 'Jest 环境配置' }
+    { path: 'tests/unit/components/LazyImage.test.js', name: 'LazyImage 组件测试' },
+    { path: 'tests/unit/lib/utils/validation.test.js', name: '验证工具测试' },
+    { path: 'tests/setup/setup.js', name: 'Jest 设置文件' },
+    { path: 'tests/setup/env.js', name: 'Jest 环境配置' }
   ]
   
   let passed = 0
@@ -266,7 +266,7 @@ function runTests() {
   log('\n🧪 运行测试...', 'blue')
   
   log('🔧 运行测试命令...', 'cyan')
-  const result = runCommand('npm test -- --runInBand && node --test tests/*.test.mjs cloudflare/*/worker.test.mjs', '单元测试', true)
+  const result = runCommand('npm run test:ci', '单元测试', true)
   
   if (result.success) {
     log('✅ 测试运行成功', 'green')

@@ -80,10 +80,12 @@ yarn
 - `yarn remove-hooks`：移除 Git hooks。
 - `yarn check-hooks`：检查 hooks 安装状态。
 
-- `yarn test`：运行 Jest 单元测试。
+- `yarn test`：运行全部 Jest、Node 和 Cloudflare Worker 测试。
+- `yarn test:unit [文件名]`：运行 Jest，可传文件名或 `--runInBand`。
+- `yarn test:node`：运行 Node 与 Worker 测试（每份仅执行一次）。
 - `yarn test:watch`：监听模式运行 Jest。
 - `yarn test:coverage`：运行测试并生成覆盖率。
-- `yarn test:ci`：CI 模式运行测试（覆盖率+无 watch）。
+- `yarn test:ci`：CI 模式运行全部测试；覆盖率按需用 `test:coverage` 生成。
 
 - `yarn health-check`：执行项目健康检查脚本。
 - `yarn validate`：执行验证入口（当前映射到 health-check）。

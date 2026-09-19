@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { compactId } from '@/lib/notion/database/model'
+import { compactId } from '@/lib/db/notion/database/model'
 
 // One fixed GET per preview. Search and expansion never reach this hook.
 export default function useDatabase(blockId, enabled) {
