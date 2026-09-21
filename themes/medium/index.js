@@ -29,7 +29,7 @@ import TagItemMini from './components/TagItemMini'
 import TocDrawer from './components/TocDrawer'
 import TopNavBar from './components/TopNavBar'
 import HomeIntro from './components/HomeIntro'
-import RewardProvider, { useReward } from './components/RewardProvider'
+import RewardProvider, { useReward } from './reward/components/RewardProvider'
 import CONFIG from './config'
 import { Style } from './style'
 

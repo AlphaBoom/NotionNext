@@ -81,7 +81,7 @@ curl -i 'https://YOUR_WORKER/v1/leaderboard?season=endless-v1' \
 
 ## 与游戏优化 PR 的协作接口
 
-游戏模拟文件 `themes/medium/lib/survivors.js` 不需要改动。`SecretSurvivors` 仅在新局开始时调用 `beginLeaderboardRun()`，并在 `lost` 时冻结 `durationMs / kills / bosses / level`。暂停、恢复、升级不能重新创建凭证。
+游戏模拟文件 `themes/medium/reward/lib/survivors.js` 不需要改动。`SecretSurvivors` 仅在新局开始时调用 `beginLeaderboardRun()`，并在 `lost` 时冻结 `durationMs / kills / bosses / level`。暂停、恢复、升级不能重新创建凭证。
 
 当前服务端仅做宽松上界检查：生存 1 秒至 24 小时，不能超过开局后的墙钟时间（容忍 5 秒网络延迟）；击退数不超过每秒 60 加 100；首领数不超过每分钟 1 个；等级不超过 `1 + kills * 25`。这些是拒绝明显假数据的检查，不参与游戏难度。
 
@@ -109,7 +109,7 @@ Node 22.13+（仓库支持 22–24）：
 
 ```bash
 node --test cloudflare/quill-leaderboard/worker.test.mjs
-yarn jest --runInBand __tests__/themes/medium/*Leaderboard*.test.js __tests__/themes/medium/survivorsExit.test.js
+yarn jest --runInBand tests/unit/themes/medium/reward/*Leaderboard*.test.js tests/unit/themes/medium/reward/survivorsExit.test.js
 ```
 
 Worker 测试使用 Node SQLite 执行真实建表、索引、排序、幂等事务和清理 SQL，无需云端账号。前端测试覆盖局凭证、上传失败重试、榜单刷新、游戏生命周期和输入框键盘行为。

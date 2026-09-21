@@ -2,8 +2,8 @@ import {
   DatabaseError,
   getDatabasePreview,
   previewBlockId
-} from '@/lib/notion/database/server'
-import { DATABASE_CACHE_SECONDS } from '@/lib/notion/database/model'
+} from '@/lib/db/notion/database/server'
+import { DATABASE_CACHE_SECONDS } from '@/lib/db/notion/database/model'
 
 export const config = { api: { bodyParser: false } }
 

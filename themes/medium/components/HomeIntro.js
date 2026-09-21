@@ -2,13 +2,13 @@ import LazyImage from '@/components/LazyImage'
 import SmartLink from '@/components/SmartLink'
 import { siteConfig } from '@/lib/config'
 import { useEffect, useRef, useState } from 'react'
-import { useReward } from './RewardProvider'
+import { useReward } from '../reward/components/RewardProvider'
 
 const DESKTOP_GAME = '(min-width: 769px) and (hover: hover) and (pointer: fine)'
 // Each device loads only its own game, after the avatar is pressed.
 const loadGames = {
-  desktop: () => import('./SecretSurvivors'),
-  mobile: () => import('./SecretRunner')
+  desktop: () => import('../reward/components/SecretSurvivors'),
+  mobile: () => import('../reward/components/SecretRunner')
 }
 
 export default function HomeIntro({ siteInfo, categoryOptions = [] }) {

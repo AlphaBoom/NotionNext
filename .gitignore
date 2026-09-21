@@ -15,6 +15,7 @@
 
 # vitepress (docs site)
 .vitepress/cache
+.vitepress/.temp
 .vitepress/dist
 
 # production

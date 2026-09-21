@@ -71,8 +71,7 @@ jobs:
           node-version-file: .nvmrc
           cache: yarn
       - run: yarn install --frozen-lockfile
-      - run: yarn test --passWithNoTests
-      - run: node --test tests/*.test.mjs cloudflare/*/worker.test.mjs
+      - run: yarn test:ci
 
   docs-site:
     name: VitePress build

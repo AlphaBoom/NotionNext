@@ -2,29 +2,31 @@
 
 [English](./PROJECT_STRUCTURE.en.md)
 
-## 顶层目录（常用）
+## 模块职责
 
-- `pages/`：Next.js 路由入口（SSG/ISR 的 `getStaticProps/getStaticPaths`）
-- `themes/`：各主题实现（UI 与主题配置）
-- `components/`：跨主题复用组件
-- `lib/`：核心逻辑（数据、缓存、工具、配置读取）
-- `conf/`：拆分后的配置文件（由 `blog.config.js` 聚合）
-- `__tests__/`：单元测试
-- `scripts/`：工程脚本（质量检查、初始化、钩子安装等）
-- `.github/`：Issue/PR 模板与协作元数据
+| 目录 | 职责 |
+| --- | --- |
+| `pages/` | Next.js Pages Router 路由、API、SSG/ISR 入口 |
+| `components/` | 跨主题组件；`database/` 存放数据库预览 UI 和客户端 hook |
+| `themes/<theme>/` | 主题布局、组件、样式及配置 |
+| `themes/medium/reward/` | Medium 的小游戏和隐藏主题；`components/` 放 UI，`lib/` 放状态、模拟与 hook |
+| `lib/db/notion/` | Notion 内容获取、格式转换、元数据和图片处理 |
+| `lib/db/notion/database/` | 数据库预览模型、公开范围、缓存服务和行属性 |
+| `lib/site/` | 站点数据适配与处理；`lib/db/SiteDataApi.js` 负责已有站点数据组装 |
+| `lib/cache/`、`lib/build/` | 缓存与构建阶段逻辑 |
+| `lib/plugins/`、`lib/utils/` | 功能集成与共享工具 |
+| `conf/`、`blog.config.js` | 配置定义；`lib/config.js` 负责读取和优先级 |
+| `cloudflare/` | 独立部署的 Worker，测试保留在各 Worker 旁边 |
+| `tests/` | 应用测试、测试环境及运行说明 |
+| `scripts/` | 开发、质量检查、文档与翻译脚本 |
+| `docs/`、`.vitepress/` | 项目文档和文档站 |
 
-## 关键文件
+## 模块边界
 
-- `blog.config.js`：聚合配置入口（通过 `...require('./conf/*.config')`）
-- `lib/config.js`：`siteConfig()` 读取逻辑（含优先级）
-- `lib/db/SiteDataApi.js`：全站数据组装核心
-- `CONTRIBUTING.md`：对外贡献入口
-- `docs/README.md`：文档导航入口
+- 路由负责接收请求和组装页面；共用的数据处理放在 `lib/`，跨主题 UI 放在 `components/`。
+- Notion 相关数据逻辑统一放在 `lib/db/notion/`，不再另建平行的 `lib/notion/`。
+- 数据库客户端只引用 `database/model.js` 等纯逻辑；`database/server.js` 由 API/服务端入口使用。不要用统一 barrel 导出把服务端依赖带进浏览器。
+- Medium 的常规文章组件放在 `components/`。小游戏和 NEW GAME! 主题放在 `reward/`；游戏和完整隐藏主题保持动态导入，普通文章不预加载它们。
+- 测试按源码职责组织在 `tests/unit/`；Node ESM 测试在 `tests/node/`。共享环境在 `tests/setup/`，Jest 只发现 `*.test.*` 文件。
 
-## 改动建议
-
-- **全局规则改动**：优先 `lib/db/` 或 `lib/utils/`
-- **主题视觉改动**：优先 `themes/<theme>/`
-- **配置项新增**：优先 `conf/*.config.js`，再由 `blog.config.js` 聚合
-- **避免在多个 `pages/*` 重复粘贴同一业务逻辑**
-
+运行方式及精简原则见 [测试说明](./testing.md)。
