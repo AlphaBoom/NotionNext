@@ -1,4 +1,5 @@
-jest.mock('@/lib/db/notion/getNotionAPI', () => ({}))
+jest.mock('@/lib/db/notion/getNotionAPI', () => ({ __esModule: true, default: { getPage: jest.fn() } }))
+jest.mock('@/lib/cache/cache_manager', () => ({ getDataFromCache: jest.fn() }))
 jest.mock('p-limit', () => () => fn => fn())
 jest.mock('notion-utils', () => ({
   getBlockValue: jest.fn(entry => entry?.value?.value || entry?.value || entry)
@@ -9,8 +10,47 @@ import {
   getMissingExternalObjectInstanceIds,
   hasExpiredSignedUrls,
   hydrateExternalObjectInstances,
-  preferStablePdfSignedUrls
+  preferStablePdfSignedUrls,
+  getPageWithRetry
 } from '@/lib/db/notion/getPostBlocks'
+import notionAPI from '@/lib/db/notion/getNotionAPI'
+import { getDataFromCache } from '@/lib/cache/cache_manager'
+
+describe('Notion read failure recovery', () => {
+  beforeEach(() => {
+    getDataFromCache.mockResolvedValue(null)
+    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    jest.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  it('rejects exhausted upstream failures instead of returning an empty successful page', async () => {
+    notionAPI.getPage.mockRejectedValue(new Error('temporary network failure'))
+    await expect(getPageWithRetry('page-id', 'test')).rejects.toThrow('Notion page data is unavailable')
+    expect(notionAPI.getPage).toHaveBeenCalledTimes(3)
+  })
+
+  it('can use the existing successful page after a transport failure', async () => {
+    const previous = { block: { page: { value: { type: 'page' } } } }
+    notionAPI.getPage.mockRejectedValue(new Error('temporary network failure'))
+    getDataFromCache.mockResolvedValue(previous)
+    await expect(getPageWithRetry('page-id', 'test')).resolves.toBe(previous)
+    expect(notionAPI.getPage).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves confirmed missing pages and permits a subsequent successful retry after incomplete data', async () => {
+    notionAPI.getPage.mockRejectedValueOnce(new Error('Notion page not found "pageid"'))
+    await expect(getPageWithRetry('page-id', 'test')).resolves.toBeNull()
+    const page = { block: { 'page-id': { value: { id: 'page-id', type: 'page' } } } }
+    notionAPI.getPage.mockResolvedValueOnce({ block: {} }).mockResolvedValueOnce(page)
+    await expect(getPageWithRetry('page-id', 'test', 3, 'key', { fetchCollections: true })).resolves.toEqual(page)
+    expect(notionAPI.getPage).toHaveBeenLastCalledWith('page-id', {
+      fetchCollections: true,
+      throwOnCollectionErrors: true
+    })
+  })
+})
+
 describe('formatNotionBlock', () => {
   it('finds rich-text external object instances missing from the block map', () => {
     const recordMap = {
