@@ -2,6 +2,7 @@ import BLOG from '@/blog.config'
 import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { DynamicLayout } from '@/themes/theme'
+import { usesPagedScroll } from '@/lib/postList'
 
 const Tag = props => {
   const theme = siteConfig('THEME', BLOG.THEME, props.NOTION_CONFIG)
@@ -26,6 +27,7 @@ export async function getStaticProps({ params: { tag, page }, locale }) {
 
   props.tag = tag
   props.page = page
+  if (usesPagedScroll(props.NOTION_CONFIG)) props.postListPaged = true
   delete props.allPages
   return {
     props,

@@ -3,6 +3,7 @@ import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { DynamicLayout } from '@/themes/theme'
 import { searchPosts } from '@/lib/search/searchPosts'
+import { prepareInitialPostList } from '@/lib/postList'
 
 const Index = props => {
   const theme = siteConfig('THEME', BLOG.THEME, props.NOTION_CONFIG)
@@ -25,19 +26,8 @@ export async function getStaticProps({ params: { keyword }, locale }) {
   )
   props.posts = await searchPosts(allPosts, keyword)
   props.postCount = props.posts.length
-  const POST_LIST_STYLE = siteConfig(
-    'POST_LIST_STYLE',
-    'Page',
-    props?.NOTION_CONFIG
-  )
-  const POSTS_PER_PAGE = siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
-
   // 处理分页
-  if (POST_LIST_STYLE === 'scroll') {
-    // 滚动列表默认给前端返回所有数据
-  } else if (POST_LIST_STYLE) {
-    props.posts = props.posts?.slice(0, POSTS_PER_PAGE)
-  }
+  prepareInitialPostList(props)
   props.keyword = keyword
   delete props.allPages
   return {

@@ -16,7 +16,7 @@ export default function SearchPage(props) {
   const count = props.postCount ?? props.posts?.length ?? 0
   const requested = status.pending ? status.keyword : keyword
   const List =
-    props.searchClientSide || siteConfig('POST_LIST_STYLE') === 'scroll'
+    props.searchClientSide || siteConfig('POST_LIST_STYLE', 'page', props.NOTION_CONFIG) === 'scroll'
       ? BlogPostListScroll
       : BlogPostListPage
   return (

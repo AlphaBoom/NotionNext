@@ -110,7 +110,7 @@ const LayoutIndex = props => {
 const LayoutPostList = props => {
   return (
     <>
-      {siteConfig('POST_LIST_STYLE') === 'page' ? (
+      {siteConfig('POST_LIST_STYLE', 'page', props.NOTION_CONFIG) === 'page' ? (
         <BlogPostListPage {...props} />
       ) : (
         <BlogPostListScroll {...props} />

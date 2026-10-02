@@ -162,6 +162,27 @@ describe('mapImgUrl signed attachments', () => {
 })
 
 describe('compressImage', () => {
+  it('uses the local thumbnail for the renovation list cover without changing its article source', () => {
+    const path = '/images/posts/codex-blog-renovation-cover.png'
+    for (const source of [
+      path,
+      `https://notion.alphaboom.cn${path}?t=post-id`,
+      `https://raw.githubusercontent.com/AlphaBoom/NotionNext/main/public${path}?t=post-id`
+    ]) {
+      expect(getCoverThumbnailUrl(source, 360)).toBe(
+        '/images/posts/codex-blog-renovation-cover-thumbnail.webp'
+      )
+      expect(compressImage(source, 1200)).toBe(source)
+    }
+    for (const source of [
+      `https://images.example${path}`,
+      `https://raw.githubusercontent.com/another/NotionNext/main/public${path}`,
+      `https://raw.githubusercontent.com/AlphaBoom/NotionNext/other/public${path}`
+    ]) {
+      expect(getCoverThumbnailUrl(source, 360)).toBe(source)
+    }
+  })
+
   it('requests a small attachment cover while keeping article images unchanged', () => {
     const host = BLOG.NOTION_HOST
     try {

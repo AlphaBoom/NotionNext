@@ -1,4 +1,5 @@
 import BLOG, { LAYOUT_MAPPINGS } from '@/blog.config'
+import CompletePostList from '@/components/CompletePostList'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
 import { getQueryParam, getQueryVariable, isBrowser } from '../lib/utils'
@@ -236,7 +237,39 @@ export const getBaseLayoutByTheme = theme => {
  */
 export const DynamicLayout = props => {
   const { theme, layoutName } = props
+  const router = useRouter()
   const SelectedLayout = useLayoutByTheme({ layoutName, theme })
+  if (
+    props.postListPaged &&
+    !props.searchClientSide &&
+    getCurrentTheme(router, theme) !== 'medium'
+  ) {
+    const params = new URLSearchParams({ all: 'true' })
+    Object.entries({
+      category: props.category,
+      tag: props.tag,
+      keyword: props.keyword,
+      locale: router.locale
+    }).forEach(([key, value]) => {
+      if (value) params.set(key, value)
+    })
+    const endpoint = `${router.basePath || ''}/api/post-list?${params.toString()}`
+    const listKey = JSON.stringify([
+      endpoint,
+      props.page,
+      props.postCount,
+      props.posts?.map(post => [post.id, post.lastEditedDate])
+    ])
+    return (
+      <CompletePostList
+        key={listKey}
+        Layout={SelectedLayout}
+        Loading={getLayoutLoading(layoutName)}
+        listProps={props}
+        endpoint={endpoint}
+      />
+    )
+  }
   return <SelectedLayout {...props} />
 }
 
