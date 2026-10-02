@@ -17,6 +17,7 @@ export default async function handler(req, res) {
     tag,
     keyword,
     metadataKeyword,
+    all,
     locale = BLOG.LANG
   } = req.query
   const pageNumber = Number(page)
@@ -31,6 +32,7 @@ export default async function handler(req, res) {
     !/^\d+$/.test(page) ||
     !Number.isSafeInteger(pageNumber) ||
     pageNumber < 1 ||
+    (all !== undefined && all !== 'true') ||
     !locales.includes(locale) ||
     [category, tag, keyword, metadataKeyword].some(
       value =>
@@ -49,16 +51,19 @@ export default async function handler(req, res) {
 
     const pageSize = siteConfig('POSTS_PER_PAGE', 12, data.NOTION_CONFIG)
     const postCount = posts.length
-    const summaries = posts
-      .slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
-      .map(post => {
-        const summary = cleanPostSummary(post)
-        // Only card metadata is needed; never send credentials, blocks or ext data.
-        delete summary.password
-        delete summary.ext
-        if (post.searchExcerpt) summary.searchExcerpt = post.searchExcerpt
-        return summary
-      })
+    // Runtime switches to legacy themes require the complete summary array.
+    const complete = all === 'true'
+    const selected = complete
+      ? posts
+      : posts.slice((pageNumber - 1) * pageSize, pageNumber * pageSize)
+    const summaries = selected.map(post => {
+      const summary = cleanPostSummary(post)
+      // Only card metadata is needed; never send credentials, blocks or ext data.
+      delete summary.password
+      delete summary.ext
+      if (post.searchExcerpt) summary.searchExcerpt = post.searchExcerpt
+      return summary
+    })
     const ttl = Number(
       siteConfig('NEXT_REVALIDATE_SECOND', 600, data.NOTION_CONFIG)
     )
@@ -72,7 +77,7 @@ export default async function handler(req, res) {
       posts: summaries,
       postCount,
       page: pageNumber,
-      hasMore: pageNumber * pageSize < postCount
+      hasMore: !complete && pageNumber * pageSize < postCount
     })
   } catch (error) {
     console.error('Failed to load post list:', error)

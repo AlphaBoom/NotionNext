@@ -125,10 +125,12 @@ test('the API preserves article order/counts and returns just the requested page
 })
 
 test('category/tag routes send one initial batch with the complete count, and later category pages retain the locale', async () => {
-  fetchGlobalAllData.mockImplementation(async () => ({
-    allPages: [post('1'), post('2'), post('3')],
-    NOTION_CONFIG: { POST_LIST_STYLE: 'scroll' }
-  }))
+  fetchGlobalAllData.mockImplementation(() =>
+    Promise.resolve({
+      allPages: [post('1'), post('2'), post('3')],
+      NOTION_CONFIG: { POST_LIST_STYLE: 'scroll' }
+    })
+  )
   const category = await categoryList({
     params: { category: '游戏' },
     locale: 'en-US'
@@ -151,6 +153,34 @@ test('category/tag routes send one initial batch with the complete count, and la
   })
 })
 
+test('legacy runtime themes can request the complete filtered summary list while Medium still gets one batch', async () => {
+  const posts = Array.from({ length: 30 }, (_, index) =>
+    post(String(index + 1), { password: 'secret', ext: {}, blockMap: {} })
+  )
+  fetchGlobalAllData.mockResolvedValue({
+    allPages: [
+      ...posts,
+      post('other', { category: '其他' }),
+      post('draft', { status: 'Draft' })
+    ],
+    NOTION_CONFIG: { POSTS_PER_PAGE: 12 }
+  })
+  const query = { category: '游戏', tag: 'JRPG' }
+  const paged = response()
+  await handler({ method: 'GET', query }, paged)
+  expect(paged.json.mock.calls[0][0].posts).toHaveLength(12)
+  const full = response()
+  await handler({ method: 'GET', query: { ...query, all: 'true' } }, full)
+  const payload = full.json.mock.calls[0][0]
+  expect(payload).toMatchObject({ postCount: 30, hasMore: false })
+  expect(payload.posts.map(p => p.id)).toEqual(posts.map(p => p.id))
+  for (const summary of payload.posts) {
+    expect(summary).not.toHaveProperty('password')
+    expect(summary).not.toHaveProperty('ext')
+    expect(summary).not.toHaveProperty('blockMap')
+  }
+})
+
 test('metadata filtering covers all published posts before slicing, and full search retains excerpts', async () => {
   const local = response()
   await handler({ method: 'GET', query: { metadataKeyword: '3' } }, local)
@@ -167,6 +197,8 @@ test.each([
   { page: '-1' },
   { page: '2.5' },
   { page: ['1', '2'] },
+  { all: ['true', 'true'] },
+  { all: 'invalid' },
   { locale: 'unknown' },
   { tag: ['JRPG', 'other'] }
 ])('rejects invalid parameters without fetching data: %j', async query => {
