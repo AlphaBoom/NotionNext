@@ -1,4 +1,8 @@
-jest.mock('@/lib/db/notion/getNotionAPI', () => ({}))
+jest.mock('@/lib/db/notion/getNotionAPI', () => ({
+  __esModule: true,
+  default: { getPage: jest.fn() }
+}))
+jest.mock('@/lib/cache/cache_manager', () => ({ getDataFromCache: jest.fn() }))
 jest.mock('p-limit', () => () => fn => fn())
 jest.mock('notion-utils', () => ({
   getBlockValue: jest.fn(entry => entry?.value?.value || entry?.value || entry)
@@ -9,8 +13,173 @@ import {
   getMissingExternalObjectInstanceIds,
   hasExpiredSignedUrls,
   hydrateExternalObjectInstances,
-  preferStablePdfSignedUrls
+  preferStablePdfSignedUrls,
+  getPageWithRetry
 } from '@/lib/db/notion/getPostBlocks'
+import notionAPI from '@/lib/db/notion/getNotionAPI'
+import { getDataFromCache } from '@/lib/cache/cache_manager'
+import { execFileSync } from 'node:child_process'
+
+describe('Notion read failure recovery', () => {
+  beforeEach(() => {
+    getDataFromCache.mockResolvedValue(null)
+    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+    jest.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  it('rejects exhausted upstream failures instead of returning an empty successful page', async () => {
+    notionAPI.getPage.mockRejectedValue(new Error('temporary network failure'))
+    await expect(getPageWithRetry('page-id', 'test')).rejects.toThrow(
+      'Notion page data is unavailable'
+    )
+    expect(notionAPI.getPage).toHaveBeenCalledTimes(3)
+  })
+
+  it('can use the existing successful page after a transport failure', async () => {
+    const previous = { block: { page: { value: { type: 'page' } } } }
+    notionAPI.getPage.mockRejectedValue(new Error('temporary network failure'))
+    getDataFromCache.mockResolvedValue(previous)
+    await expect(getPageWithRetry('page-id', 'test')).resolves.toBe(previous)
+    expect(notionAPI.getPage).toHaveBeenCalledTimes(1)
+  })
+
+  it('preserves confirmed missing pages and permits a subsequent successful retry after incomplete data', async () => {
+    notionAPI.getPage.mockRejectedValueOnce(
+      new Error('Notion page not found "pageid"')
+    )
+    await expect(getPageWithRetry('page-id', 'test')).resolves.toBeNull()
+    const page = {
+      block: { 'page-id': { value: { id: 'page-id', type: 'page' } } }
+    }
+    notionAPI.getPage
+      .mockResolvedValueOnce({ block: {} })
+      .mockResolvedValueOnce(page)
+    await expect(
+      getPageWithRetry('page-id', 'test', 3, 'key', { fetchCollections: true })
+    ).resolves.toEqual(page)
+    expect(notionAPI.getPage).toHaveBeenLastCalledWith('page-id', {
+      fetchCollections: true
+    })
+  })
+
+  it('allows private related databases and unused views with the real notion-client', async () => {
+    notionAPI.getPage.mockImplementation(async (id, options) =>
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          [
+            '--input-type=module',
+            '-e',
+            `
+      import { NotionAPI } from 'notion-client'
+      const recordMap = {
+        block: {
+          root: { value: { id: 'root', type: 'collection_view_page', collection_id: 'publishing', view_ids: ['selected', 'private-view'], content: ['private-table'] } },
+          'private-table': { value: { id: 'private-table', type: 'collection_view', collection_id: 'private', view_ids: ['private-view'] } }
+        },
+        collection: { publishing: { value: { schema: {} } } },
+        collection_view: {}, notion_user: {}
+      }
+      const client = new NotionAPI()
+      client.getPageRaw = async () => ({ recordMap })
+      client.getCollectionData = async (collectionId, viewId) => {
+        if (collectionId !== 'publishing' || viewId !== 'selected') throw new Error('private collection: 400')
+        return { recordMap: { block: {}, collection: {}, collection_view: {}, notion_user: {} }, result: { reducerResults: { collection_group_results: { blockIds: [] } } } }
+      }
+      console.warn = console.error = () => {}
+      const data = await client.getPage('root', { ...${JSON.stringify(options)}, fetchMissingBlocks: false, signFileUrls: false })
+      process.stdout.write(JSON.stringify(data))
+    `
+          ],
+          { encoding: 'utf8' }
+        )
+      )
+    )
+    const result = await getPageWithRetry('root', 'test', 3, 'key', {
+      fetchCollections: true
+    })
+    expect(
+      result.collection_query.publishing.selected.collection_group_results
+        .blockIds
+    ).toEqual([])
+    expect(notionAPI.getPage).toHaveBeenCalledTimes(1)
+  })
+
+  it('retries a missing required query instead of accepting page_sort or another view', async () => {
+    const missing = {
+      block: {
+        root: {
+          value: {
+            id: 'root',
+            type: 'collection_view_page',
+            collection_id: 'publishing',
+            view_ids: ['selected', 'other']
+          }
+        }
+      },
+      collection_query: { publishing: { other: { blockIds: ['row'] } } },
+      collection_view: {
+        selected: { value: { value: { page_sort: ['row'] } } }
+      }
+    }
+    const complete = {
+      ...missing,
+      collection_query: { publishing: { selected: { blockIds: [] } } }
+    }
+    notionAPI.getPage
+      .mockResolvedValueOnce(missing)
+      .mockResolvedValueOnce(complete)
+    await expect(
+      getPageWithRetry('root', 'test', 3, 'key', { fetchCollections: true })
+    ).resolves.toEqual(complete)
+    expect(notionAPI.getPage).toHaveBeenCalledTimes(2)
+  })
+
+  it('validates only the first configuration table used by the parser', async () => {
+    const recordMap = {
+      block: {
+        config: {
+          value: {
+            id: 'config',
+            type: 'page',
+            content: ['table', 'private-table']
+          }
+        },
+        table: {
+          value: {
+            id: 'table',
+            type: 'collection_view',
+            collection_id: 'settings',
+            view_ids: ['selected']
+          }
+        },
+        'private-table': {
+          value: {
+            id: 'private-table',
+            type: 'collection_view',
+            collection_id: 'private',
+            view_ids: ['view']
+          }
+        }
+      },
+      collection_query: { settings: { selected: { blockIds: [] } } }
+    }
+    notionAPI.getPage.mockResolvedValueOnce(recordMap)
+    const options = { fetchCollections: true, validateConfigTable: true }
+    await expect(
+      getPageWithRetry('config', 'test', 3, 'key', options)
+    ).resolves.toEqual(recordMap)
+    notionAPI.getPage.mockResolvedValue({
+      ...recordMap,
+      collection_query: { private: { view: { blockIds: [] } } }
+    })
+    await expect(
+      getPageWithRetry('config', 'test', 3, 'key', options)
+    ).rejects.toThrow('Notion page data is unavailable')
+  })
+})
+
 describe('formatNotionBlock', () => {
   it('finds rich-text external object instances missing from the block map', () => {
     const recordMap = {

@@ -12,6 +12,28 @@ jest.mock('notion-utils', () => ({
 import { parseConfigFromPage } from '@/lib/db/notion/getNotionConfig'
 
 describe('parseConfigFromPage', () => {
+  it('rejects a missing used config query while preserving a genuinely empty configuration table', () => {
+    const recordMap = {
+      block: {
+        table: {
+          value: {
+            id: 'table',
+            type: 'collection_view',
+            collection_id: 'settings',
+            view_ids: ['selected']
+          }
+        }
+      },
+      collection: { settings: { value: { schema: {} } } },
+      collection_query: { settings: { unrelated: { blockIds: [] } } }
+    }
+    expect(() => parseConfigFromPage(recordMap, ['table'])).toThrow(
+      'Notion collection query is unavailable'
+    )
+    recordMap.collection_query.settings = { selected: { blockIds: [] } }
+    expect(parseConfigFromPage(recordMap, ['table'])).toEqual({})
+  })
+
   it.each(['collection_view', 'collection_view_page'])(
     'reads config from a %s database block',
     type => {
