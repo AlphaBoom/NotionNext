@@ -314,7 +314,7 @@ const Style = () => (
     #theme-medium .medium-post-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
     #theme-medium .medium-pagination {
-      display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+      display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
       align-items: center; gap: 12px; margin: 36px 0 12px;
       color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap;
     }
@@ -333,12 +333,16 @@ const Style = () => (
     }
     #theme-medium .medium-pagination-direction {
       display: flex; align-items: center; justify-content: center;
-      min-height: 44px; padding: 0 8px; white-space: nowrap;
+      width: 88px; max-width: 100%; min-height: 52px; padding: 0 12px; border-radius: 4px; white-space: nowrap;
     }
+    #theme-medium .medium-pagination-direction:first-child { justify-self: start; }
+    #theme-medium .medium-pagination-direction:last-child { justify-self: end; }
+    #theme-medium .medium-pagination-direction[href]:hover { background: var(--wash); }
+    #theme-medium .medium-pagination-direction[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     #theme-medium .medium-pagination-direction[aria-disabled='true'] { opacity: .35; }
     #theme-medium .medium-pagination-indicator {
       display: none; position: relative; align-items: center; justify-content: center;
-      gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 4px;
+      width: fit-content; justify-self: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 4px;
     }
     #theme-medium .medium-pagination-indicator:hover { background: var(--wash); }
     #theme-medium .medium-pagination-indicator:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -353,7 +357,7 @@ const Style = () => (
     @media (max-width: 639px) {
       #theme-medium .medium-pagination-pages { display: none; }
       #theme-medium .medium-pagination-indicator { display: flex; }
-      #theme-medium .medium-pagination { gap: 8px; }
+      #theme-medium .medium-pagination { gap: 12px; }
     }
 
     /* Text-first covers use existing metadata; a Notion image always takes priority. */
