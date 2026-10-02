@@ -47,11 +47,17 @@ describe('RSS endpoint', () => {
     finish({ allPages: [] })
     await Promise.all([first, second])
     await handler({ method: 'GET', query: { format: 'json' } }, json)
+    const head = response()
+    await handler({ method: 'HEAD', query: {} }, head)
     expect(fetchData).toHaveBeenCalledTimes(1)
     expect(buildFeeds).toHaveBeenCalledTimes(1)
     expect(rss.send).toHaveBeenCalledWith(feed.xml)
     expect(atom.send).toHaveBeenCalledWith(feed.atomXml)
     expect(json.send).toHaveBeenCalledWith(feed.json)
+    expect(head.status).toHaveBeenCalledWith(200)
+    expect(head.headers['Content-Type']).toBe(
+      'application/rss+xml; charset=utf-8'
+    )
     expect(rss.headers['Cache-Control']).toContain('s-maxage=600')
   })
 

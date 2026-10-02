@@ -14,7 +14,8 @@ async function refreshRss() {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
-  if (req.method !== 'GET') {
+  if (!['GET', 'HEAD'].includes(req.method)) {
+    res.setHeader('Allow', 'GET, HEAD')
     return res.status(405).json({ message: 'Method Not Allowed' })
   }
   const format = req.query?.format || 'rss'
