@@ -34,6 +34,23 @@ const PaginationSimple = ({ page = 1, totalPage }) => {
 
   if (total <= 1) return null
 
+  const selectPage = event => {
+    const number = Number(event.target.value)
+    if (number === current) return
+    const destination = href(number)
+    const params = new URLSearchParams(
+      router.asPath.split('?')[1]?.split('#')[0] || ''
+    )
+    const preserved = {}
+    params.forEach((value, key) => {
+      if (value) preserved[key] = value
+    })
+    void router.push({
+      ...destination,
+      query: { ...preserved, ...destination.query }
+    })
+  }
+
   const direction = (number, label, rel) =>
     number < 1 || number > total ? (
       <span className='medium-pagination-direction' aria-disabled='true'>
@@ -81,6 +98,37 @@ const PaginationSimple = ({ page = 1, totalPage }) => {
           </li>
         ))}
       </ol>
+      <label className='medium-pagination-indicator'>
+        <span aria-hidden='true'>
+          {current} / {total}
+        </span>
+        <svg
+          aria-hidden='true'
+          width='12'
+          height='12'
+          viewBox='0 0 16 16'
+          fill='none'
+        >
+          <path
+            d='m4 6 4 4 4-4'
+            stroke='currentColor'
+            strokeWidth='1.5'
+            strokeLinecap='round'
+            strokeLinejoin='round'
+          />
+        </svg>
+        <select
+          aria-label={`选择页码，共 ${total} 页`}
+          value={current}
+          onChange={selectPage}
+        >
+          {Array.from({ length: total }, (_, index) => index + 1).map(number => (
+            <option key={number} value={number}>
+              第 {number} 页
+            </option>
+          ))}
+        </select>
+      </label>
       {direction(current + 1, locale.PAGINATION.NEXT, 'next')}
     </nav>
   )

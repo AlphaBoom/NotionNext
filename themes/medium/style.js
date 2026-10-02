@@ -316,17 +316,16 @@ const Style = () => (
     #theme-medium .medium-pagination {
       display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center; gap: 12px; margin: 36px 0 12px;
-      color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums;
+      color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap;
     }
     #theme-medium .medium-pagination-pages {
-      display: flex; justify-content: center; gap: 4px; list-style: none;
+      display: flex; flex-wrap: nowrap; justify-content: center; gap: 4px; list-style: none;
       margin: 0; padding: 0;
     }
     #theme-medium .medium-pagination-number, #theme-medium .medium-pagination-gap {
       display: flex; align-items: center; justify-content: center;
-      min-width: 44px; height: 44px; border-radius: 4px;
+      min-width: 40px; height: 44px; border-radius: 4px;
     }
-    #theme-medium .medium-pagination-gap { min-width: 20px; }
     #theme-medium .medium-pagination-number:hover { background: var(--wash); }
     #theme-medium .medium-pagination-number[aria-current='page'] {
       background: var(--wash); color: var(--accent); font-weight: 600;
@@ -337,16 +336,24 @@ const Style = () => (
       min-height: 44px; padding: 0 8px; white-space: nowrap;
     }
     #theme-medium .medium-pagination-direction[aria-disabled='true'] { opacity: .35; }
+    #theme-medium .medium-pagination-indicator {
+      display: none; position: relative; align-items: center; justify-content: center;
+      gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 4px;
+    }
+    #theme-medium .medium-pagination-indicator:hover { background: var(--wash); }
+    #theme-medium .medium-pagination-indicator:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #theme-medium .medium-pagination-indicator select {
+      position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px;
+    }
     #theme-medium .medium-load-more { margin: 28px 0 12px; text-align: center; color: var(--muted); font-size: 14px; }
     #theme-medium .medium-load-more button { min-height: 44px; padding: 8px 24px; border: 1px solid var(--line); border-radius: 4px; }
     #theme-medium .medium-load-more button:hover { background: var(--wash); }
     #theme-medium .medium-load-more button:disabled { cursor: wait; opacity: .65; }
     #theme-medium .medium-load-more [role='alert'] { margin-bottom: 12px; }
     @media (max-width: 639px) {
-      #theme-medium .medium-pagination { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      #theme-medium .medium-pagination-pages { grid-column: 1 / -1; grid-row: 1; flex-wrap: wrap; }
-      #theme-medium .medium-pagination-direction:first-child { grid-column: 1; grid-row: 2; justify-self: start; }
-      #theme-medium .medium-pagination-direction:last-child { grid-column: 2; grid-row: 2; justify-self: end; }
+      #theme-medium .medium-pagination-pages { display: none; }
+      #theme-medium .medium-pagination-indicator { display: flex; }
+      #theme-medium .medium-pagination { gap: 8px; }
     }
 
     /* Text-first covers use existing metadata; a Notion image always takes priority. */
