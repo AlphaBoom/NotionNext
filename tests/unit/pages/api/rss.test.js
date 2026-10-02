@@ -76,6 +76,33 @@ describe('RSS endpoint', () => {
     expect(buildFeeds).toHaveBeenCalledTimes(3)
   })
 
+  it('keeps the old feed when the required publishing query fails and permits a later verified empty result', async () => {
+    await handler({ method: 'GET', query: {} }, response())
+    now.mockReturnValue(600001)
+    fetchData.mockRejectedValueOnce(
+      new Error('Notion collection query is unavailable')
+    )
+    const failed = response()
+    await handler({ method: 'GET', query: {} }, failed)
+    expect(failed.send).toHaveBeenCalledWith(feed.xml)
+    expect(failed.headers['Cache-Control']).toBe('no-store')
+    expect(buildFeeds).toHaveBeenCalledTimes(1)
+
+    // #39 makes an empty allPages result possible only after the used query succeeds.
+    const emptyFeed = {
+      xml: '<rss/>',
+      atomXml: '<feed/>',
+      json: '{"items":[]}'
+    }
+    fetchData.mockResolvedValueOnce({ allPages: [] })
+    buildFeeds.mockResolvedValueOnce(emptyFeed)
+    const recovered = response()
+    await handler({ method: 'GET', query: {} }, recovered)
+    expect(recovered.status).toHaveBeenCalledWith(200)
+    expect(recovered.send).toHaveBeenCalledWith(emptyFeed.xml)
+    expect(recovered.headers['Cache-Control']).toContain('s-maxage=600')
+  })
+
   it('reports an unavailable cold feed without caching the error and allows recovery', async () => {
     fetchData.mockRejectedValueOnce(new Error('Notion unavailable'))
     const failed = response()

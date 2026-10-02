@@ -4,6 +4,53 @@ import getAllPageIds from '@/lib/db/notion/getAllPageIds'
 jest.mock('notion-utils', () => ({ idToUuid: id => id }))
 
 describe('Notion collection page IDs', () => {
+  it('requires a result from the used view and preserves explicitly empty results', () => {
+    const staleView = {
+      selected: { value: { value: { page_sort: ['old-row'] } } }
+    }
+    const read = queries =>
+      getAllPageIds(
+        queries,
+        'publishing',
+        staleView,
+        ['selected', 'unused'],
+        {},
+        { requireQuery: true }
+      )
+    expect(() => read({ publishing: { unused: { blockIds: [] } } })).toThrow(
+      'Notion collection query is unavailable'
+    )
+    expect(() => read({ publishing: { selected: {} } })).toThrow(
+      'Notion collection query is unavailable'
+    )
+    expect(
+      read({
+        publishing: { selected: { collection_group_results: { blockIds: [] } } }
+      })
+    ).toEqual([])
+  })
+
+  it.each([
+    { collection_group_results: { blockIds: ['row'] } },
+    { reducerResults: { collection_group_results: { blockIds: ['row'] } } },
+    { results: { blockIds: ['row'] } },
+    { blockIds: ['row'] }
+  ])(
+    'accepts supported query result shapes during strict validation',
+    result => {
+      expect(
+        getAllPageIds(
+          { publishing: { selected: result } },
+          'publishing',
+          {},
+          ['selected'],
+          {},
+          { requireQuery: true }
+        )
+      ).toEqual(['row'])
+    }
+  )
+
   it('extracts page ids from collection view page_sort in newer payloads', () => {
     const pageIds = getAllPageIds(
       {},
