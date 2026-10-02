@@ -21,7 +21,7 @@ function destinationTitle(url, router) {
     return href && !href.startsWith('#') &&
       anchor.origin === window.location.origin && routeKey(anchor.href, router) === key
   })
-  return (link?.textContent || link?.getAttribute('aria-label') || '').trim()
+  return (link?.getAttribute('aria-label') || link?.textContent || '').trim()
 }
 
 export default function RouteTransition({ children }) {

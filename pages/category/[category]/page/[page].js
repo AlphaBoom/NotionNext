@@ -2,6 +2,7 @@ import BLOG from '@/blog.config'
 import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { DynamicLayout } from '@/themes/theme'
+import { usesPagedScroll } from '@/lib/postList'
 
 /**
  * 分类页
@@ -14,9 +15,9 @@ export default function Category(props) {
   return <DynamicLayout theme={theme} layoutName='LayoutPostList' {...props} />
 }
 
-export async function getStaticProps({ params: { category, page } }) {
+export async function getStaticProps({ params: { category, page }, locale }) {
   const from = 'category-page-props'
-  let props = await fetchGlobalAllData({ from })
+  let props = await fetchGlobalAllData({ from, locale })
 
   // 过滤状态类型
   props.posts = props.allPages
@@ -33,6 +34,7 @@ export async function getStaticProps({ params: { category, page } }) {
 
   delete props.allPages
   props.page = page
+  if (usesPagedScroll(props.NOTION_CONFIG)) props.postListPaged = true
 
   props = { ...props, category, page }
 

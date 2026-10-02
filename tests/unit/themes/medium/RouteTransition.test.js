@@ -53,6 +53,12 @@ function Page({ children }) {
   )
 }
 
+it('uses the accessible page label instead of an isolated page number while loading', () => {
+  render(<Page><a href='/page/3' aria-label='第 3 页'>3</a></Page>)
+  act(() => mockRouter.events.emit('routeChangeStart', '/page/3', {}))
+  expect(screen.getByRole('heading', { name: '第 3 页' })).toBeVisible()
+})
+
 it('shows the destination before the page data resolves, then reveals the new page', async () => {
   const { rerender } = render(<Page />)
   const link = screen.getByRole('link', { name: '赛马娘技能数据库' })

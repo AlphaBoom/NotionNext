@@ -14,6 +14,7 @@ import { generateRedirectJson } from '@/lib/utils/redirect'
 import { checkDataFromAlgolia } from '@/lib/plugins/algolia'
 import pLimit from 'p-limit'
 import { adapterNotionBlockMap } from '@/lib/utils/notion.util'
+import { prepareInitialPostList } from '@/lib/postList'
 
 /**
  * 首页布局
@@ -69,19 +70,7 @@ export async function getStaticProps(req) {
   )
 
   // 处理分页
-  const POST_LIST_STYLE = siteConfig(
-    'POST_LIST_STYLE',
-    'page',
-    props?.NOTION_CONFIG
-  )
-  if (POST_LIST_STYLE === 'scroll') {
-    // 滚动列表默认给前端返回所有数据
-  } else if (POST_LIST_STYLE === 'page') {
-    props.posts = props.posts?.slice(
-      0,
-      siteConfig('POSTS_PER_PAGE', 12, props?.NOTION_CONFIG)
-    )
-  }
+  prepareInitialPostList(props)
 
   // 预览文章内容
   if (POST_LIST_PREVIEW) {

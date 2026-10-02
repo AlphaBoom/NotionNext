@@ -313,6 +313,53 @@ const Style = () => (
     #theme-medium .medium-post-cover { width: 180px; aspect-ratio: 3 / 2; overflow: hidden; border-radius: 4px; background: var(--wash); }
     #theme-medium .medium-post-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
+    #theme-medium .medium-pagination {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center; gap: 12px; margin: 36px 0 12px;
+      color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap;
+    }
+    #theme-medium .medium-pagination-pages {
+      display: flex; flex-wrap: nowrap; justify-content: center; gap: 4px; list-style: none;
+      margin: 0; padding: 0;
+    }
+    #theme-medium .medium-pagination-number, #theme-medium .medium-pagination-gap {
+      display: flex; align-items: center; justify-content: center;
+      min-width: 40px; height: 44px; border-radius: 4px;
+    }
+    #theme-medium .medium-pagination-number:hover { background: var(--wash); }
+    #theme-medium .medium-pagination-number[aria-current='page'] {
+      background: var(--wash); color: var(--accent); font-weight: 600;
+      box-shadow: inset 0 -2px var(--accent);
+    }
+    #theme-medium .medium-pagination-direction {
+      display: flex; align-items: center; justify-content: center;
+      width: 88px; max-width: 100%; min-height: 52px; padding: 0 12px; border-radius: 4px; white-space: nowrap;
+    }
+    #theme-medium .medium-pagination-direction:first-child { justify-self: start; }
+    #theme-medium .medium-pagination-direction:last-child { justify-self: end; }
+    #theme-medium .medium-pagination-direction[href]:hover { background: var(--wash); }
+    #theme-medium .medium-pagination-direction[href]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #theme-medium .medium-pagination-direction[aria-disabled='true'] { opacity: .35; }
+    #theme-medium .medium-pagination-indicator {
+      display: none; position: relative; align-items: center; justify-content: center;
+      width: fit-content; justify-self: center; gap: 6px; min-height: 44px; padding: 0 12px; border-radius: 4px;
+    }
+    #theme-medium .medium-pagination-indicator:hover { background: var(--wash); }
+    #theme-medium .medium-pagination-indicator:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #theme-medium .medium-pagination-indicator select {
+      position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px;
+    }
+    #theme-medium .medium-load-more { margin: 28px 0 12px; text-align: center; color: var(--muted); font-size: 14px; }
+    #theme-medium .medium-load-more button { min-height: 44px; padding: 8px 24px; border: 1px solid var(--line); border-radius: 4px; }
+    #theme-medium .medium-load-more button:hover { background: var(--wash); }
+    #theme-medium .medium-load-more button:disabled { cursor: wait; opacity: .65; }
+    #theme-medium .medium-load-more [role='alert'] { margin-bottom: 12px; }
+    @media (max-width: 639px) {
+      #theme-medium .medium-pagination-pages { display: none; }
+      #theme-medium .medium-pagination-indicator { display: flex; }
+      #theme-medium .medium-pagination { gap: 12px; }
+    }
+
     /* Text-first covers use existing metadata; a Notion image always takes priority. */
     #theme-medium .medium-text-cover {
       --cover-paper: #e9eee2; --cover-ink: #334d3f; --cover-accent: #78936c;
