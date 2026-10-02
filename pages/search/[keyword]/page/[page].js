@@ -3,6 +3,7 @@ import { siteConfig } from '@/lib/config'
 import { fetchGlobalAllData } from '@/lib/db/SiteDataApi'
 import { DynamicLayout } from '@/themes/theme'
 import { searchPosts } from '@/lib/search/searchPosts'
+import { usesPagedScroll } from '@/lib/postList'
 
 const Index = props => {
   const { keyword } = props
@@ -37,6 +38,7 @@ export async function getStaticProps({ params: { keyword, page }, locale }) {
   )
   props.keyword = keyword
   props.page = page
+  if (usesPagedScroll(props.NOTION_CONFIG)) props.postListPaged = true
   delete props.allPages
   return {
     props,

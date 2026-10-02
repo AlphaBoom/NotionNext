@@ -4,6 +4,7 @@ import { fetchGlobalAllData, getPostBlocks } from '@/lib/db/SiteDataApi'
 import { formatNotionBlock } from '@/lib/db/notion/getPostBlocks'
 import { adapterNotionBlockMap } from '@/lib/utils/notion.util'
 import { DynamicLayout } from '@/themes/theme'
+import { usesPagedScroll } from '@/lib/postList'
 
 /**
  * 文章列表分页
@@ -50,6 +51,7 @@ export async function getStaticProps({ params: { page }, locale }) {
     POSTS_PER_PAGE * page
   )
   props.page = page
+  if (usesPagedScroll(props.NOTION_CONFIG)) props.postListPaged = true
 
   // 处理预览
   if (siteConfig('POST_LIST_PREVIEW', false, props?.NOTION_CONFIG)) {
