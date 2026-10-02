@@ -37,6 +37,12 @@ jest.mock('@/lib/cache/memory_cache', () => ({
   }
 }))
 jest.mock('@/lib/utils/post', () => ({ processPostData: jest.fn() }))
+jest.mock('@/lib/utils/rss', () => ({ buildRssFeeds: jest.fn() }))
+jest.mock('@/lib/db/notion/getPageProperties', () => ({
+  __esModule: true,
+  default: jest.fn(),
+  adjustPageProperties: jest.fn()
+}))
 
 import BLOG from '@/blog.config'
 import { fetchGlobalAllData, resolvePostProps } from '@/lib/db/SiteDataApi'
@@ -47,6 +53,9 @@ import {
 import { fetchPageFromNotion } from '@/lib/db/notion/getNotionPost'
 import MemoryCache from '@/lib/cache/memory_cache'
 import FileCache from '@/lib/cache/local_file_cache'
+import getPageProperties from '@/lib/db/notion/getPageProperties'
+import { buildRssFeeds } from '@/lib/utils/rss'
+import rssHandler from '@/pages/api/rss'
 
 describe('site data failure recovery', () => {
   const database = BLOG.NOTION_PAGE_ID
@@ -139,6 +148,65 @@ describe('site data failure recovery', () => {
     await expect(
       resolvePostProps({ prefix: 'abcdef0123456789abcdef0123456789' })
     ).resolves.toEqual(expect.objectContaining({ post: null }))
+  })
+
+  it('preserves the cached RSS after a publishing query failure and recovers to a truly empty feed through the real site pipeline', async () => {
+    const response = () => ({
+      headers: {},
+      setHeader(name, value) {
+        this.headers[name] = value
+      },
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn().mockReturnThis(),
+      json: jest.fn().mockReturnThis()
+    })
+    const now = jest.spyOn(Date, 'now').mockReturnValue(0)
+    getPageProperties.mockReturnValue({
+      id: 'row',
+      type: 'Post',
+      status: 'Published',
+      title: 'Article',
+      slug: 'article',
+      href: '/article',
+      tags: [],
+      tagItems: [],
+      summary: '',
+      publishDate: Date.UTC(2026, 9, 2),
+      date: { start_date: '2026-10-02' }
+    })
+    buildRssFeeds.mockImplementation(async ({ allPages }) => ({
+      xml: allPages.length ? '<rss>article</rss>' : '<rss/>',
+      atomXml: '<feed/>',
+      json: '{"items":[]}'
+    }))
+    const published = validEmptyDatabase()
+    published.block.row = {
+      value: { id: 'row', type: 'page', parent_id: 'collection' }
+    }
+    published.collection_query.collection.view.blockIds = ['row']
+    fetchNotionPageBlocks.mockResolvedValueOnce(published)
+    const initial = response()
+    await rssHandler({ method: 'GET', query: {} }, initial)
+    expect(initial.send).toHaveBeenCalledWith('<rss>article</rss>')
+
+    now.mockReturnValue(600001)
+    FileCache.entries.clear()
+    MemoryCache.entries.clear()
+    const failedQuery = validEmptyDatabase()
+    failedQuery.collection_query = {}
+    fetchNotionPageBlocks.mockResolvedValueOnce(failedQuery)
+    const failed = response()
+    await rssHandler({ method: 'GET', query: {} }, failed)
+    expect(failed.send).toHaveBeenCalledWith('<rss>article</rss>')
+    expect(failed.headers['Cache-Control']).toBe('no-store')
+    expect(buildRssFeeds).toHaveBeenCalledTimes(1)
+    expect(FileCache.entries.size).toBe(0)
+
+    fetchNotionPageBlocks.mockResolvedValueOnce(validEmptyDatabase())
+    const recovered = response()
+    await rssHandler({ method: 'GET', query: {} }, recovered)
+    expect(recovered.send).toHaveBeenCalledWith('<rss/>')
+    expect(recovered.headers['Cache-Control']).toContain('s-maxage=600')
   })
 
   it('rejects an incomplete article body instead of generating a page without its content', async () => {
