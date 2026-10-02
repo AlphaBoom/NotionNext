@@ -81,12 +81,6 @@ const PaginationSimple = ({ page = 1, totalPage }) => {
           </li>
         ))}
       </ol>
-      <span
-        className='medium-pagination-indicator'
-        aria-label={`第 ${current} 页，共 ${total} 页`}
-      >
-        {current} / {total}
-      </span>
       {direction(current + 1, locale.PAGINATION.NEXT, 'next')}
     </nav>
   )

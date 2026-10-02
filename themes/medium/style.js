@@ -324,8 +324,9 @@ const Style = () => (
     }
     #theme-medium .medium-pagination-number, #theme-medium .medium-pagination-gap {
       display: flex; align-items: center; justify-content: center;
-      min-width: 40px; height: 44px; border-radius: 4px;
+      min-width: 44px; height: 44px; border-radius: 4px;
     }
+    #theme-medium .medium-pagination-gap { min-width: 20px; }
     #theme-medium .medium-pagination-number:hover { background: var(--wash); }
     #theme-medium .medium-pagination-number[aria-current='page'] {
       background: var(--wash); color: var(--accent); font-weight: 600;
@@ -336,16 +337,16 @@ const Style = () => (
       min-height: 44px; padding: 0 8px; white-space: nowrap;
     }
     #theme-medium .medium-pagination-direction[aria-disabled='true'] { opacity: .35; }
-    #theme-medium .medium-pagination-indicator { display: none; text-align: center; }
     #theme-medium .medium-load-more { margin: 28px 0 12px; text-align: center; color: var(--muted); font-size: 14px; }
     #theme-medium .medium-load-more button { min-height: 44px; padding: 8px 24px; border: 1px solid var(--line); border-radius: 4px; }
     #theme-medium .medium-load-more button:hover { background: var(--wash); }
     #theme-medium .medium-load-more button:disabled { cursor: wait; opacity: .65; }
     #theme-medium .medium-load-more [role='alert'] { margin-bottom: 12px; }
     @media (max-width: 639px) {
-      #theme-medium .medium-pagination-pages { display: none; }
-      #theme-medium .medium-pagination-indicator { display: block; }
-      #theme-medium .medium-pagination { gap: 8px; }
+      #theme-medium .medium-pagination { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      #theme-medium .medium-pagination-pages { grid-column: 1 / -1; grid-row: 1; flex-wrap: wrap; }
+      #theme-medium .medium-pagination-direction:first-child { grid-column: 1; grid-row: 2; justify-self: start; }
+      #theme-medium .medium-pagination-direction:last-child { grid-column: 2; grid-row: 2; justify-self: end; }
     }
 
     /* Text-first covers use existing metadata; a Notion image always takes priority. */
