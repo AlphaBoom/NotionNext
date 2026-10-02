@@ -57,12 +57,12 @@ describe('site data failure recovery', () => {
           id: database,
           type: 'collection_view_page',
           collection_id: 'collection',
-          view_ids: []
+          view_ids: ['view']
         }
       }
     },
     collection: { collection: { value: { schema: {} } } },
-    collection_query: {},
+    collection_query: { collection: { view: { blockIds: [] } } },
     collection_view: {}
   })
   beforeEach(() => {
@@ -110,6 +110,21 @@ describe('site data failure recovery', () => {
       'Notion publishing database rows are incomplete'
     )
     expect(FileCache.entries.size).toBe(0)
+  })
+
+  it('rejects a failed selected query without caching it and accepts a successful empty query on recovery', async () => {
+    const missingQuery = validEmptyDatabase()
+    missingQuery.collection_query = { collection: { unused: { blockIds: [] } } }
+    fetchNotionPageBlocks.mockResolvedValueOnce(missingQuery)
+    await expect(fetchGlobalAllData({ from: 'test' })).rejects.toThrow(
+      'Notion collection query is unavailable'
+    )
+    expect(FileCache.entries.size).toBe(0)
+    fetchNotionPageBlocks.mockResolvedValueOnce(validEmptyDatabase())
+    await expect(fetchGlobalAllData({ from: 'test' })).resolves.toEqual(
+      expect.objectContaining({ allPages: [], postCount: 0 })
+    )
+    expect(fetchNotionPageBlocks).toHaveBeenCalledTimes(2)
   })
 
   it('does not turn a failed UUID lookup into a not-found response', async () => {
